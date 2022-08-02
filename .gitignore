@@ -1,0 +1,325 @@
+syntax: glob
+
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+*.sln.ide/
+
+# Xamarin Studio / monodevelop user-specific
+*.userprefs
+
+# Build results
+
+[Dd]ebug/
+[Rr]elease/
+x64/
+build/
+[Bb]in/
+[Oo]bj/
+
+# Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
+!packages/*/build/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+# Guidance Automation Toolkit
+*.gpState
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# TeamCity is a build add-in
+_TeamCity*
+
+# DotCover is a Code Coverage Tool
+*.dotCover
+
+# NCrunch
+*.ncrunch*
+.*crunch*.local.xml
+_NCrunch_*
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.Publish.xml
+
+# Windows Azure Build Output
+csx
+*.build.csdef
+
+# Windows Store app package directory
+AppPackages/
+
+# Others
+sql/
+*.Cache
+ClientBin/
+[Ss]tyle[Cc]op.*
+~$*
+*~
+*.dbmdl
+*.[Pp]ublish.xml
+*.pfx
+*.publishsettings
+
+# RIA/Silverlight projects
+Generated_Code/
+
+# Backup & report files from converting an old project file to a newer
+# Visual Studio version. Backup files are not needed, because we have git ;-)
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+
+# SQL Server files
+App_Data/*.mdf
+App_Data/*.ldf
+
+
+#LightSwitch generated files
+GeneratedArtifacts/
+_Pvt_Extensions/
+ModelManifest.xml
+
+# =========================
+# Windows detritus
+# =========================
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Mac desktop service store files
+.DS_Store
+
+# ===================================================
+# Exclude F# project specific directories and files
+# ===================================================
+
+# NuGet Packages Directory
+packages/
+
+# Generated documentation folder
+docs/output/
+
+# Temp folder used for publishing docs
+temp/
+
+# Test results produced by build
+TestResults.xml
+
+# Nuget outputs
+release.cmd
+release.sh
+localpackages/
+paket-files
+*.orig
+.paket/paket.exe
+docs/content/license.md
+docs/content/release-notes.md
+_NCrunch_Paket
+docs/content/paket-*.md
+!docs/content/paket-folder.md
+*.bak
+System.Management.Automation.dll
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# =========================
+# Operating System Files
+# =========================
+
+# OSX
+# =========================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+
+*.tlog
+*.obj
+*.exe
+*.pdb
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.lib
+*.sbr
+*.scc
+*.il
+_Upgrade*
+*.orig
+UpgradeLog.*
+[Bb]in
+[Dd]ebug*/
+obj/
+.vs/
+[Rr]elease*/
+_ReSharper*/
+[Tt]est[Rr]esult*
+[Bb]uild[Ll]og.*
+*.[Pp]ublish.xml
+PilotICE/Ascon.Pilot.Client/Translation/LocalizationResources.xaml
+PilotICE/Ascon.Pilot.Client/Translation/LocalizationResources.xaml.cs
+PilotICE/Ascon.Pilot.Core/GlobalAssemblyInfo.cs
+ClientPGS
+.svn/
+PilotICE/Ascon.Pilot.Core/Properties/GlobalAssemblyInfo.cs
+Pilot_ICE/PilotICE/Pilot XPS V4/x64/*
+Pilot_ICE/PilotICE/Pilot XPS V4/Win32/*
+Pilot.Installer/Version.wxi
+Pilot.Installer/Pilot-myAdmin/Ascon.Pilot.MyAdmin.MSI.x64/HelpFiles.wxs
+Pilot.Installer/Pilot-myAdmin/Ascon.Pilot.MyAdmin.MSI.x86/Components/HelpFiles.wxs
+Pilot.Installer/Pilot-ICE/Ascon.Pilot.ICE.MSI.x86/Components/HelpFiles.wxs
+Pilot.Installer/Pilot-ICE/Ascon.Pilot.ICE.MSI.x64/HelpFiles.wxs
+Pilot.Installer/GlobalAssemblyInfo.cs
+Pilot.Installer/Pilot-ICE/Ascon.Pilot.ICE.MSI.x86/HelpFiles.wxs
+Pilot.Installer/Pilot-Server/Databases.zip
+*.exp
+PilotICE/Ascon.Pilot.sublime-workspace
+Pilot.Installer/Pilot-XpsViewer/Ascon.Pilot.XpsViewer.x64/HelpFiles.wxs
+Pilot.Installer/Pilot-XpsViewer/Ascon.Pilot.XpsViewer.x86/Components/HelpFiles.wxs
+Pilot.Installer/ThreeDStorage/Ascon.Pilot.ThreeDStorage.MSI.x64/HelpFiles.wxs
+Pilot.Installer/ThreeDStorage/Ascon.Pilot.ThreeDStorage.MSI.x86/HelpFiles.wxs
+PilotICE/Pilot XPS V4/Pilot XPS V4.opensdf
+PilotICE/Ascon.Pilot.SDK.Samples/packages/*
+Pilot.Installer/Pilot-Enterprise/Ascon.Pilot.Enterprise.MSI.x86/HelpFiles.wxs
+Pilot.Installer/Pilot-Enterprise/Ascon.Pilot.Enterprise.MSI.x64/HelpFiles.wxs
+/Pilot.Installer/Pilot-BIM/Ascon.Pilot.BIM.MSI.x64/HelpFiles.wxs
+/Pilot.Installer/Pilot-BIM/Ascon.Pilot.BIM.MSI.x86/HelpFiles.wxs
+PilotICE/Ascon.Pilot.Help/en-EN/Output/pustovova/3D-Storage/Content/certificate.htm
+PilotICE/Ascon.Pilot.Help/en-EN/Output/*
+PilotICE/Ascon.Pilot.Help/ru-RU/Output/*
+PilotICE/PdfPreviewHandler/log4net.dll
+PilotICE/PdfPreviewHandler/AxInterop.AcroPDFLib.dll
+PilotICE/PdfPreviewHandler/Interop.AcroPDFLib.dll
+PilotICE/PdfPreviewHandler/PdfPreviewHandler.exe.config
+desktop.ini
+TestComplete/PilotICE/Pilot.tcCfgExtender
+TestComplete/PilotICE/Log/*
+TestComplete/PilotICE/*.tcLS
+PilotICE/Ascon.Pilot.SDK.Samples/Ascon.Pilot.SDK.0.0.0.0.nupkg
+CodedTestUI/CodedTestUI.sln.metaproj.tmp
+CodedTestUI/CodedTestUI.sln.metaproj
+PilotICE/Tools/IconsTest/IconsTest.sln.DotSettings
+Pilot.Installer/Pilot-ECM/Ascon.Pilot.ECM.MSI.x86/HelpFiles.wxs
+Pilot.Installer/Pilot-ECM/Ascon.Pilot.ECM.MSI.x64/HelpFiles.wxs
+PilotICE/Ascon.Pilot.PDF2XPS/Mapping.txt
+PilotICE/.vs/Ascon.Pilot/v15/Server/sqlite3/storage.ide-wal
+PilotICE/.vs/Ascon.Pilot/v15/Server/sqlite3/db.lock
+PilotICE/.vs/Ascon.Pilot/v15/Server/sqlite3/storage.ide
+PilotICE/.vs/Ascon.Pilot/v15/Server/sqlite3/storage.ide-shm
+PilotICE/NetCore/.vs/*
+PilotICE/NetCore/Ascon.Pilot.Daemon/Properties/PublishProfiles/*
+PilotICE/.vs/*
+.vs/Install/*
+.vs/
+CodedTestUI/.vs/CodedTestUI/v15*
+PilotICE/Ascon.Pilot.SDK.Samples/Samples/.vs/*
+PilotICE/Ascon.Pilot.Service/Ascon.Pilot.Daemon/Properties/PublishProfiles/*
+syntax: regexp
+Pilot.Installer/Content/*
+Pilot.Installer/Pilot-ICE/Content/*
+Pilot.Installer/Pilot-Server/Content/*
+Pilot.Installer/Pilot-myAdmin/Content/*
+Pilot.Installer/Pilot-XpsViewer/Content*
+.hgtags
+/Pilot.Installer/Tools/Uploader/bin/*
+/TestDatabaseUpdater/.attrindex/_b_1.del
+/TestDatabaseUpdater/.attrindex/_b.si
+/TestDatabaseUpdater/.attrindex/_b.cfs
+/TestDatabaseUpdater/.attrindex/_b.cfe
+/TestDatabaseUpdater/.attrindex/_a_1.del
+/TestDatabaseUpdater/.attrindex/_a.si
+/TestDatabaseUpdater/.attrindex/_a.cfs
+/TestDatabaseUpdater/.attrindex/_a.cfe
+/TestDatabaseUpdater/.attrindex/_8.si
+/TestDatabaseUpdater/.attrindex/_8.cfs
+/TestDatabaseUpdater/.attrindex/_8.cfe
+/TestDatabaseUpdater/.attrindex/_0_2.del
+/TestDatabaseUpdater/.attrindex/_0.si
+/TestDatabaseUpdater/.attrindex/_0.cfs
+/TestDatabaseUpdater/.attrindex/_0.cfe
+/TestDatabaseUpdater/.attrindex/segments_b
+/TestDatabaseUpdater/.attrindex/segments.gen
+/TestDatabaseUpdater/.attrindex/index_version
+/TestDatabaseUpdater/.attrindex
+/Pilot.Installer/Pilot-SearchServer/Ascon.Pilot.Search.Msi.x64/ProductFiles.wxs
+/Pilot.Installer/Pilot-SearchServer/Ascon.Pilot.Search.Msi.x86/ProductFiles.wxs
+/PilotICE/Ascon.Pilot.Camera360/Translation/LocalizationResources.xaml
+/PilotICE/Ascon.Pilot.Camera360/Translation/LocalizationResources.xaml.cs
+/PilotICE/Ascon.Pilot.SDK.Samples/Client/Ascon.Pilot.SDK.0.0.0.0.nupkg
+/PilotICE/Ascon.Pilot.SDK.Samples/Client/Ascon.Pilot.SDK.0.0.0.0-nuget.nupkg
+/PilotICE/Tools/AD_test_2/AD_test_2/obj/*
