@@ -26,11 +26,6 @@
       "enterprise": false
     },
     {
-      "_id": "Accounts_RegistrationForm_LinkReplacementText",
-      "value": "Registration temporarily disabled. Please check back later!",
-      "enterprise": false
-    },
-    {
       "_id": "Accounts_ShowFormLogin",
       "value": true,
       "enterprise": false
