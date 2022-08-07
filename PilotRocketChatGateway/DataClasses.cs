@@ -11,6 +11,7 @@ namespace PilotRocketChatGateway
         public string version { get; init; }
     }
 
+    #region settings
     public record OauthSettings : HttpResult
     {
         public string[] services { get; init; }
@@ -44,5 +45,13 @@ namespace PilotRocketChatGateway
         public bool enterprise { get; init; }
         public bool invalidValue { get; init; }
         public string[] modules { get; init; }
+    }
+    #endregion settings
+
+    public record WebSocketRequest : HttpResult
+    {
+        public string msg { get; init; }
+        public string version { get; init; }
+        public string[] support { get; init; }
     }
 }
