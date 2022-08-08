@@ -2,12 +2,12 @@
 using Newtonsoft.Json;
 using System.Reflection;
 
-namespace PilotRocketChatGateway.Controllers.Settings
+namespace PilotRocketChatGateway.Controllers.SettingControllers
 {
     public class PublicSettingsController : Controller
     {
-        public const string SERVER_SETTNGS_FILE = "rocketchatsettings.json";
-        private static Dictionary<string, Setting> _serverSettings  = LoadServerSettings();
+        private const string ROCKET_CHAT_SETTNGS_FILE = "rocketchatsettings.json";
+        private static Dictionary<string, Setting> _rocketChatSettings { get; } = LoadRocketChatSettings();
 
         [HttpGet("api/v1/settings.public")]
         public string Get(string query)
@@ -29,16 +29,16 @@ namespace PilotRocketChatGateway.Controllers.Settings
 
             foreach(var setting in settingsRequest.settings.settings)
             {
-                if (_serverSettings.TryGetValue(setting, out var val))
+                if (_rocketChatSettings.TryGetValue(setting, out var val))
                     result.settings.Add(val);
             }
 
             return result;
         }
 
-        private static Dictionary<string, Setting> LoadServerSettings()
+        private static Dictionary<string, Setting> LoadRocketChatSettings()
         {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), SERVER_SETTNGS_FILE);
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ROCKET_CHAT_SETTNGS_FILE);
             string json = System.IO.File.ReadAllText(path);
 
             var settings = JsonConvert.DeserializeObject<ServerSettings>(json);

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace PilotRocketChatGateway.Controllers.Settings
+namespace PilotRocketChatGateway.Controllers.SettingControllers
 {
     [ApiController]
     public class OauthSettingsController : ControllerBase
