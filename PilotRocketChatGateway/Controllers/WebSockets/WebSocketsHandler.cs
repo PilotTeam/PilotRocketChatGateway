@@ -41,7 +41,7 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
                     var result = new WebSocketRequest() { msg = "connected" };
                     await SendResult(result);
                     break;
-                case "pings":
+                case "ping":
                     result = new WebSocketRequest() { msg = "pong" };
                     await SendResult(result);
                break;

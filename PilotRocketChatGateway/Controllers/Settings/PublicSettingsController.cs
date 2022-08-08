@@ -6,7 +6,7 @@ namespace PilotRocketChatGateway.Controllers.Settings
 {
     public class PublicSettingsController : Controller
     {
-        public const string SERVER_SETTNGS_FILE = "serversettings.json";
+        public const string SERVER_SETTNGS_FILE = "rocketchatsettings.json";
         private static Dictionary<string, Setting> _serverSettings  = LoadServerSettings();
 
         [HttpGet("api/v1/settings.public")]
