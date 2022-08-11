@@ -14,10 +14,10 @@ namespace PilotRocketChatGateway.Controllers
     public class LoginController : ControllerBase
     {
         private readonly IContextService _contextService;
-        private readonly ILogger<WebSocketsController> _logger;
+        private readonly ILogger<LoginController> _logger;
         private readonly AuthSettings _authSettings;
 
-        public LoginController(IContextService contextService, IOptions<AuthSettings> authSettings, ILogger<WebSocketsController> logger)
+        public LoginController(IContextService contextService, IOptions<AuthSettings> authSettings, ILogger<LoginController> logger)
         {
             _contextService = contextService;
             _logger = logger;

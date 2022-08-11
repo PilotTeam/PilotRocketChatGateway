@@ -15,7 +15,7 @@ namespace PilotRocketChatGateway
 
         public async Task Invoke(HttpContext context)
         {
-            _logger.Log(LogLevel.Information, $"Http path: {context.Request.Path} + query: {context.Request.QueryString}");
+            _logger.Log(LogLevel.Information, $"Http method: {context.Request.Method} path: {context.Request.Path} query: {context.Request.QueryString}");
             await _next(context);
         }
     }

@@ -8,7 +8,6 @@ namespace PilotRocketChatGateway.PilotServer
         IServerApiService GetServerApi(string actor);
         void CreateContext(Credentials credentials);
         void RemoveContext(string actor);
-        string GetTokenActor(HttpContext httpContext);
     }
     public class ContextService : IContextService
     {
@@ -52,15 +51,6 @@ namespace PilotRocketChatGateway.PilotServer
             return apiService.ServerApi;
         }
 
-        public string GetTokenActor(HttpContext httpContext)
-        {
-            httpContext.Request.Headers.TryGetValue("x-auth-token", out var tokenSource);
-            if (string.IsNullOrEmpty(tokenSource))
-                return null;
-
-            var jwtToken = new JwtSecurityToken(tokenSource.ToString());
-            return jwtToken.Actor;
-        }
         private IRemoteService GetRemoteService(string actor)
         {
             lock (_services)
