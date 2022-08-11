@@ -1,4 +1,4 @@
-﻿namespace PilotRocketChatGateway
+﻿namespace PilotRocketChatGateway.PilotServer
 {
     public record PilotSettings
     {

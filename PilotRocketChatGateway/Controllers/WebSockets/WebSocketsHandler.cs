@@ -15,7 +15,7 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
             _webSocket = webSocket;
         }
 
-        public async Task Process()
+        public async Task ProcessAsync()
         {
             var buffer = new byte[1024 * 4];
             while (true)
@@ -28,27 +28,55 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                var request = JsonConvert.DeserializeObject<WebSocketRequest>(json);
-                await HandleRequest(request);
+                _logger.Log(LogLevel.Information, json);
+                try
+                {
+                    var request = JsonConvert.DeserializeObject<WebSocketRequest>(json);
+                    await HandleRequestAsync(request);
+                }
+                catch(Exception e)
+                {
+                 //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
+                    _logger.LogError(0, e, e.Message);
+                }
             }
         }
 
-        private async Task HandleRequest(WebSocketRequest request)
+        private async Task HandleRequestAsync(WebSocketRequest request)
         {
             switch (request.msg)
             {
                 case "connect":
-                    var result = new WebSocketRequest() { msg = "connected" };
+                    var result = new WebSocketResult() { id = request.id, msg = "connected" };
                     await SendResult(result);
                     break;
                 case "ping":
-                    result = new WebSocketRequest() { msg = "pong" };
+                    result = new WebSocketResult() { id = request.id, msg = "pong" };
                     await SendResult(result);
-               break;
+                    break;
+                case "method":
+                    await HandleMethodRequestAsync(request);
+                    break;
             }
         }
 
-        private async Task SendResult(WebSocketRequest result)
+        private async Task HandleMethodRequestAsync(WebSocketRequest request)
+        {
+            switch (request.method)
+            {
+                case "login":
+                    var result = new WebSocketResult()
+                    {
+                        id = request.id,
+                        msg = "result",
+                    };
+
+                    await SendResult(result);
+                    break;
+            }
+        }
+
+        private async Task SendResult(WebSocketResult result)
         {
             var json = JsonConvert.SerializeObject(result);
             var send = Encoding.UTF8.GetBytes(json);

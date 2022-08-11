@@ -22,7 +22,10 @@ namespace PilotRocketChatGateway
         {
             return "PilotRocketChatGateway"; // потребитель токена
         }
-
+        public DateTime? GetTokenLifetime(int days)
+        {
+            return DateTime.UtcNow.AddDays(days); // время жизни токена - 2 дня
+        }
         public TimeSpan GetClockCrew()
         {
             return TimeSpan.Zero;
