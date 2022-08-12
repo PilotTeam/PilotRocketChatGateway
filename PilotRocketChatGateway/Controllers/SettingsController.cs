@@ -2,16 +2,22 @@
 using Newtonsoft.Json;
 using System.Reflection;
 
-namespace PilotRocketChatGateway.Controllers.SettingControllers
+namespace PilotRocketChatGateway.Controllers
 {
     [ApiController]
-    public class PublicSettingsController : ControllerBase
+    public class SettingsController : ControllerBase
     {
         private const string ROCKET_CHAT_SETTNGS_FILE = "rocketchatsettings.json";
         private static Dictionary<string, Setting> _rocketChatSettings { get; } = LoadRocketChatSettings();
 
+        [HttpGet("api/v1/settings.oauth")]
+        public OauthSettings GetOuthSettings()
+        {
+            return new OauthSettings { success = false, services = new string[] { } };
+        }
+
         [HttpGet("api/v1/settings.public")]
-        public string Get(string query)
+        public string GetPublicSettings(string query)
         {
             var settings = JsonConvert.DeserializeObject<SettingsRequest>(query);
 
@@ -28,7 +34,7 @@ namespace PilotRocketChatGateway.Controllers.SettingControllers
                 total = settingsRequest.settings.settings.Count
             };
 
-            foreach(var setting in settingsRequest.settings.settings)
+            foreach (var setting in settingsRequest.settings.settings)
             {
                 if (_rocketChatSettings.TryGetValue(setting, out var val))
                     result.settings.Add(val);

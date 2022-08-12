@@ -22,7 +22,9 @@ namespace PilotRocketChatGateway.Controllers
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
             var rooms = context.ChatService.LoadRooms();
-            return JsonConvert.SerializeObject(rooms);
+
+            var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
+            return JsonConvert.SerializeObject(result);
         }
     }
 }

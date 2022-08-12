@@ -23,7 +23,9 @@ namespace PilotRocketChatGateway.Controllers
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
             var subs = context.ChatService.LoadRoomsSubscriptions();
-            return JsonConvert.SerializeObject(subs);
+
+            var result = new Subscriptions() { success = true, update = subs, remove = new List<Subscription>() };
+            return JsonConvert.SerializeObject(result);
         }
 
     }

@@ -5,8 +5,9 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IChatService
     {
-        Rooms LoadRooms();
-        Subscriptions LoadRoomsSubscriptions();
+        IList<Room> LoadRooms();
+        IList<Subscription> LoadRoomsSubscriptions();
+        IList<Message> LoadMessages(Guid roomId, int count);
     }
     public class ChatService : IChatService
     {
@@ -15,26 +16,22 @@ namespace PilotRocketChatGateway.UserContext
         {
             _serverApi = serverApi;
         }
-        public Rooms LoadRooms()
+        public IList<Room> LoadRooms()
         {
             var chats = _serverApi.GetChats();
-            var subs = new Rooms() { success = true, update = new List<Room>(), remove = new List<Room>() };
-            foreach (var chat in chats)
-            {
-                subs.update.Add(ConvertToRoom(chat));
-            }
-            return subs;
+            return chats.Select(x => ConvertToRoom(x)).ToList();
         }
 
-        public Subscriptions LoadRoomsSubscriptions()
+        public IList<Subscription> LoadRoomsSubscriptions()
         {
             var chats = _serverApi.GetChats();
-            var subs = new Subscriptions() { success = true, update = new List<Subscription>(), remove = new List<Subscription>() };
-            foreach (var chat in chats)
-            {
-                subs.update.Add(ConvertToSubscription(chat));
-            }
-            return subs;
+            return chats.Select(x => ConvertToSubscription(x)).ToList();
+        }
+
+        public IList<Message> LoadMessages(Guid roomId, int count)
+        {
+            var msgs = _serverApi.GetMessages(roomId, count);
+            return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x)).ToList();
         }
 
         private static Subscription ConvertToSubscription(DChatInfo chat)
@@ -99,29 +96,9 @@ namespace PilotRocketChatGateway.UserContext
             return jsDate;
         }
         private static readonly long DatetimeMinTimeTicks = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
-        public static long ToJavaScriptMilliseconds(DateTime dt)
+        private static long ToJavaScriptMilliseconds(DateTime dt)
         {
             return (dt.ToUniversalTime().Ticks - DatetimeMinTimeTicks) / 10000;
-        }
-
-
-
-        public Messages LoadMessages(Guid roomId, int count)
-        {
-            var msgs = _serverApi.GetMessages(roomId, count);
-
-            var result = new Messages()
-            {
-                success = true,
-                messages = new List<Message>()
-            };
-
-            foreach (var msg in msgs.Where(x => x.Type == MessageType.TextMessage))
-            {
-                result.messages.Add(GetMessage(msg));
-
-            }
-            return result;
         }
     }
 }

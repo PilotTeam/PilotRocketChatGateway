@@ -129,13 +129,13 @@ namespace PilotRocketChatGateway
     
     public record Rooms : HttpResult
     {
-        public List<Room> update { get; init; }
-        public List<Room> remove { get; init; }
+        public IList<Room> update { get; init; }
+        public IList<Room> remove { get; init; }
     }
     public record Subscriptions : HttpResult
     {
-        public List<Subscription> update { get; init; }
-        public List<Subscription> remove { get; init; }
+        public IList<Subscription> update { get; init; }
+        public IList<Subscription> remove { get; init; }
     }
     public record Subscription
     {
@@ -166,6 +166,11 @@ namespace PilotRocketChatGateway
         [JsonProperty("ts")]
         public JSDate creationDate { get; init; }
     }
+    public record Messages : HttpResult
+    {
+        public IList<Message> messages { get; init; }
+    }
+
     public record Message
     {
         [JsonProperty("_id")]
