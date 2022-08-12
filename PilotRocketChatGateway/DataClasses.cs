@@ -16,6 +16,11 @@ namespace PilotRocketChatGateway
     {
         public string version { get; init; }
     }
+    public record JSDate
+    {
+        [JsonProperty("$date")]
+        public long date { get; init; }
+}
 
     #region settings
     public record OauthSettings : HttpResult
@@ -53,8 +58,11 @@ namespace PilotRocketChatGateway
         public string[] modules { get; init; }
     }
     #endregion settings
+    #region websocket
     public class User
     {
+        [JsonProperty("_id")]
+        public string id;
         public string name;
         public string username;
     }
@@ -91,15 +99,10 @@ namespace PilotRocketChatGateway
     {
         public string token { get; init; }
         public string id { get; init; }
-        public Date tokenExpires { get; init; }
+        public JSDate tokenExpires { get; init; }
     }
 
-    public class Date
-    {
-        [JsonProperty("$date")]
-        public long date { get; init; }
-    }
-
+    #endregion websocket
     #region login
 
     public class LoginRequest
@@ -123,4 +126,58 @@ namespace PilotRocketChatGateway
     }
 
     #endregion
+    
+    public record Rooms : HttpResult
+    {
+        public List<Room> update { get; init; }
+        public List<Room> remove { get; init; }
+    }
+    public record Subscriptions : HttpResult
+    {
+        public List<Subscription> update { get; init; }
+        public List<Subscription> remove { get; init; }
+    }
+    public record Subscription
+    {
+        [JsonProperty("_updatedAt")]
+        public JSDate updatedAt { get; init; }
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+        public int unread { get; init; }
+        public string name { get; init; }
+        public bool open { get; init; }
+        [JsonProperty("t")]
+        public string channelType { get; init; }
+        [JsonProperty("ts")]
+        public JSDate creationDate { get; init; }
+    }
+    public record Room
+    {
+        [JsonProperty("_updatedAt")]
+        public JSDate updatedAt { get; init; }
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        public string name { get; init; }
+        [JsonProperty("t")]
+        public string channelType { get; init; }
+        public Message lastMessage { get; init; }
+        [JsonProperty("ts")]
+        public JSDate creationDate { get; init; }
+    }
+    public record Message
+    {
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        [JsonProperty("_updatedAt")]
+        public object updatedAt { get; init; }
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+        public string msg { get; init; }
+        [JsonProperty("ts")]
+        public JSDate creationDate { get; init; }
+        public User u { get; init; }
+    }
+
 }

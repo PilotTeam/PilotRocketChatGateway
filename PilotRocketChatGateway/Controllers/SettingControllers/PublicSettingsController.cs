@@ -4,7 +4,8 @@ using System.Reflection;
 
 namespace PilotRocketChatGateway.Controllers.SettingControllers
 {
-    public class PublicSettingsController : Controller
+    [ApiController]
+    public class PublicSettingsController : ControllerBase
     {
         private const string ROCKET_CHAT_SETTNGS_FILE = "rocketchatsettings.json";
         private static Dictionary<string, Setting> _rocketChatSettings { get; } = LoadRocketChatSettings();

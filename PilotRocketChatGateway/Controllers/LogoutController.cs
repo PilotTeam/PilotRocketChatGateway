@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.Controllers
 {

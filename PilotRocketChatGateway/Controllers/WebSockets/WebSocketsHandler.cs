@@ -37,7 +37,7 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
                 catch(Exception e)
                 {
                  //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
-                    _logger.LogError(0, e, e.Message);
+                   // _logger.LogError(0, e, e.Message);
                 }
             }
         }

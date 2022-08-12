@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PilotRocketChatGateway;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,7 @@ builder.Services.AddControllers();
 builder.Services.Configure<PilotSettings>(builder.Configuration.GetSection("PilotServer"));
 builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
 builder.Services.AddSingleton<IConnectionService, ConnectionService>();
-builder.Services.AddSingleton<IRemoteServiceFactory, RemoteServiceFactory>();
+builder.Services.AddSingleton<IContextFactory, ContextFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();

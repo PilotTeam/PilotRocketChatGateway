@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.Controllers.WebSockets;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -31,25 +32,13 @@ namespace PilotRocketChatGateway.Controllers
             {
                 var credentials = Credentials.GetConnectionCredentials(user.user, user.password);
                 _contextService.CreateContext(credentials);
-                var serverApi = _contextService.GetServerApi(credentials.Username);
+                var context = _contextService.GetContext(credentials.Username);
                 var tokenString = CreateToken(credentials);
+
                 _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
 
-                var response = new HttpLoginResponse()
-                {
-                    status = "success",
-                    data = new LoginData()
-                    {
-                        authToken = tokenString,
-                        userId = serverApi.CurrentPerson.Id.ToString(),
-                        me = new User()
-                        {
-                            name = serverApi.CurrentPerson.DisplayName,
-                            username = serverApi.CurrentPerson.Login,
-                        },
-                    }
-                };
-                return JsonConvert.SerializeObject(response); 
+                var response = GetLoginResponse(context.RemoteService.ServerApi, tokenString);
+                return JsonConvert.SerializeObject(response);
             }
             catch (Exception e)
             {
@@ -58,6 +47,24 @@ namespace PilotRocketChatGateway.Controllers
                 var error = new Error() { status = "error", error = "Unauthorized", message = e.Message };
                 return JsonConvert.SerializeObject(error);
             }
+        }
+
+        private static HttpLoginResponse GetLoginResponse(IServerApiService serverApi, string tokenString)
+        {
+            return new HttpLoginResponse()
+            {
+                status = "success",
+                data = new LoginData()
+                {
+                    authToken = tokenString,
+                    userId = serverApi.CurrentPerson.Id.ToString(),
+                    me = new User()
+                    {
+                        name = serverApi.CurrentPerson.DisplayName,
+                        username = serverApi.CurrentPerson.Login,
+                    },
+                }
+            };
         }
 
         private string CreateToken(Credentials credentials)
