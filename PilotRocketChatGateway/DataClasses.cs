@@ -181,7 +181,7 @@ namespace PilotRocketChatGateway
         public string roomId { get; init; }
         public string msg { get; init; }
         [JsonProperty("ts")]
-        public JSDate creationDate { get; init; }
+        public object creationDate { get; init; }
         public User u { get; init; }
     }
 

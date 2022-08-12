@@ -71,7 +71,7 @@ namespace PilotRocketChatGateway.UserContext
                     id = msg.Id.ToString(),
                     roomId = msg.ChatId.ToString(),
                     updatedAt = ConvertToJSDate(msg.LocalDate),
-                    creationDate = ConvertToJSDate(msg.LocalDate),
+                    creationDate = ConvertToJSDate2(msg.LocalDate),
                     msg = ProtoBuf.Serializer.Deserialize<string>(stream),
                     u = new User()
                     {
@@ -83,10 +83,10 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        //public static string ConvertToJSDate2(DateTime date)
-        //{
-        //    return date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-        //}
+        public static string ConvertToJSDate2(DateTime date)
+        {
+            return date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+        }
         private static JSDate ConvertToJSDate(DateTime date)
         {
             var jsDate = new JSDate()
