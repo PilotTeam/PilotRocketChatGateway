@@ -2,7 +2,7 @@
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace PilotRocketChatGateway
+namespace PilotRocketChatGateway.Authentication
 {
 
     [Serializable]
@@ -30,5 +30,6 @@ namespace PilotRocketChatGateway
         {
             return TimeSpan.Zero;
         }
+
     }
 }

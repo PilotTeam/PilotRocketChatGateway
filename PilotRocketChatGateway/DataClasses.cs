@@ -79,6 +79,8 @@ namespace PilotRocketChatGateway
     }
     public record WebSocketParams
     {
+        [JsonProperty("resume")]
+        public string authToken { get; init; }
         public User user { get; init; }
         public string password { get; init; }
     }
@@ -126,7 +128,8 @@ namespace PilotRocketChatGateway
     }
 
     #endregion
-    
+    #region rooms
+
     public record Rooms : HttpResult
     {
         public IList<Room> update { get; init; }
@@ -184,5 +187,6 @@ namespace PilotRocketChatGateway
         public object creationDate { get; init; }
         public User u { get; init; }
     }
+    #endregion rooms
 
 }

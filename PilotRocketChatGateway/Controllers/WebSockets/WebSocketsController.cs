@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -10,10 +12,12 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
     public class WebSocketsController : ControllerBase
     {
         private readonly ILogger<WebSocketsController> _logger;
+        private readonly AuthSettings _authSettings;
 
-        public WebSocketsController(ILogger<WebSocketsController> logger)
+        public WebSocketsController(ILogger<WebSocketsController> logger, IOptions<AuthSettings> authSettings)
         {
             _logger = logger;
+            _authSettings = authSettings.Value;
         }
 
         [HttpGet("/websocket")]
@@ -23,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                 _logger.Log(LogLevel.Information, "WebSocket connection established");
-                await new WebSocketsProcessor(webSocket, _logger).ProcessAsync();
+                await new WebSocketsProcessor(webSocket, _logger, _authSettings).ProcessAsync();
             }
             else
             {

@@ -1,4 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -8,11 +12,14 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
     {
         private ILogger<WebSocketsController> _logger;
         private WebSocket _webSocket;
+        private AuthSettings _authSettings;
+        private bool _authorized;
 
-        public WebSocketsProcessor(WebSocket webSocket, ILogger<WebSocketsController> logger)
+        public WebSocketsProcessor(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings)
         {
             _logger = logger;
             _webSocket = webSocket;
+            _authSettings = authSettings;
         }
 
         public async Task ProcessAsync()
@@ -65,15 +72,37 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
             switch (request.method)
             {
                 case "login":
-                    var result = new WebSocketResult()
-                    {
-                        id = request.id,
-                        msg = "result",
-                    };
-
+                    var result = Login(request);
                     await SendResult(result);
                     break;
             }
+        }
+
+        private WebSocketResult Login(WebSocketRequest request)
+        {
+            if (ValidateCurrentToken(request.@params[0].authToken) == false)
+                throw new UnauthorizedAccessException();
+
+            _authorized = true;
+            return new WebSocketResult()
+            {
+                id = request.id,
+                msg = "result",
+            };
+        }
+
+        private bool ValidateCurrentToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            try
+            {
+                tokenHandler.ValidateToken(token, AuthUtils.GetTokenValidationParameters(_authSettings), out SecurityToken validatedToken);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
         }
 
         private async Task SendResult(WebSocketResult result)

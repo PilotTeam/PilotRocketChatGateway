@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PilotRocketChatGateway;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.Text;
@@ -19,23 +20,12 @@ builder.Services.AddSingleton<IContextService, ContextService>();
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = authSettings.Issuer,
-        ValidateAudience = false,
-        ValidAudience = authSettings.GetAudience(),
-        ValidateLifetime = true,
-        IssuerSigningKey = authSettings.GetSymmetricSecurityKey(),
-        ValidateIssuerSigningKey = true,
-        ClockSkew = authSettings.GetClockCrew()
-    };
-
+    options.TokenValidationParameters = AuthUtils.GetTokenValidationParameters(authSettings);
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            context.Request.Headers.TryGetValue("x-auth-token", out var token);
+            context.Request.Headers.TryGetValue(AuthUtils.AUTH_HEADER_NAME, out var token);
             if (string.IsNullOrEmpty(token))
             {
                 context.NoResult();
