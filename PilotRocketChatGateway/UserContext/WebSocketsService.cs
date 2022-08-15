@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.Controllers;
+using System.Dynamic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Text;
@@ -47,13 +49,13 @@ namespace PilotRocketChatGateway.UserContext
 
                 try
                 {
-                    var request = JsonConvert.DeserializeObject<WebSocketRequest>(json);
+                    dynamic request = JsonConvert.DeserializeObject<ExpandoObject>(json, new ExpandoObjectConverter());
                     await HandleRequestAsync(request);
                 }
                 catch (Exception e)
                 {
-                    //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
-                    // _logger.LogError(0, e, e.Message);
+                 //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
+                    _logger.LogError(0, e, e.Message);
                 }
             }
         }
@@ -73,26 +75,28 @@ namespace PilotRocketChatGateway.UserContext
             _logger.Log(LogLevel.Information, "WebSocket connection closed");
         }
 
-        private async Task HandleRequestAsync(WebSocketRequest request)
+        private async Task HandleRequestAsync(dynamic request)
         {
             switch (request.msg)
             {
                 case "connect":
-                    var result = new WebSocketResult() { id = request.id, msg = "connected" };
+                    dynamic result = new { msg = "connected" };
                     await SendResult(result);
                     IsActive = true;
                     break;
                 case "ping":
-                    result = new WebSocketResult() { id = request.id, msg = "pong" };
+                    result = new { msg = "pong" };
                     await SendResult(result);
                     break;
                 case "method":
                     await HandleMethodRequestAsync(request);
                     break;
+                case "sub":
+                    await HandleSubRequestAsync(request);
+                    break;
             }
         }
-
-        private async Task HandleMethodRequestAsync(WebSocketRequest request)
+        private async Task HandleMethodRequestAsync(dynamic request)
         {
             switch (request.method)
             {
@@ -103,18 +107,34 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        private WebSocketResult Login(WebSocketRequest request)
+        private async Task HandleSubRequestAsync(dynamic request)
         {
-            var authToken = request.@params[0].authToken;
+            switch (request.name)
+            {
+                case "stream-notify-user":
+                    await StreamNotifyUser(request);
+                    break;
+            }
+        }
+
+        private async Task StreamNotifyUser(dynamic request)
+        {
+            //var result = Login(request);
+            //await SendResult(result);
+        }
+
+        private dynamic Login(dynamic request)
+        {
+            var authToken = request.@params[0].resume;
             if (ValidateCurrentToken(authToken) == false)
                 throw new UnauthorizedAccessException();
 
             RegisterService(authToken);
             IsAuthorized = true;
-            return new WebSocketResult()
+            return new 
             {
                 id = request.id,
-                msg = "result",
+                msg = "result"
             };
         }
 
@@ -140,7 +160,7 @@ namespace PilotRocketChatGateway.UserContext
             return true;
         }
 
-        private async Task SendResult(WebSocketResult result)
+        private async Task SendResult(dynamic result)
         {
             var json = JsonConvert.SerializeObject(result);
             var send = Encoding.UTF8.GetBytes(json);
@@ -148,9 +168,10 @@ namespace PilotRocketChatGateway.UserContext
             await _webSocket.SendAsync(toSend, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public void Dispose()
+        public async void Dispose()
         {
-            CloseAsync(WebSocketCloseStatus.NormalClosure);
+            await CloseAsync(WebSocketCloseStatus.NormalClosure);
+            _webSocket.Dispose();
         }
     }
 }

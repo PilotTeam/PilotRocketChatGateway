@@ -66,44 +66,6 @@ namespace PilotRocketChatGateway
         public string name;
         public string username;
     }
-    public record WebSocketRequest
-    {
-        public string id { get; init; }
-
-        public string msg { get; init; }
-
-        public string method { get; init; }
-
-        [JsonProperty("params")]
-        public WebSocketParams[] @params { get; init; }
-    }
-    public record WebSocketParams
-    {
-        [JsonProperty("resume")]
-        public string authToken { get; init; }
-        public User user { get; init; }
-        public string password { get; init; }
-    }
-
-    public record WebSocketResult
-    {
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public string id { get; init; }
-
-        public string msg { get; init; }
-
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public WebSocketLogin result { get; init; }
-
-    }
-
-    public class WebSocketLogin
-    {
-        public string token { get; init; }
-        public string id { get; init; }
-        public JSDate tokenExpires { get; init; }
-    }
-
     #endregion websocket
     #region login
 
