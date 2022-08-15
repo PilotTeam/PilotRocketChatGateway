@@ -15,6 +15,7 @@ builder.Services.Configure<PilotSettings>(builder.Configuration.GetSection("Pilo
 builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
 builder.Services.AddSingleton<IConnectionService, ConnectionService>();
 builder.Services.AddSingleton<IContextFactory, ContextFactory>();
+builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();

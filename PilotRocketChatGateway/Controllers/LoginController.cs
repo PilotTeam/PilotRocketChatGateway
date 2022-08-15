@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
-using PilotRocketChatGateway.Controllers.WebSockets;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.IdentityModel.Tokens.Jwt;

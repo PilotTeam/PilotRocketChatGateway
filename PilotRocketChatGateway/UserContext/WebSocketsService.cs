@@ -2,24 +2,33 @@
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
+using PilotRocketChatGateway.Controllers;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace PilotRocketChatGateway.Controllers.WebSockets
+namespace PilotRocketChatGateway.UserContext
 {
-    public class WebSocketsProcessor
+    public interface IWebSocksetsService : IDisposable
     {
-        private ILogger<WebSocketsController> _logger;
-        private WebSocket _webSocket;
-        private AuthSettings _authSettings;
-        private bool _authorized;
+        Task ProcessAsync();
+        bool IsAuthorized { get; }
+        bool IsActive { get; }
+    }
+    public class WebSocketsService : IWebSocksetsService
+    {
+        private readonly ILogger<WebSocketsController> _logger;
+        private readonly WebSocket _webSocket;
+        private readonly AuthSettings _authSettings;
+        private readonly IContextService _contextService;
+        private IContext _context;
 
-        public WebSocketsProcessor(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings)
+        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings, IContextService contextService)
         {
             _logger = logger;
             _webSocket = webSocket;
             _authSettings = authSettings;
+            _contextService = contextService;
         }
 
         public async Task ProcessAsync()
@@ -30,23 +39,38 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
                 var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.CloseStatus.HasValue)
                 {
-                    await _webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-                    _logger.Log(LogLevel.Information, "WebSocket connection closed");
+                    await CloseAsync(result.CloseStatus.Value);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 _logger.Log(LogLevel.Information, json);
+
                 try
                 {
                     var request = JsonConvert.DeserializeObject<WebSocketRequest>(json);
                     await HandleRequestAsync(request);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                 //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
-                   // _logger.LogError(0, e, e.Message);
+                    //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
+                    // _logger.LogError(0, e, e.Message);
                 }
             }
+        }
+
+        public bool IsAuthorized { get; private set; }
+
+        public bool IsActive { get; private set; }
+
+        private async Task CloseAsync(WebSocketCloseStatus status)
+        {
+            if (IsActive == false)
+                return;
+
+            IsActive = false;
+            IsAuthorized = false;
+            await _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
+            _logger.Log(LogLevel.Information, "WebSocket connection closed");
         }
 
         private async Task HandleRequestAsync(WebSocketRequest request)
@@ -56,6 +80,7 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
                 case "connect":
                     var result = new WebSocketResult() { id = request.id, msg = "connected" };
                     await SendResult(result);
+                    IsActive = true;
                     break;
                 case "ping":
                     result = new WebSocketResult() { id = request.id, msg = "pong" };
@@ -80,15 +105,25 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
 
         private WebSocketResult Login(WebSocketRequest request)
         {
-            if (ValidateCurrentToken(request.@params[0].authToken) == false)
+            var authToken = request.@params[0].authToken;
+            if (ValidateCurrentToken(authToken) == false)
                 throw new UnauthorizedAccessException();
 
-            _authorized = true;
+            RegisterService(authToken);
+            IsAuthorized = true;
             return new WebSocketResult()
             {
                 id = request.id,
                 msg = "result",
             };
+        }
+
+        private void RegisterService(string authToken)
+        {
+            var jwtToken = new JwtSecurityToken(authToken);
+            _context = _contextService.GetContext(jwtToken.Actor);
+            _context.WebSocketsService = this;
+
         }
 
         private bool ValidateCurrentToken(string token)
@@ -111,6 +146,11 @@ namespace PilotRocketChatGateway.Controllers.WebSockets
             var send = Encoding.UTF8.GetBytes(json);
             ArraySegment<byte> toSend = new ArraySegment<byte>(send, 0, send.Length);
             await _webSocket.SendAsync(toSend, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        public void Dispose()
+        {
+            CloseAsync(WebSocketCloseStatus.NormalClosure);
         }
     }
 }

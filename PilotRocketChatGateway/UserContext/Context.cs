@@ -7,6 +7,7 @@ namespace PilotRocketChatGateway.UserContext
         IRemoteService RemoteService { get; init; }
 
         IChatService ChatService { get; init; }
+        IWebSocksetsService WebSocketsService { get; set; }
     }
     public class Context : IContext
     {
@@ -41,9 +42,12 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
+        public IWebSocksetsService WebSocketsService { get; set; }
+
         public void Dispose()
         {
-            RemoteService.Dispose();
+            _remoteService.Dispose();
+            WebSocketsService.Dispose();
         }
     }
 }
