@@ -8,6 +8,7 @@ namespace PilotRocketChatGateway.PilotServer
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
         List<DChatInfo> GetChats();
+        DChatInfo GetChat(Guid id);
         List<DMessage> GetMessages(Guid chatId, int count);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
@@ -31,6 +32,11 @@ namespace PilotRocketChatGateway.PilotServer
         }
 
         public INPerson CurrentPerson => _currentPerson;
+
+        public DChatInfo GetChat(Guid id)
+        {
+            return _messagesApi.GetChat(id);
+        }
 
         public List<DChatInfo> GetChats()
         {

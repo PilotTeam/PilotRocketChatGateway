@@ -1,8 +1,10 @@
 ﻿using Ascon.Pilot.Server.Api;
+using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.PilotServer
 {
-    public interface IRemoteService : IDisposable
+    public interface IService : IDisposable { }
+    public interface IRemoteService : IService
     {
         IServerApiService ServerApi { get; }
         bool IsActive { get; }
@@ -12,15 +14,14 @@ namespace PilotRocketChatGateway.PilotServer
         private HttpPilotClient _client;
         private ServerApiService _serverApi;
 
-        public RemoteService(HttpPilotClient client)
+        public RemoteService(HttpPilotClient client, IContext context)
         {
             _client = client;
             _client.SetConnectionLostListener(this);
 
             var serverApi = _client.GetServerApi(new NullableServerCallback());
-            var messageApi = client.GetMessagesApi(new MessagesCallback());
+            var messageApi = _client.GetMessagesApi(new MessagesCallback(context));
             var dbInfo = serverApi.OpenDatabase();
-
 
             _serverApi = new ServerApiService(serverApi, messageApi, dbInfo);
             IsActive = true;

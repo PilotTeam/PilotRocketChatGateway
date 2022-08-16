@@ -1,20 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Ascon.Pilot.DataClasses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.Controllers;
+using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 using System.Dynamic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace PilotRocketChatGateway.UserContext
+namespace PilotRocketChatGateway.WebSockets
 {
-    public interface IWebSocksetsService : IDisposable
+    public interface IWebSocksetsService : IService
     {
         Task ProcessAsync();
-        bool IsAuthorized { get; }
+        IWebSocketSession Session { get; }
         bool IsActive { get; }
     }
     public class WebSocketsService : IWebSocksetsService
@@ -23,15 +26,20 @@ namespace PilotRocketChatGateway.UserContext
         private readonly WebSocket _webSocket;
         private readonly AuthSettings _authSettings;
         private readonly IContextService _contextService;
-        private IContext _context;
+        private readonly IWebSocketSessionFactory _webSocketSessionFactory;
 
-        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings, IContextService contextService)
+        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory)
         {
             _logger = logger;
             _webSocket = webSocket;
             _authSettings = authSettings;
             _contextService = contextService;
+            _webSocketSessionFactory = webSocketSessionFactory;
         }
+
+        public IWebSocketSession Session { get; private set; }
+
+        public bool IsActive { get; private set; }
 
         public async Task ProcessAsync()
         {
@@ -54,25 +62,10 @@ namespace PilotRocketChatGateway.UserContext
                 }
                 catch (Exception e)
                 {
-                 //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
+                    //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
                     _logger.LogError(0, e, e.Message);
                 }
             }
-        }
-
-        public bool IsAuthorized { get; private set; }
-
-        public bool IsActive { get; private set; }
-
-        private async Task CloseAsync(WebSocketCloseStatus status)
-        {
-            if (IsActive == false)
-                return;
-
-            IsActive = false;
-            IsAuthorized = false;
-            await _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
-            _logger.Log(LogLevel.Information, "WebSocket connection closed");
         }
 
         private async Task HandleRequestAsync(dynamic request)
@@ -80,13 +73,13 @@ namespace PilotRocketChatGateway.UserContext
             switch (request.msg)
             {
                 case "connect":
-                    dynamic result = new { msg = "connected" };
-                    await SendResult(result);
+                    var result = new { msg = "connected" };
+                    await _webSocket.SendResultAsync(result);
                     IsActive = true;
                     break;
                 case "ping":
                     result = new { msg = "pong" };
-                    await SendResult(result);
+                    await _webSocket.SendResultAsync(result);
                     break;
                 case "method":
                     await HandleMethodRequestAsync(request);
@@ -101,76 +94,55 @@ namespace PilotRocketChatGateway.UserContext
             switch (request.method)
             {
                 case "login":
-                    var result = Login(request);
-                    await SendResult(result);
+                    await LoginAsync(request);
                     break;
             }
         }
 
         private async Task HandleSubRequestAsync(dynamic request)
         {
-            switch (request.name)
-            {
-                case "stream-notify-user":
-                    await StreamNotifyUser(request);
-                    break;
-            }
-        }
-
-        private async Task StreamNotifyUser(dynamic request)
-        {
-            //var result = Login(request);
-            //await SendResult(result);
-        }
-
-        private dynamic Login(dynamic request)
-        {
-            var authToken = request.@params[0].resume;
-            if (ValidateCurrentToken(authToken) == false)
+            if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
 
-            RegisterService(authToken);
-            IsAuthorized = true;
-            return new 
+            Session.SubscribeEvent(request);
+        }
+
+        private async Task LoginAsync(dynamic request)
+        {
+            if (Session != null)
+                return;
+
+            var context = RegisterService(request.@params[0].resume);
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, _webSocket);
+            var result = new
             {
-                id = request.id,
+                request.id,
                 msg = "result"
             };
+            await _webSocket.SendResultAsync(result);
         }
 
-        private void RegisterService(string authToken)
+        private IContext RegisterService(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken);
-            _context = _contextService.GetContext(jwtToken.Actor);
-            _context.WebSocketsService = this;
-
+            var context = _contextService.GetContext(jwtToken.Actor);
+            context.SetService(this);
+            return context;
         }
-
-        private bool ValidateCurrentToken(string token)
+        private async Task CloseAsync(WebSocketCloseStatus status)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                tokenHandler.ValidateToken(token, AuthUtils.GetTokenValidationParameters(_authSettings), out SecurityToken validatedToken);
-            }
-            catch
-            {
-                return false;
-            }
-            return true;
-        }
+            if (IsActive == false)
+                return;
 
-        private async Task SendResult(dynamic result)
-        {
-            var json = JsonConvert.SerializeObject(result);
-            var send = Encoding.UTF8.GetBytes(json);
-            ArraySegment<byte> toSend = new ArraySegment<byte>(send, 0, send.Length);
-            await _webSocket.SendAsync(toSend, WebSocketMessageType.Text, true, CancellationToken.None);
+            IsActive = false;
+            await _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
+            _logger.Log(LogLevel.Information, "WebSocket connection closed");
         }
 
         public async void Dispose()
         {
             await CloseAsync(WebSocketCloseStatus.NormalClosure);
+            Session?.Dispose();
             _webSocket.Dispose();
         }
     }

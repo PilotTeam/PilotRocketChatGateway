@@ -3,9 +3,10 @@ using PilotRocketChatGateway.PilotServer;
 
 namespace PilotRocketChatGateway.UserContext
 {
-    public interface IChatService
+    public interface IChatService : IService
     {
         IList<Room> LoadRooms();
+        Room LoadRoom(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
     }
@@ -32,6 +33,12 @@ namespace PilotRocketChatGateway.UserContext
         {
             var msgs = _serverApi.GetMessages(roomId, count);
             return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x)).ToList();
+        }
+
+        public Room LoadRoom(Guid id)
+        {
+            var chat = _serverApi.GetChat(id);
+            return ConvertToRoom(chat);
         }
 
         private static Subscription ConvertToSubscription(DChatInfo chat)
@@ -99,6 +106,10 @@ namespace PilotRocketChatGateway.UserContext
         private static long ToJavaScriptMilliseconds(DateTime dt)
         {
             return (dt.ToUniversalTime().Ticks - DatetimeMinTimeTicks) / 10000;
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

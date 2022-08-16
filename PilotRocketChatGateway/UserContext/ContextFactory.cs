@@ -12,13 +12,13 @@ namespace PilotRocketChatGateway.UserContext
     {
         public IContext CreateContext(HttpPilotClient client)
         {
-            var remoteSerive = new RemoteService(client);
+            var context = new Context();
+            var remoteSerive = new RemoteService(client, context);
             var chatService = new ChatService(remoteSerive.ServerApi);
-            return new Context()
-            {
-                RemoteService = remoteSerive,
-                ChatService = chatService
-            };
+
+            context.SetService(remoteSerive);
+            context.SetService(chatService);
+            return context;
         }
     }
 }

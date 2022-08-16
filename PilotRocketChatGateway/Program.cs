@@ -4,6 +4,7 @@ using PilotRocketChatGateway;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using PilotRocketChatGateway.WebSockets;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthS
 builder.Services.AddSingleton<IConnectionService, ConnectionService>();
 builder.Services.AddSingleton<IContextFactory, ContextFactory>();
 builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactory>();
+builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();

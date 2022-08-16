@@ -1,18 +1,22 @@
 ﻿using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
 {
     public interface IContext : IDisposable
     {
-        IRemoteService RemoteService { get; init; }
+        IRemoteService RemoteService { get; }
 
-        IChatService ChatService { get; init; }
-        IWebSocksetsService WebSocketsService { get; set; }
+        IChatService ChatService { get; }
+        IWebSocketSession WebSocketsSession { get; }
+        void SetService(IService service);
     }
     public class Context : IContext
     {
         private IRemoteService _remoteService;
         private IChatService _chatService;
+        private IWebSocksetsService _webSocksetsService;
+
         public IRemoteService RemoteService
         {
 
@@ -22,7 +26,7 @@ namespace PilotRocketChatGateway.UserContext
                     throw new UnauthorizedAccessException();
                 return _remoteService;
             }
-            init
+            set
             {
                 _remoteService = value;
             }
@@ -36,18 +40,35 @@ namespace PilotRocketChatGateway.UserContext
                     throw new UnauthorizedAccessException();
                 return _chatService;
             }
-            init
+            set
             {
                 _chatService = value;
             }
         }
 
-        public IWebSocksetsService WebSocketsService { get; set; }
-
+        public IWebSocketSession WebSocketsSession => _webSocksetsService.Session;
+        
+        public void SetService(IService service)
+        {
+            switch (service)
+            {
+                case IRemoteService remoteService:
+                    _remoteService = remoteService;
+                    break;
+                case IChatService chatService:
+                    _chatService = chatService;
+                    break;
+                case IWebSocksetsService webSocksetsService: 
+                    _webSocksetsService = webSocksetsService;
+                    break;
+                default: 
+                    throw new Exception($"unknown service: {service.GetType()}");
+            }
+        }
         public void Dispose()
         {
             _remoteService.Dispose();
-            WebSocketsService.Dispose();
+            _webSocksetsService?.Dispose();
         }
     }
 }
