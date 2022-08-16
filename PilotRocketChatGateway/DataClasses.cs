@@ -105,7 +105,7 @@ namespace PilotRocketChatGateway
     public record Subscription
     {
         [JsonProperty("_updatedAt")]
-        public JSDate updatedAt { get; init; }
+        public object updatedAt { get; init; }
         [JsonProperty("_id")]
         public string id { get; init; }
         [JsonProperty("rid")]
@@ -115,13 +115,11 @@ namespace PilotRocketChatGateway
         public bool open { get; init; }
         [JsonProperty("t")]
         public string channelType { get; init; }
-        [JsonProperty("ts")]
-        public JSDate creationDate { get; init; }
     }
     public record Room
     {
         [JsonProperty("_updatedAt")]
-        public JSDate updatedAt { get; init; }
+        public object updatedAt { get; init; }
         [JsonProperty("_id")]
         public string id { get; init; }
         public string name { get; init; }
@@ -129,7 +127,7 @@ namespace PilotRocketChatGateway
         public string channelType { get; init; }
         public Message lastMessage { get; init; }
         [JsonProperty("ts")]
-        public JSDate creationDate { get; init; }
+        public object creationDate { get; init; }
     }
     public record Messages : HttpResult
     {

@@ -34,7 +34,38 @@ namespace PilotRocketChatGateway.WebSockets
             _webSocket = webSocket;
         }
 
+        public void SubscribeEvent(dynamic request)
+        {
+            _subscriptions[request.@params[0]] = request.id;
+        }
+
         public async Task SendMessageToClientAsync(DMessage dMessage)
+        {
+            await UpdateSubscription(dMessage);
+           await UpdateRoom(dMessage);
+        }
+
+        private async Task UpdateSubscription(DMessage dMessage)
+        {
+            var eventName = $"{_sessionId}/subscriptions-changed";
+            var sub = _chatService.LoadRoomsSubscription(dMessage.ChatId);
+            var id = _subscriptions[eventName];
+
+            var result = new
+            {
+                msg = "updated",
+                collection = Streams.STREAM_NOTIFY_USER,
+                id,
+                fields = new
+                {
+                    eventName,
+                    args = new object[] { "updated", sub }
+                }
+            };
+            await _webSocket.SendResultAsync(result);
+        }
+
+        private async Task UpdateRoom(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/rooms-changed";
             var room = _chatService.LoadRoom(dMessage.ChatId);
@@ -54,10 +85,6 @@ namespace PilotRocketChatGateway.WebSockets
             await _webSocket.SendResultAsync(result);
         }
 
-        public void SubscribeEvent(dynamic request)
-        {
-            _subscriptions[request.@params[0]] = request.id;
-        }
         private bool ValidateCurrentToken(string token, AuthSettings authSettings)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

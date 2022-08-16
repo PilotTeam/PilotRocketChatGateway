@@ -5,8 +5,9 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IChatService : IService
     {
-        IList<Room> LoadRooms();
         Room LoadRoom(Guid id);
+        IList<Room> LoadRooms();
+        Subscription LoadRoomsSubscription(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
     }
@@ -40,6 +41,11 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _serverApi.GetChat(id);
             return ConvertToRoom(chat);
         }
+        public Subscription LoadRoomsSubscription(Guid id)
+        {
+            var chat = _serverApi.GetChat(id);
+            return ConvertToSubscription(chat);
+        }
 
         private static Subscription ConvertToSubscription(DChatInfo chat)
         {
@@ -52,7 +58,6 @@ namespace PilotRocketChatGateway.UserContext
                 id = chat.Chat.Id.ToString(),
                 roomId = chat.Chat.Id.ToString(),
                 channelType = "p",
-                creationDate = ConvertToJSDate(chat.Chat.CreationDateUtc),
             };
         }
         private Room ConvertToRoom(DChatInfo chat)
@@ -78,7 +83,7 @@ namespace PilotRocketChatGateway.UserContext
                     id = msg.Id.ToString(),
                     roomId = msg.ChatId.ToString(),
                     updatedAt = ConvertToJSDate(msg.LocalDate),
-                    creationDate = ConvertToJSDate2(msg.LocalDate),
+                    creationDate = ConvertToJSDate(msg.LocalDate),
                     msg = ProtoBuf.Serializer.Deserialize<string>(stream),
                     u = new User()
                     {
@@ -90,22 +95,9 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        public static string ConvertToJSDate2(DateTime date)
+        public static string ConvertToJSDate(DateTime date)
         {
             return date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-        }
-        private static JSDate ConvertToJSDate(DateTime date)
-        {
-            var jsDate = new JSDate()
-            {
-                date = ToJavaScriptMilliseconds(date)
-            };
-            return jsDate;
-        }
-        private static readonly long DatetimeMinTimeTicks = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
-        private static long ToJavaScriptMilliseconds(DateTime dt)
-        {
-            return (dt.ToUniversalTime().Ticks - DatetimeMinTimeTicks) / 10000;
         }
 
         public void Dispose()
