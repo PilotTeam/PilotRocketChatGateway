@@ -106,11 +106,14 @@ namespace PilotRocketChatGateway
     {
         [JsonProperty("_updatedAt")]
         public object updatedAt { get; init; }
+        [JsonProperty("ls")]
+        public object lastSeen { get; init; }
         [JsonProperty("_id")]
         public string id { get; init; }
         [JsonProperty("rid")]
         public string roomId { get; init; }
         public int unread { get; init; }
+        public bool alert { get; init; }
         public string name { get; init; }
         public bool open { get; init; }
         [JsonProperty("t")]

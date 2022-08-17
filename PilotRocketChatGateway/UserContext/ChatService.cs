@@ -69,18 +69,30 @@ namespace PilotRocketChatGateway.UserContext
                 };
             }
         }
-        private static Subscription ConvertToSubscription(DChatInfo chat)
+
+        private Subscription ConvertToSubscription(DChatInfo chat)
         {
             return new Subscription()
             {
                 updatedAt = ConvertToJSDate(chat.LastMessage.LocalDate),
+                lastSeen = LoadLastSeenChatsDate(chat),
                 unread = chat.UnreadMessagesNumber,
                 open = true,
                 name = chat.Chat.Name,
+                alert = chat.UnreadMessagesNumber > 0,
                 id = chat.Chat.Id.ToString(),
                 roomId = chat.Chat.Id.ToString(),
                 channelType = "p",
             };
+        }
+        
+        private string LoadLastSeenChatsDate(DChatInfo chat)
+        {
+            if (chat.UnreadMessagesNumber == 0)
+                return ConvertToJSDate(chat.LastMessage.LocalDate);
+
+            var firstUnreadMsg = _serverApi.GetMessages(chat.Chat.Id, chat.UnreadMessagesNumber).OrderBy(x => x.LocalDate).First();
+            return ConvertToJSDate(firstUnreadMsg.LocalDate);
         }
         private Room ConvertToRoom(DChatInfo chat)
         {
