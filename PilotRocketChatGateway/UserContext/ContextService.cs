@@ -16,11 +16,13 @@ namespace PilotRocketChatGateway.UserContext
         private readonly ConcurrentDictionary<string, IContext> _services = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
+        private readonly ILogger<ContextService> _logger;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory)
+        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextService> logger)
         {
             _connectionService = connectionService;
             _contextFactory = contextFactory;
+            _logger = logger;
         }
 
         public void CreateContext(Credentials credentials)
@@ -34,7 +36,7 @@ namespace PilotRocketChatGateway.UserContext
                     return;
 
                 var httpClient = _connectionService.Connect(credentials);
-                var context = _contextFactory.CreateContext(httpClient);
+                var context = _contextFactory.CreateContext(httpClient, _logger);
 
                 _services[credentials.Username] = context;
             }

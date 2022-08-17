@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.WebSockets
     public class Streams
     {
         public const string STREAM_NOTIFY_USER = "stream-notify-user";
+        public const string STREAM_ROOM_MESSAGES = "stream-room-messages";
     }
     public interface IWebSocketSession : IDisposable
     {
@@ -42,7 +43,28 @@ namespace PilotRocketChatGateway.WebSockets
         public async Task SendMessageToClientAsync(DMessage dMessage)
         {
             await UpdateSubscription(dMessage);
-           await UpdateRoom(dMessage);
+            await UpdateRoom(dMessage);
+            await SendMessageUpdate(dMessage);
+        }
+
+        private async Task SendMessageUpdate(DMessage message)
+        {
+            var eventName = $"{message.ChatId}";
+            var rocketChatMessage = _chatService.ConvertToMessage(message);
+            var id = _subscriptions[eventName];
+
+            var result = new 
+            {
+                msg = "created",
+                collection = Streams.STREAM_ROOM_MESSAGES,
+                id = id,
+                fields = new
+                {
+                    eventName = eventName,
+                    args = new object[] { rocketChatMessage }
+                }
+            };
+            await _webSocket.SendResultAsync(result);
         }
 
         private async Task UpdateSubscription(DMessage dMessage)

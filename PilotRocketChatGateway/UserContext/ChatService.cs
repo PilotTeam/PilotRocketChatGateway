@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
+        Message ConvertToMessage(DMessage msg);
     }
     public class ChatService : IChatService
     {
@@ -47,6 +48,27 @@ namespace PilotRocketChatGateway.UserContext
             return ConvertToSubscription(chat);
         }
 
+        public Message ConvertToMessage(DMessage msg)
+        {
+            var user = _serverApi.GetPerson(msg.CreatorId);
+            using (var stream = new MemoryStream(msg.Data))
+            {
+                return new Message()
+                {
+                    id = msg.Id.ToString(),
+                    roomId = msg.ChatId.ToString(),
+                    updatedAt = ConvertToJSDate(msg.LocalDate),
+                    creationDate = ConvertToJSDate(msg.LocalDate),
+                    msg = ProtoBuf.Serializer.Deserialize<string>(stream),
+                    u = new User()
+                    {
+                        id = user.Id.ToString(),
+                        username = user.Login,
+                        name = user.DisplayName
+                    }
+                };
+            }
+        }
         private static Subscription ConvertToSubscription(DChatInfo chat)
         {
             return new Subscription()
@@ -71,28 +93,6 @@ namespace PilotRocketChatGateway.UserContext
                 creationDate = ConvertToJSDate(chat.Chat.CreationDateUtc),
                 lastMessage = ConvertToMessage(chat.LastMessage)
             };
-        }
-
-        private Message ConvertToMessage(DMessage msg)
-        {
-            var user = _serverApi.GetPerson(msg.CreatorId);
-            using (var stream = new MemoryStream(msg.Data))
-            {
-                return new Message()
-                {
-                    id = msg.Id.ToString(),
-                    roomId = msg.ChatId.ToString(),
-                    updatedAt = ConvertToJSDate(msg.LocalDate),
-                    creationDate = ConvertToJSDate(msg.LocalDate),
-                    msg = ProtoBuf.Serializer.Deserialize<string>(stream),
-                    u = new User()
-                    {
-                        id = user.Id.ToString(),
-                        username = user.Login,
-                        name = user.DisplayName
-                    }
-                };
-            }
         }
 
         public static string ConvertToJSDate(DateTime date)

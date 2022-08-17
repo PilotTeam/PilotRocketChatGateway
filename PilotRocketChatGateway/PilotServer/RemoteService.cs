@@ -14,13 +14,13 @@ namespace PilotRocketChatGateway.PilotServer
         private HttpPilotClient _client;
         private ServerApiService _serverApi;
 
-        public RemoteService(HttpPilotClient client, IContext context)
+        public RemoteService(HttpPilotClient client, IContext context, ILogger logger)
         {
             _client = client;
             _client.SetConnectionLostListener(this);
 
             var serverApi = _client.GetServerApi(new NullableServerCallback());
-            var messageApi = _client.GetMessagesApi(new MessagesCallback(context));
+            var messageApi = _client.GetMessagesApi(new MessagesCallback(context, logger));
             var dbInfo = serverApi.OpenDatabase();
 
             _serverApi = new ServerApiService(serverApi, messageApi, dbInfo);
