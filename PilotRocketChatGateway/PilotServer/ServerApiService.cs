@@ -9,7 +9,9 @@ namespace PilotRocketChatGateway.PilotServer
         INPerson GetPerson(int id);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
+        DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, int count);
+        void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
     }
@@ -32,6 +34,11 @@ namespace PilotRocketChatGateway.PilotServer
         }
 
         public INPerson CurrentPerson => _currentPerson;
+
+        public DMessage GetLastUnreadMessage(Guid chatId)
+        {
+            return _messagesApi.GetLastUnreadMessage(chatId);
+        }
 
         public DChatInfo GetChat(Guid id)
         {
@@ -61,6 +68,11 @@ namespace PilotRocketChatGateway.PilotServer
         public INPerson GetPerson(int id)
         {
             return _people[id];
+        }
+
+        public void SendMessage(DMessage message)
+        {
+            _messagesApi.SendMessage(message);
         }
 
         private void LoadPeople()

@@ -102,6 +102,15 @@ namespace PilotRocketChatGateway
         public IList<Subscription> update { get; init; }
         public IList<Subscription> remove { get; init; }
     }
+    public record MessageRequest
+    {
+        public Message message { get; init; }
+    }
+    public record RoomRequest
+    {
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+    }
     public record Subscription
     {
         [JsonProperty("_updatedAt")]
@@ -132,6 +141,7 @@ namespace PilotRocketChatGateway
         [JsonProperty("ts")]
         public object creationDate { get; init; }
     }
+
     public record Messages : HttpResult
     {
         public IList<Message> messages { get; init; }

@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
+        void SendMessageToServer(MessageType type, Guid chatId, string text);
         Message ConvertToMessage(DMessage msg);
     }
     public class ChatService : IChatService
@@ -70,6 +71,60 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
+
+        public void SendMessageToServer(MessageType type, Guid chatId, string text)
+        {
+            switch (type)
+            {
+                case MessageType.TextMessage:
+                    SendTextMessageToServer(chatId, text);
+                    break;
+                case MessageType.MessageRead:
+                    SendReadAllMessageToServer(chatId, text);
+                    break;
+
+            }
+        }
+
+        private void SendReadAllMessageToServer(Guid chatId, string text)
+        {
+            var chat = _serverApi.GetChat(chatId);
+            var unreads = _serverApi.GetMessages(chatId, chat.UnreadMessagesNumber);
+            foreach (var unread in unreads)
+                _serverApi.SendMessage(new DMessage()
+                {
+                    Id = Guid.NewGuid(),
+                    CreatorId = _serverApi.CurrentPerson.Id,
+                    ChatId = chatId,
+                    LocalDate = DateTime.Now.ToUniversalTime(),
+                    Type = MessageType.MessageRead,
+                    RelatedMessageId = unread.Id
+                });
+        }
+
+        private void SendTextMessageToServer(Guid chatId, string text)
+        {
+            var dMessage = new DMessage()
+            {
+                Id = Guid.NewGuid(),
+                CreatorId = _serverApi.CurrentPerson.Id,
+                ChatId = chatId,
+                LocalDate = DateTime.Now.ToUniversalTime(),
+                Type = MessageType.TextMessage,
+                Data = GetMessageData(text)
+            };
+            _serverApi.SendMessage(dMessage);
+        }
+
+        private byte[] GetMessageData(string text)
+        {
+            using (var stream = new MemoryStream())
+            {
+                ProtoBuf.Serializer.Serialize(stream, text);
+                return stream.ToArray();
+            }
+        }
+
         private Subscription ConvertToSubscription(DChatInfo chat)
         {
             return new Subscription()
@@ -85,14 +140,14 @@ namespace PilotRocketChatGateway.UserContext
                 channelType = "p",
             };
         }
-        
+
         private string LoadLastSeenChatsDate(DChatInfo chat)
         {
             if (chat.UnreadMessagesNumber == 0)
                 return ConvertToJSDate(chat.LastMessage.LocalDate);
 
-            var firstUnreadMsg = _serverApi.GetMessages(chat.Chat.Id, chat.UnreadMessagesNumber).OrderBy(x => x.LocalDate).First();
-            return ConvertToJSDate(firstUnreadMsg.LocalDate);
+            var lastUnreadMessage = _serverApi.GetLastUnreadMessage(chat.Chat.Id);
+            return ConvertToJSDate(lastUnreadMessage.LocalDate);
         }
         private Room ConvertToRoom(DChatInfo chat)
         {
@@ -107,7 +162,7 @@ namespace PilotRocketChatGateway.UserContext
             };
         }
 
-        public static string ConvertToJSDate(DateTime date)
+        private static string ConvertToJSDate(DateTime date)
         {
             return date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         }
