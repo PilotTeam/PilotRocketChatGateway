@@ -16,8 +16,10 @@ namespace PilotRocketChatGateway.WebSockets
     {
         Task SendMessageToClientAsync(DMessage dMessage);
         Task NotifyMessageCreatedAsync(DMessage dMessage);
-        void SubscribeEvent(dynamic request);
+        void Subscribe(dynamic request);
+        void Unsubscribe(dynamic request);
     }
+
     public class WebSocketSession : IWebSocketSession
     {
         private readonly string _sessionId;
@@ -35,10 +37,26 @@ namespace PilotRocketChatGateway.WebSockets
             _chatService = chatService;
             _webSocket = webSocket;
         }
+        public class R
+        {
+            public string msg { get; init; }
+            public string[] subs { get; init; }
+        }
 
-        public void SubscribeEvent(dynamic request)
+        public void Subscribe(dynamic request)
         {
             _subscriptions[request.@params[0]] = request.id;
+            var result = new 
+            {
+                msg = "ready",
+                subs = new string[] { request.id.ToString() }
+            };
+            _webSocket.SendResultAsync(result);
+        }
+        public void Unsubscribe(dynamic request)
+        {
+            var sub = _subscriptions.FirstOrDefault(x => x.Value == request.id).Key;
+            _subscriptions.Remove(sub);
         }
 
         public async Task SendMessageToClientAsync(DMessage dMessage)
@@ -51,7 +69,7 @@ namespace PilotRocketChatGateway.WebSockets
 
         public async Task NotifyMessageCreatedAsync(DMessage dMessage)
         {
-            await UpdateSubscription(dMessage);
+            await UpdateRoomsSubscription(dMessage);
             await UpdateRoom(dMessage);
         }
 
@@ -59,7 +77,8 @@ namespace PilotRocketChatGateway.WebSockets
         {
             var eventName = $"{message.ChatId}";
             var rocketChatMessage = _chatService.ConvertToMessage(message);
-            var id = _subscriptions[eventName];
+            if (!_subscriptions.TryGetValue(eventName, out var id))
+                return;
 
             var result = new 
             {
@@ -75,11 +94,12 @@ namespace PilotRocketChatGateway.WebSockets
             await _webSocket.SendResultAsync(result);
         }
 
-        private async Task UpdateSubscription(DMessage dMessage)
+        private async Task UpdateRoomsSubscription(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/subscriptions-changed";
             var sub = _chatService.LoadRoomsSubscription(dMessage.ChatId);
-            var id = _subscriptions[eventName];
+            if (!_subscriptions.TryGetValue(eventName, out var id))
+                return;
 
             var result = new
             {
@@ -99,7 +119,8 @@ namespace PilotRocketChatGateway.WebSockets
         {
             var eventName = $"{_sessionId}/rooms-changed";
             var room = _chatService.LoadRoom(dMessage.ChatId);
-            var id = _subscriptions[eventName];
+            if (!_subscriptions.TryGetValue(eventName, out var id))
+                return;
 
             var result = new
             {

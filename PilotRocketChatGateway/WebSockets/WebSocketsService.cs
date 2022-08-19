@@ -87,6 +87,9 @@ namespace PilotRocketChatGateway.WebSockets
                 case "sub":
                     await HandleSubRequestAsync(request);
                     break;
+                case "unsub":
+                    await HandleUnsubRequestAsync(request);
+                    break;
             }
         }
         private async Task HandleMethodRequestAsync(dynamic request)
@@ -98,13 +101,20 @@ namespace PilotRocketChatGateway.WebSockets
                     break;
             }
         }
-
         private async Task HandleSubRequestAsync(dynamic request)
         {
             if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
 
-            Session.SubscribeEvent(request);
+            Session.Subscribe(request);
+        }
+
+        private async Task HandleUnsubRequestAsync(dynamic request)
+        {
+            if (Session == null || !IsActive)
+                throw new UnauthorizedAccessException();
+
+            Session.Unsubscribe(request);
         }
 
         private async Task LoginAsync(dynamic request)
