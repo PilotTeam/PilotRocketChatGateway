@@ -15,6 +15,7 @@ namespace PilotRocketChatGateway.WebSockets
     public interface IWebSocketSession : IDisposable
     {
         Task SendMessageToClientAsync(DMessage dMessage);
+        Task NotifyMessageCreatedAsync(DMessage dMessage);
         void SubscribeEvent(dynamic request);
     }
     public class WebSocketSession : IWebSocketSession
@@ -42,9 +43,16 @@ namespace PilotRocketChatGateway.WebSockets
 
         public async Task SendMessageToClientAsync(DMessage dMessage)
         {
+            if (dMessage.Type != MessageType.TextMessage)
+                return;
+            await NotifyMessageCreatedAsync(dMessage);
+            await SendMessageUpdate(dMessage);
+        }
+
+        public async Task NotifyMessageCreatedAsync(DMessage dMessage)
+        {
             await UpdateSubscription(dMessage);
             await UpdateRoom(dMessage);
-            await SendMessageUpdate(dMessage);
         }
 
         private async Task SendMessageUpdate(DMessage message)

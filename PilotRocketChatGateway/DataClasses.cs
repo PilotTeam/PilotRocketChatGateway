@@ -102,7 +102,7 @@ namespace PilotRocketChatGateway
         public IList<Subscription> update { get; init; }
         public IList<Subscription> remove { get; init; }
     }
-    public record MessageRequest
+    public record MessageRequest : HttpResult
     {
         public Message message { get; init; }
     }

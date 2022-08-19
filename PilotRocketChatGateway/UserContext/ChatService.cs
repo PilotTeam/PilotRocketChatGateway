@@ -10,48 +10,51 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
-        void SendMessageToServer(MessageType type, Guid chatId, string text);
+        Message SendMessageToServer(MessageType type, Guid chatId, string text);
         Message ConvertToMessage(DMessage msg);
     }
     public class ChatService : IChatService
     {
-        IServerApiService _serverApi;
-        public ChatService(IServerApiService serverApi)
+        IContext _context;
+        public ChatService(IContext context)
         {
-            _serverApi = serverApi;
+            _context = context;
         }
         public IList<Room> LoadRooms()
         {
-            var chats = _serverApi.GetChats();
+            var chats = _context.RemoteService.ServerApi.GetChats();
             return chats.Select(x => ConvertToRoom(x)).ToList();
         }
 
         public IList<Subscription> LoadRoomsSubscriptions()
         {
-            var chats = _serverApi.GetChats();
+            var chats = _context.RemoteService.ServerApi.GetChats();
             return chats.Select(x => ConvertToSubscription(x)).ToList();
         }
 
         public IList<Message> LoadMessages(Guid roomId, int count)
         {
-            var msgs = _serverApi.GetMessages(roomId, count);
+            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, count);
             return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x)).ToList();
         }
 
         public Room LoadRoom(Guid id)
         {
-            var chat = _serverApi.GetChat(id);
+            var chat = _context.RemoteService.ServerApi.GetChat(id);
             return ConvertToRoom(chat);
         }
         public Subscription LoadRoomsSubscription(Guid id)
         {
-            var chat = _serverApi.GetChat(id);
+            var chat = _context.RemoteService.ServerApi.GetChat(id);
             return ConvertToSubscription(chat);
         }
 
         public Message ConvertToMessage(DMessage msg)
         {
-            var user = _serverApi.GetPerson(msg.CreatorId);
+            var user = _context.RemoteService.ServerApi.CurrentPerson;
+            if (msg.CreatorId != _context.RemoteService.ServerApi.CurrentPerson.Id)
+                user = _context.RemoteService.ServerApi.GetPerson(msg.CreatorId);
+
             using (var stream = new MemoryStream(msg.Data))
             {
                 return new Message()
@@ -72,48 +75,60 @@ namespace PilotRocketChatGateway.UserContext
         }
 
 
-        public void SendMessageToServer(MessageType type, Guid chatId, string text)
+        public Message SendMessageToServer(MessageType type, Guid chatId, string text)
         {
             switch (type)
             {
                 case MessageType.TextMessage:
-                    SendTextMessageToServer(chatId, text);
-                    break;
+                    return SendTextMessageToServer(chatId, text);
                 case MessageType.MessageRead:
-                    SendReadAllMessageToServer(chatId, text);
-                    break;
-
+                    return SendReadAllMessageToServer(chatId, text);
+                default:
+                    throw new Exception($"unknow message type: {type}");
             }
         }
 
-        private void SendReadAllMessageToServer(Guid chatId, string text)
+        private Message SendReadAllMessageToServer(Guid chatId, string text)
         {
-            var chat = _serverApi.GetChat(chatId);
-            var unreads = _serverApi.GetMessages(chatId, chat.UnreadMessagesNumber);
+            var chat = _context.RemoteService.ServerApi.GetChat(chatId);
+            if (chat.UnreadMessagesNumber == 0)
+                return null;
+            var unreads = _context.RemoteService.ServerApi.GetMessages(chatId, chat.UnreadMessagesNumber);
             foreach (var unread in unreads)
-                _serverApi.SendMessage(new DMessage()
+                _context.RemoteService.ServerApi.SendMessage(new DMessage()
                 {
                     Id = Guid.NewGuid(),
-                    CreatorId = _serverApi.CurrentPerson.Id,
+                    CreatorId = _context.RemoteService.ServerApi.CurrentPerson.Id,
                     ChatId = chatId,
                     LocalDate = DateTime.Now.ToUniversalTime(),
                     Type = MessageType.MessageRead,
                     RelatedMessageId = unread.Id
                 });
+            return null;
         }
 
-        private void SendTextMessageToServer(Guid chatId, string text)
+        private Message SendTextMessageToServer(Guid chatId, string text)
         {
+            var id = Guid.NewGuid();
+            var date = DateTime.Now.ToUniversalTime();
             var dMessage = new DMessage()
             {
-                Id = Guid.NewGuid(),
-                CreatorId = _serverApi.CurrentPerson.Id,
+                Id = id,
+                CreatorId = _context.RemoteService.ServerApi.CurrentPerson.Id,
                 ChatId = chatId,
-                LocalDate = DateTime.Now.ToUniversalTime(),
+                LocalDate = date,
                 Type = MessageType.TextMessage,
                 Data = GetMessageData(text)
             };
-            _serverApi.SendMessage(dMessage);
+
+            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            NotifyMessageCreated(dMessage);
+            return ConvertToMessage(dMessage);
+        }
+
+        private void NotifyMessageCreated(DMessage dMessage)
+        {
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage);
         }
 
         private byte[] GetMessageData(string text)
@@ -146,7 +161,7 @@ namespace PilotRocketChatGateway.UserContext
             if (chat.UnreadMessagesNumber == 0)
                 return ConvertToJSDate(chat.LastMessage.LocalDate);
 
-            var lastUnreadMessage = _serverApi.GetLastUnreadMessage(chat.Chat.Id);
+            var lastUnreadMessage = _context.RemoteService.ServerApi.GetLastUnreadMessage(chat.Chat.Id);
             return ConvertToJSDate(lastUnreadMessage.LocalDate);
         }
         private Room ConvertToRoom(DChatInfo chat)
