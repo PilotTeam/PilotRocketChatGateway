@@ -37,11 +37,6 @@ namespace PilotRocketChatGateway.WebSockets
             _chatService = chatService;
             _webSocket = webSocket;
         }
-        public class R
-        {
-            public string msg { get; init; }
-            public string[] subs { get; init; }
-        }
 
         public void Subscribe(dynamic request)
         {

@@ -26,10 +26,11 @@ namespace PilotRocketChatGateway.Controllers
         }
 
         [HttpPost]
-        public string Post(LoginRequest user)
+        public string Post(object request)
         {
             try
             {
+                var user = JsonConvert.DeserializeObject<LoginRequest>(request.ToString());
                 var credentials = Credentials.GetConnectionCredentials(user.user, user.password);
                 _contextService.CreateContext(credentials);
                 var context = _contextService.GetContext(credentials.Username);
@@ -42,7 +43,7 @@ namespace PilotRocketChatGateway.Controllers
             }
             catch (Exception e)
             {
-                _logger.Log(LogLevel.Information, $"Signed in failed. Username: {user.user}.");
+                _logger.Log(LogLevel.Information, $"Signed in failed");
                 _logger.LogError(0, e, e.Message);
                 var error = new Error() { status = "error", error = "Unauthorized", message = e.Message };
                 return JsonConvert.SerializeObject(error);
