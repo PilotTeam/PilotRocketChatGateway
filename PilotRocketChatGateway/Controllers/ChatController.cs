@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Ascon.Pilot.DataClasses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.PilotServer;
@@ -6,30 +7,13 @@ using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.Controllers
 {
-
     [ApiController]
-    public class ChatHistoryController : ControllerBase
+    public class ChatController : ControllerBase
     {
         private readonly IContextService _contextService;
-        public ChatHistoryController(IContextService contextService)
+        public ChatController(IContextService contextService)
         {
             _contextService = contextService;
-        }
-
-        [Authorize]
-        [HttpGet("api/v1/channels.history")]
-        public string GetChannelsHistory(string roomId, int count)
-        {
-            var result = LoadChatHistory(roomId, count);
-            return JsonConvert.SerializeObject(result);
-        }
-
-        [Authorize]
-        [HttpGet("api/v1/groups.history")]
-        public string GetGroupsHistory(string roomId, int count)
-        {
-            var result = LoadChatHistory(roomId, count);
-            return JsonConvert.SerializeObject(result);
         }
 
         [Authorize]
@@ -47,13 +31,19 @@ namespace PilotRocketChatGateway.Controllers
             return JsonConvert.SerializeObject(res);
         }
 
-        private Messages LoadChatHistory(string roomId, int count)
+        [Authorize]
+        [HttpPost("api/v1/chat.sendMessage")]
+        public string SendMessage(object request)
         {
+            var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msgs = context.ChatService.LoadMessages(Guid.Parse(roomId), count);
-
-            var result = new Messages() { success = true, messages = msgs };
-            return result;
+            var msg = context.ChatService.SendMessageToServer(MessageType.TextMessage, Guid.Parse(message.roomId), message.msg);
+            var result = new MessageRequest()
+            {
+                message = msg,
+                success = true
+            };
+            return JsonConvert.SerializeObject(result);
         }
     }
 }

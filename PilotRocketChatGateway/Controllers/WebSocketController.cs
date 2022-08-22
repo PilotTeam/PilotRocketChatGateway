@@ -11,15 +11,15 @@ namespace PilotRocketChatGateway.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WebSocketsController : ControllerBase
+    public class WebSocketController : ControllerBase
     {
-        private readonly ILogger<WebSocketsController> _logger;
+        private readonly ILogger<WebSocketController> _logger;
         private readonly AuthSettings _authSettings;
         private IContextService _contextService;
         private readonly IWebSocketsServiceFactory _webSocketsServiceFactory;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
 
-        public WebSocketsController(ILogger<WebSocketsController> logger, IOptions<AuthSettings> authSettings, IContextService contextService, IWebSocketsServiceFactory webSocketsServiceFactory, IWebSocketSessionFactory webSocketSessionFactory)
+        public WebSocketController(ILogger<WebSocketController> logger, IOptions<AuthSettings> authSettings, IContextService contextService, IWebSocketsServiceFactory webSocketsServiceFactory, IWebSocketSessionFactory webSocketSessionFactory)
         {
             _logger = logger;
             _authSettings = authSettings.Value;
@@ -28,7 +28,7 @@ namespace PilotRocketChatGateway.Controllers
             _webSocketSessionFactory = webSocketSessionFactory;
         }
 
-        [HttpGet("/websocket")]
+        [HttpGet]
         public async Task Get()
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)

@@ -11,13 +11,13 @@ namespace PilotRocketChatGateway.Controllers
         private static Dictionary<string, Setting> _rocketChatSettings { get; } = LoadRocketChatSettings();
 
         [HttpGet("api/v1/settings.oauth")]
-        public OauthSettings GetOuthSettings()
+        public OauthSettings Outh()
         {
             return new OauthSettings { success = false, services = new string[] { } };
         }
 
         [HttpGet("api/v1/settings.public")]
-        public string GetPublicSettings(string query)
+        public string Public(string query)
         {
             var settings = JsonConvert.DeserializeObject<SettingsRequest>(query);
 

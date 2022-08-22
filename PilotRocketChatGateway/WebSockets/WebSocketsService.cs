@@ -22,13 +22,13 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public class WebSocketsService : IWebSocksetsService
     {
-        private readonly ILogger<WebSocketsController> _logger;
+        private readonly ILogger<WebSocketController> _logger;
         private readonly WebSocket _webSocket;
         private readonly AuthSettings _authSettings;
         private readonly IContextService _contextService;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
 
-        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketsController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory)
+        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory)
         {
             _logger = logger;
             _webSocket = webSocket;

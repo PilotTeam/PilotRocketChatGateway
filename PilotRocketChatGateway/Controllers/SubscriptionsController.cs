@@ -28,5 +28,18 @@ namespace PilotRocketChatGateway.Controllers
             return JsonConvert.SerializeObject(result);
         }
 
+        [Authorize]
+        [HttpPost("/api/v1/subscriptions.read")]
+        public string Read(object request)
+        {
+            var room = JsonConvert.DeserializeObject<RoomRequest>(request.ToString());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            context.ChatService.SendMessageToServer(MessageType.MessageRead, Guid.Parse(room.roomId), string.Empty);
+            var result = new HttpResult()
+            {
+                success = true
+            };
+            return JsonConvert.SerializeObject(result);
+        }
     }
 }
