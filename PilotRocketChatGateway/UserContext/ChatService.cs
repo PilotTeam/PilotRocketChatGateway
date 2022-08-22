@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(Guid id);
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
+        IList<Message> LoadUnreadMessages(Guid roomId);
         Message SendMessageToServer(MessageType type, Guid chatId, string text);
         Message ConvertToMessage(DMessage msg);
     }
@@ -36,6 +37,13 @@ namespace PilotRocketChatGateway.UserContext
         {
             var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, count);
             return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x)).ToList();
+        }
+        public IList<Message> LoadUnreadMessages(Guid roomId)
+        {
+            var chat = _context.RemoteService.ServerApi.GetChat(roomId);
+            if (chat.UnreadMessagesNumber == 0)
+                return new List<Message>();
+            return LoadMessages(roomId, chat.UnreadMessagesNumber);
         }
 
         public Room LoadRoom(Guid id)

@@ -106,6 +106,11 @@ namespace PilotRocketChatGateway
     {
         public Message message { get; init; }
     }
+    public record MessagesUpdated : HttpResult
+    {
+        public IList<Message> updated { get; init; }
+        public IList<Message> deleted { get; init; }
+    }
     public record RoomRequest
     {
         [JsonProperty("rid")]

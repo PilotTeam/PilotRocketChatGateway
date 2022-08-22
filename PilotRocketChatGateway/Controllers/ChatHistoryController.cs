@@ -32,6 +32,21 @@ namespace PilotRocketChatGateway.Controllers
             return JsonConvert.SerializeObject(result);
         }
 
+        [Authorize]
+        [HttpGet("api/v1/chat.syncMessages")]
+        public string SyncMessages(string roomId, string lastUpdate) //TODO to use lastUpdate
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var msgs = context.ChatService.LoadUnreadMessages(Guid.Parse(roomId));
+            var res = new MessagesUpdated()
+            {
+                updated = msgs,
+                deleted = new List<Message>(),
+                success = true
+            };
+            return JsonConvert.SerializeObject(res);
+        }
+
         private Messages LoadChatHistory(string roomId, int count)
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
