@@ -169,8 +169,13 @@ namespace PilotRocketChatGateway.UserContext
             if (chat.UnreadMessagesNumber == 0)
                 return ConvertToJSDate(chat.LastMessage.LocalDate);
 
-            var lastUnreadMessage = _context.RemoteService.ServerApi.GetLastUnreadMessage(chat.Chat.Id);
-            return ConvertToJSDate(lastUnreadMessage.LocalDate);
+            var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, chat.UnreadMessagesNumber);
+            var earliestUnreadMessage = unread.LastOrDefault(x => x.Type == MessageType.TextMessage);
+
+            if (earliestUnreadMessage == null)
+                return ConvertToJSDate(chat.LastMessage.LocalDate);
+
+            return ConvertToJSDate(earliestUnreadMessage.LocalDate);
         }
         private Room ConvertToRoom(DChatInfo chat)
         {
