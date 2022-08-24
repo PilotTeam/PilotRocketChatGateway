@@ -73,6 +73,8 @@ namespace PilotRocketChatGateway
     {
         public string user { get; init; }
         public string password { get; init; }
+        [JsonProperty("resume")]
+        public string token { get; init; }
     }
 
     public class HttpLoginResponse

@@ -31,14 +31,7 @@ namespace PilotRocketChatGateway.Controllers
             try
             {
                 var user = JsonConvert.DeserializeObject<LoginRequest>(request.ToString());
-                var credentials = Credentials.GetConnectionCredentials(user.user, user.password);
-                _contextService.CreateContext(credentials);
-                var context = _contextService.GetContext(credentials.Username);
-                var tokenString = CreateToken(credentials);
-
-                _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
-
-                var response = GetLoginResponse(context.RemoteService.ServerApi, tokenString);
+                var response = Login(user);
                 return JsonConvert.SerializeObject(response);
             }
             catch (Exception e)
@@ -48,6 +41,37 @@ namespace PilotRocketChatGateway.Controllers
                 var error = new Error() { status = "error", error = "Unauthorized", message = e.Message };
                 return JsonConvert.SerializeObject(error);
             }
+        }
+
+        private HttpLoginResponse Login(LoginRequest? user)
+        {
+            if (user.token == null)
+                return CreateNewSession(user);
+
+            return ContinueSession(user);
+        }
+
+        private HttpLoginResponse ContinueSession(LoginRequest? user)
+        {
+            var context = _contextService.GetContext(AuthUtils.GetTokenActor(user.token));
+            _logger.Log(LogLevel.Information, $"Resume signed in successfully. Username: {context.RemoteService.ServerApi.CurrentPerson.Login}.");
+            return GetLoginResponse(context.RemoteService.ServerApi, user.token);
+        }
+
+        private IContext CreateContext(Credentials credentials)
+        {
+            _contextService.CreateContext(credentials);
+            return  _contextService.GetContext(credentials.Username);
+        }
+
+        private HttpLoginResponse CreateNewSession(LoginRequest? user)
+        {
+            var credentials = Credentials.GetConnectionCredentials(user.user, user.password);
+            var context = CreateContext(credentials);
+            var tokenString = CreateToken(user);
+
+            _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
+            return GetLoginResponse(context.RemoteService.ServerApi, tokenString);
         }
 
         private static HttpLoginResponse GetLoginResponse(IServerApiService serverApi, string tokenString)
@@ -68,14 +92,14 @@ namespace PilotRocketChatGateway.Controllers
             };
         }
 
-        private string CreateToken(Credentials credentials)
+        private string CreateToken(LoginRequest user)
         {
             var secretKey = _authSettings.GetSymmetricSecurityKey();
             var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-                new Claim("actort", credentials.Username)
+                new Claim("actort", user.user),
             };
 
             var tokeOptions = new JwtSecurityToken(

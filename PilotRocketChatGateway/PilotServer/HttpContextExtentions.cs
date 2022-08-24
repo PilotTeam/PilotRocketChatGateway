@@ -11,9 +11,7 @@ namespace PilotRocketChatGateway.PilotServer
             if (string.IsNullOrEmpty(tokenSource))
                 return null;
 
-            var jwtToken = new JwtSecurityToken(tokenSource.ToString());
-            return jwtToken.Actor;
-
+            return AuthUtils.GetTokenActor(tokenSource);
         }
     }
 }

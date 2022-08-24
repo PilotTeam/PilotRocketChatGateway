@@ -1,4 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace PilotRocketChatGateway.Authentication
 {
@@ -18,6 +19,13 @@ namespace PilotRocketChatGateway.Authentication
                 ValidateIssuerSigningKey = true,
                 ClockSkew = authSettings.GetClockCrew()
             };
+        }
+
+        public static string GetTokenActor(string token)
+        {
+            var jwtToken = new JwtSecurityToken(token);
+            return jwtToken.Actor;
+
         }
     }
 }
