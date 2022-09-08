@@ -42,12 +42,12 @@ namespace PilotRocketChatGateway.PilotServer
 
         public DChatInfo GetChat(Guid id)
         {
-            return _messagesApi.GetChat(id);
+            return _messagesApi.GetChat(id).DChatInfo;
         }
 
         public List<DChatInfo> GetChats()
         {
-            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue);
+            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue).Select(x => x.DChatInfo).ToList();
         }
 
         public DDatabaseInfo GetDatabaseInfo()
