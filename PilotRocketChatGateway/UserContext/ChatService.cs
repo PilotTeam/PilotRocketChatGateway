@@ -186,7 +186,7 @@ namespace PilotRocketChatGateway.UserContext
                 id = chat.Chat.Id.ToString(),
                 channelType = "p",
                 creationDate = ConvertToJSDate(chat.Chat.CreationDateUtc),
-                lastMessage = ConvertToMessage(chat.LastMessage)
+                lastMessage = chat.LastMessage.Type == MessageType.TextMessage ? ConvertToMessage(chat.LastMessage) : null
             };
         }
 
