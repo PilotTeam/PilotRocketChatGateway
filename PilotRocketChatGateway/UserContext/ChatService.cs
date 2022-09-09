@@ -11,6 +11,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<Subscription> LoadRoomsSubscriptions();
         IList<Message> LoadMessages(Guid roomId, int count);
         IList<Message> LoadUnreadMessages(Guid roomId);
+        User LoadUser(int usderId);
         Message SendMessageToServer(MessageType type, Guid chatId, string text);
         Message ConvertToMessage(DMessage msg);
     }
@@ -59,9 +60,7 @@ namespace PilotRocketChatGateway.UserContext
 
         public Message ConvertToMessage(DMessage msg)
         {
-            var user = _context.RemoteService.ServerApi.CurrentPerson;
-            if (msg.CreatorId != _context.RemoteService.ServerApi.CurrentPerson.Id)
-                user = _context.RemoteService.ServerApi.GetPerson(msg.CreatorId);
+            var user = LoadUser(msg.CreatorId);
 
             using (var stream = new MemoryStream(msg.Data))
             {
@@ -72,16 +71,21 @@ namespace PilotRocketChatGateway.UserContext
                     updatedAt = ConvertToJSDate(msg.LocalDate),
                     creationDate = ConvertToJSDate(msg.LocalDate),
                     msg = ProtoBuf.Serializer.Deserialize<string>(stream),
-                    u = new User()
-                    {
-                        id = user.Id.ToString(),
-                        username = user.Login,
-                        name = user.DisplayName
-                    }
+                    u = user
                 };
             }
         }
 
+        public User LoadUser(int userId)
+        {
+            INPerson person;
+            if (_context.RemoteService.ServerApi.CurrentPerson.Id == userId)
+                person = _context.RemoteService.ServerApi.CurrentPerson;
+            else
+                person = _context.RemoteService.ServerApi.GetPerson(userId); 
+
+            return GetUser(person);
+        }
 
         public Message SendMessageToServer(MessageType type, Guid chatId, string text)
         {
@@ -94,6 +98,18 @@ namespace PilotRocketChatGateway.UserContext
                 default:
                     throw new Exception($"unknow message type: {type}");
             }
+        }
+
+        private User GetUser(INPerson person)
+        {
+            return new User()
+            {
+                id = person.Id.ToString(),
+                username = person.Login,
+                name = person.DisplayName,
+                status = "online",
+                roles = new string[] { "user" }
+            };
         }
 
         private Message SendReadAllMessageToServer(Guid chatId, string text)

@@ -55,7 +55,7 @@ namespace PilotRocketChatGateway.Controllers
         {
             var context = _contextService.GetContext(AuthUtils.GetTokenActor(user.token));
             _logger.Log(LogLevel.Information, $"Resume signed in successfully. Username: {context.RemoteService.ServerApi.CurrentPerson.Login}.");
-            return GetLoginResponse(context.RemoteService.ServerApi, user.token);
+            return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, user.token);
         }
 
         private IContext CreateContext(Credentials credentials)
@@ -71,10 +71,10 @@ namespace PilotRocketChatGateway.Controllers
             var tokenString = CreateToken(user);
 
             _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
-            return GetLoginResponse(context.RemoteService.ServerApi, tokenString);
+            return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, tokenString);
         }
 
-        private static HttpLoginResponse GetLoginResponse(IServerApiService serverApi, string tokenString)
+        private static HttpLoginResponse GetLoginResponse(IServerApiService serverApi, IChatService chatService, string tokenString)
         {
             return new HttpLoginResponse()
             {
@@ -83,11 +83,7 @@ namespace PilotRocketChatGateway.Controllers
                 {
                     authToken = tokenString,
                     userId = serverApi.CurrentPerson.Id.ToString(),
-                    me = new User()
-                    {
-                        name = serverApi.CurrentPerson.DisplayName,
-                        username = serverApi.CurrentPerson.Login,
-                    },
+                    me = chatService.LoadUser(serverApi.CurrentPerson.Id)
                 }
             };
         }

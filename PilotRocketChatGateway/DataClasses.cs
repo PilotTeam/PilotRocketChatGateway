@@ -65,6 +65,8 @@ namespace PilotRocketChatGateway
         public string id;
         public string name;
         public string username;
+        public string status;
+        public string[] roles;
     }
     #endregion websocket
     #region login
