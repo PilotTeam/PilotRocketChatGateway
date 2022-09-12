@@ -20,7 +20,7 @@ namespace PilotRocketChatGateway
     {
         [JsonProperty("$date")]
         public long date { get; init; }
-}
+    }
 
     #region settings
     public record OauthSettings : HttpResult
@@ -56,6 +56,27 @@ namespace PilotRocketChatGateway
         public bool enterprise { get; init; }
         public bool invalidValue { get; init; }
         public string[] modules { get; init; }
+    }
+
+    public record Permissions : HttpResult
+    {
+        public IList<Permission> update { get; init; }
+        public IList<Permission> remove { get; init; }
+    }
+    public record Permission
+    {
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        [JsonProperty("_updatedAt")]
+        public object updatedAt { get; init; }
+        public string group { get; init; }
+        public string groupPermissionId { get; init; }
+        public string level { get; init; }
+        public string[] roles { get; init; }
+        public string section { get; init; }
+        public string sectionPermissionId { get; init; }
+        public string settingId { get; init; }
+        public int sorter { get; init; }
     }
     #endregion settings
     #region websocket
