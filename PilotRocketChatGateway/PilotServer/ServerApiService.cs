@@ -7,8 +7,10 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
+        INPerson GetPerson(string login);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
+        DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, int count);
         void SendMessage(DMessage message);
@@ -45,6 +47,11 @@ namespace PilotRocketChatGateway.PilotServer
             return _messagesApi.GetChat(id).DChatInfo;
         }
 
+        public DChatInfo GetPersonalChat(int personId)
+        {
+            return _messagesApi.GetPersonalChat(personId).DChatInfo;
+        }
+
         public List<DChatInfo> GetChats()
         {
             return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue).Select(x => x.DChatInfo).ToList();
@@ -67,7 +74,12 @@ namespace PilotRocketChatGateway.PilotServer
 
         public INPerson GetPerson(int id)
         {
-            return _people[id];
+            _people.TryGetValue(id, out var person);
+            return person;
+        }
+        public INPerson GetPerson(string login)
+        {
+            return _people.Values.First(x => x.Login == login);
         }
 
         public void SendMessage(DMessage message)

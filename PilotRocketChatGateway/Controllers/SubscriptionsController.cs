@@ -34,7 +34,7 @@ namespace PilotRocketChatGateway.Controllers
         {
             var room = JsonConvert.DeserializeObject<RoomRequest>(request.ToString());
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            context.ChatService.SendMessageToServer(MessageType.MessageRead, Guid.Parse(room.roomId), string.Empty);
+            context.ChatService.SendReadAllMessageToServer(Guid.Parse(room.roomId));
             var result = new HttpResult()
             {
                 success = true
