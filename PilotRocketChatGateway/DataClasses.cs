@@ -191,5 +191,14 @@ namespace PilotRocketChatGateway
         public User u { get; init; }
     }
     #endregion rooms
-
+    #region directory
+    public record DirectoryRequest
+    {
+        public string type { get; init; }
+        public string workspace { get; init; }
+        public int count { get; init; }
+        public int offset { get; init; }
+        public string sort { get; init; }
+    }
+    #endregion
 }

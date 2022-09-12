@@ -12,6 +12,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<Message> LoadMessages(Guid roomId, int count);
         IList<Message> LoadUnreadMessages(Guid roomId);
         User LoadUser(int usderId);
+        IList<User> LoadUsers(int count);
         Message SendMessageToServer(MessageType type, Guid chatId, string text);
         Message ConvertToMessage(DMessage msg);
     }
@@ -75,7 +76,11 @@ namespace PilotRocketChatGateway.UserContext
                 };
             }
         }
-
+        public IList<User> LoadUsers(int count)
+        {
+            var users = _context.RemoteService.ServerApi.GetPeople().Values;
+            return users.Select(x => GetUser(x)).ToList();
+        }
         public User LoadUser(int userId)
         {
             INPerson person;
