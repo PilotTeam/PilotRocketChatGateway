@@ -25,5 +25,16 @@ namespace PilotRocketChatGateway.Controllers
             var result = new { success = true, full = false, users = new User[] { user } };
             return JsonConvert.SerializeObject(result);
         }
+
+        [Authorize]
+        [HttpGet("api/v1/users.info")]
+        public string Info(int userId)
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var user = context.ChatService.LoadUser(userId);
+
+            var result = new { success = true, user = user };
+            return JsonConvert.SerializeObject(result);
+        }
     }
 }
