@@ -215,14 +215,27 @@ namespace PilotRocketChatGateway.UserContext
                 lastSeen = LoadLastSeenChatsDate(chat),
                 unread = chat.UnreadMessagesNumber,
                 open = true,
-                name = chat.Chat.Name,
+                name = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).name : chat.Chat.Name,
                 alert = chat.UnreadMessagesNumber > 0,
                 id = chat.Chat.Id.ToString(),
                 roomId = chat.Chat.Id.ToString(),
-                channelType = "p",
+                channelType = GetChannelType(chat.Chat)
             };
         }
 
+        private User GetPersonalChatTarget(DChat chat)
+        {
+            var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
+            var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
+            var target = members.First(x => x.PersonId != currentPersonId);
+            var person = _context.RemoteService.ServerApi.GetPerson(target.PersonId);
+            return GetUser(person);
+        }
+
+        private string GetChannelType(DChat chat)
+        {
+            return chat.Type == ChatKind.Personal ? "d" : "g";
+        }
         private string LoadLastSeenChatsDate(DChatInfo chat)
         {
             if (chat.UnreadMessagesNumber == 0)
@@ -241,13 +254,14 @@ namespace PilotRocketChatGateway.UserContext
             return new Room()
             {
                 updatedAt = ConvertToJSDate(lastMessage.LocalDate),
-                name = chat.Name,
+                name = chat.Type == ChatKind.Personal ? string.Empty : chat.Name,
                 id = chat.Id.ToString(),
-                channelType = "p",
+                channelType = GetChannelType(chat),
                 creationDate = ConvertToJSDate(chat.CreationDateUtc),
-                lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage) : null
+                lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage) : null,
             };
         }
+
 
         private static string ConvertToJSDate(DateTime date)
         {

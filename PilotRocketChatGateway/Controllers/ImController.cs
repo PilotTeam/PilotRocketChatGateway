@@ -19,7 +19,7 @@ namespace PilotRocketChatGateway.Controllers
 
         [Authorize]
         [HttpPost("api/v1/im.create")]
-        public string Post(object request)
+        public string Create(object request)
         {
             var user = JsonConvert.DeserializeObject<User>(request.ToString());
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
@@ -35,6 +35,17 @@ namespace PilotRocketChatGateway.Controllers
             room = context.ChatService.CreateChat(new List<string>() { user.username }, ChatKind.Personal);
             var result1 = new { room = room, success = true };
             return JsonConvert.SerializeObject(result1);
+        }
+
+        [Authorize]
+        [HttpGet("api/v1/im.history")]
+        public string History(string roomId, int count)
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var msgs = context.ChatService.LoadMessages(Guid.Parse(roomId), count);
+
+            var result = new Messages() { success = true, messages = msgs };
+            return JsonConvert.SerializeObject(result);
         }
     }
 }
