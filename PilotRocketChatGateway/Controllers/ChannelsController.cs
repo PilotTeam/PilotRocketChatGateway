@@ -20,7 +20,7 @@ namespace PilotRocketChatGateway.Controllers
         public string History(string roomId, int count)
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msgs = context.ChatService.LoadMessages(Guid.Parse(roomId), count);
+            var msgs = context.ChatService.LoadMessages(roomId, count);
 
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);

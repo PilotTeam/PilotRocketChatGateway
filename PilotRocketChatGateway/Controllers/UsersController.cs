@@ -19,11 +19,16 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/users.presence")]
         public string Presence(string ids)
         {
-            var id = int.Parse(ids.Split(',')[0]);
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var user = context.ChatService.LoadUser(id);
 
-            var result = new { success = true, full = false, users = new User[] { user } };
+            var users = new List<User>();
+            foreach (var id in ids.Split(',').Select(x => int.Parse(x)))
+            {
+                var user = context.ChatService.LoadUser(id);
+                users.Add(user);
+            }
+
+            var result = new { success = true, full = false, users = users };
             return JsonConvert.SerializeObject(result);
         }
 

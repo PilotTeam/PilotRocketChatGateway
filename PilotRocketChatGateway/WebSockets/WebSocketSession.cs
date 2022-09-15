@@ -87,7 +87,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task SendChatCreated(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.LoadRoom(dMessage.ChatId);
+            var room = _chatService.LoadRoom(dMessage.ChatId.ToString());
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 
@@ -107,8 +107,8 @@ namespace PilotRocketChatGateway.WebSockets
 
         private async Task SendMessageUpdate(DMessage message)
         {
-            var eventName = $"{message.ChatId}";
             var rocketChatMessage = _chatService.ConvertToMessage(message);
+            var eventName = $"{rocketChatMessage.roomId}";
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 
@@ -129,7 +129,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task UpdateRoomsSubscription(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_SUBSCRIPTIONS_CHANGED}";
-            var sub = _chatService.LoadRoomsSubscription(dMessage.ChatId);
+            var sub = _chatService.LoadRoomsSubscription(dMessage.ChatId.ToString());
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 
@@ -150,7 +150,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task UpdateRoom(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.LoadRoom(dMessage.ChatId);
+            var room = _chatService.LoadRoom(dMessage.ChatId.ToString());
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 

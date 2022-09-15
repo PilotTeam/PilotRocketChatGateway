@@ -5,18 +5,17 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IChatService : IService
     {
-        Room LoadRoom(Guid id);
+        Room LoadRoom(string id);
         IList<Room> LoadRooms();
-        Subscription LoadRoomsSubscription(Guid id);
+        Subscription LoadRoomsSubscription(string roomId);
         IList<Subscription> LoadRoomsSubscriptions();
         Room LoadPersonalRoom(string username);
-        IList<Message> LoadMessages(Guid roomId, int count);
-        IList<Message> LoadUnreadMessages(Guid roomId);
+        IList<Message> LoadMessages(string roomId, int count);
+        IList<Message> LoadUnreadMessages(string roomId);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
-        Message SendTextMessageToServer(Guid chatId, string text);
-        void SendReadAllMessageToServer(Guid chatId);
-        public void SendChatsMemberMessageToServer(Guid chatId, string username);
+        Message SendTextMessageToServer(string roomId, string text);
+        void SendReadAllMessageToServer(string roomId);
         Room CreateChat(IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
     }
@@ -39,46 +38,33 @@ namespace PilotRocketChatGateway.UserContext
             return chats.Select(x => ConvertToSubscription(x)).ToList();
         }
 
-        public IList<Message> LoadMessages(Guid roomId, int count)
+        public IList<Message> LoadMessages(string roomId, int count)
         {
-            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, count);
-            return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x)).ToList();
+            var id = GetRoomId(roomId);
+            return LoadMessages(id, count);
         }
-        public IList<Message> LoadUnreadMessages(Guid roomId)
+
+
+        public IList<Message> LoadUnreadMessages(string roomId)
         {
-            var chat = _context.RemoteService.ServerApi.GetChat(roomId);
+            var id = GetRoomId(roomId);
+            var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return new List<Message>();
-            return LoadMessages(roomId, chat.UnreadMessagesNumber);
+            return LoadMessages(id, chat.UnreadMessagesNumber);
         }
 
-        public Room LoadRoom(Guid id)
+        public Room LoadRoom(string id)
         {
-            var chat = _context.RemoteService.ServerApi.GetChat(id);
+            var roomId = GetRoomId(id);
+            var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             return ConvertToRoom(chat.Chat, chat.LastMessage);
         }
-        public Subscription LoadRoomsSubscription(Guid id)
+        public Subscription LoadRoomsSubscription(string roomId)
         {
+            var id = GetRoomId(roomId);
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             return ConvertToSubscription(chat);
-        }
-
-        public Message ConvertToMessage(DMessage msg)
-        {
-            var user = LoadUser(msg.CreatorId);
-
-            using (var stream = new MemoryStream(msg.Data))
-            {
-                return new Message()
-                {
-                    id = msg.Id.ToString(),
-                    roomId = msg.ChatId.ToString(),
-                    updatedAt = ConvertToJSDate(msg.LocalDate),
-                    creationDate = ConvertToJSDate(msg.LocalDate),
-                    msg = ProtoBuf.Serializer.Deserialize<string>(stream),
-                    u = user
-                };
-            }
         }
         public IList<User> LoadUsers(int count)
         {
@@ -124,32 +110,37 @@ namespace PilotRocketChatGateway.UserContext
             NotifyMessageCreated(msg);
             return ConvertToRoom(chat, msg);
         }
-        public void SendReadAllMessageToServer(Guid chatId)
+        public void SendReadAllMessageToServer(string roomId)
         {
-            var chat = _context.RemoteService.ServerApi.GetChat(chatId);
+            var id = GetRoomId(roomId);
+            var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return;
-            var unreads = _context.RemoteService.ServerApi.GetMessages(chatId, chat.UnreadMessagesNumber);
+            var unreads = _context.RemoteService.ServerApi.GetMessages(id, chat.UnreadMessagesNumber);
             foreach (var unread in unreads)
             {
-                var msg = CreateMessage(chatId, MessageType.MessageRead, unread.Id);
+                var msg = CreateMessage(id, MessageType.MessageRead, unread.Id);
                 _context.RemoteService.ServerApi.SendMessage(msg);
             }
         }
-
-        public Message SendTextMessageToServer(Guid chatId, string text)
+        public Message ConvertToMessage(DMessage msg)
         {
-            var date = DateTime.Now.ToUniversalTime();
-            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            var chat = _context.RemoteService.ServerApi.GetChat(msg.ChatId);
+            return ConvertToMessage(msg, chat.Chat);
+        }
+
+        public Message SendTextMessageToServer(string roomId, string text)
+        {
+            var id = GetRoomId(roomId);
+            var dMessage = CreateMessage(id, MessageType.TextMessage);
             SetMessageData(dMessage, text);
             _context.RemoteService.ServerApi.SendMessage(dMessage);
             NotifyMessageCreated(dMessage);
-            return ConvertToMessage(dMessage);
+            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(id).Chat);
         }
-
-        public void SendChatsMemberMessageToServer(Guid chatId, string username)
+        private void SendChatsMemberMessageToServer(Guid roomId, string username)
         {
-            var msg = CreateMessage(chatId, MessageType.ChatMembers);
+            var msg = CreateMessage(roomId, MessageType.ChatMembers);
             var person = _context.RemoteService.ServerApi.GetPerson(username);
 
             var change = new DMemberChange
@@ -166,8 +157,29 @@ namespace PilotRocketChatGateway.UserContext
             SetMessageData(msg, memberData);
             _context.RemoteService.ServerApi.SendMessage(msg);
         }
+        private IList<Message> LoadMessages(Guid roomId, int count)
+        {
+            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, count);
+            var chat = _context.RemoteService.ServerApi.GetChat(roomId);
+            return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x, chat.Chat)).ToList();
+        }
+        private Message ConvertToMessage(DMessage msg, DChat chat)
+        {
+            var user = LoadUser(msg.CreatorId);
 
-
+            using (var stream = new MemoryStream(msg.Data))
+            {
+                return new Message()
+                {
+                    id = msg.Id.ToString(),
+                    roomId = GetRoomId(chat),
+                    updatedAt = ConvertToJSDate(msg.LocalDate),
+                    creationDate = ConvertToJSDate(msg.LocalDate),
+                    msg = ProtoBuf.Serializer.Deserialize<string>(stream),
+                    u = user
+                };
+            }
+        }
         private DMessage CreateMessage(Guid chatId, MessageType type, Guid? relatedMessageId = null)
         {
             return new DMessage()
@@ -215,10 +227,11 @@ namespace PilotRocketChatGateway.UserContext
                 lastSeen = LoadLastSeenChatsDate(chat),
                 unread = chat.UnreadMessagesNumber,
                 open = true,
-                name = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).name : chat.Chat.Name,
+                name = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).username : chat.Chat.Name,
+                displayName = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).name : chat.Chat.Name,
                 alert = chat.UnreadMessagesNumber > 0,
-                id = chat.Chat.Id.ToString(),
-                roomId = chat.Chat.Id.ToString(),
+                id = GetRoomId(chat.Chat),
+                roomId = GetRoomId(chat.Chat),
                 channelType = GetChannelType(chat.Chat)
             };
         }
@@ -255,13 +268,25 @@ namespace PilotRocketChatGateway.UserContext
             {
                 updatedAt = ConvertToJSDate(lastMessage.LocalDate),
                 name = chat.Type == ChatKind.Personal ? string.Empty : chat.Name,
-                id = chat.Id.ToString(),
+                id = GetRoomId(chat),
                 channelType = GetChannelType(chat),
                 creationDate = ConvertToJSDate(chat.CreationDateUtc),
-                lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage) : null,
+                lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage, chat) : null,
             };
         }
+        private string GetRoomId(DChat chat)
+        {
+            return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
+        }
+        private Guid GetRoomId(string strId)
+        {
+            if (Guid.TryParse(strId, out var id))
+                return id;
 
+            var personId = int.Parse(strId);
+            var chat = _context.RemoteService.ServerApi.GetPersonalChat(personId);
+            return chat.Chat.Id;
+        }
 
         private static string ConvertToJSDate(DateTime date)
         {

@@ -141,6 +141,12 @@ namespace PilotRocketChatGateway
         [JsonProperty("rid")]
         public string roomId { get; init; }
     }
+
+    public record GroupRequest
+    {
+        public string name { get; init; }
+        public string[] members { get; init; }
+    }
     public record Subscription
     {
         [JsonProperty("_updatedAt")]
@@ -154,6 +160,8 @@ namespace PilotRocketChatGateway
         public int unread { get; init; }
         public bool alert { get; init; }
         public string name { get; init; }
+        [JsonProperty("fname")]
+        public string displayName { get; init; }
         public bool open { get; init; }
         [JsonProperty("t")]
         public string channelType { get; init; }

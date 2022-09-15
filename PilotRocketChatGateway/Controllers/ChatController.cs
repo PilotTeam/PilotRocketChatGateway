@@ -21,7 +21,7 @@ namespace PilotRocketChatGateway.Controllers
         public string SyncMessages(string roomId, string lastUpdate) //TODO to use lastUpdate
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msgs = context.ChatService.LoadUnreadMessages(Guid.Parse(roomId));
+            var msgs = context.ChatService.LoadUnreadMessages(roomId);
             var res = new MessagesUpdated()
             {
                 updated = msgs,
@@ -37,7 +37,7 @@ namespace PilotRocketChatGateway.Controllers
         {
             var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
             var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msg = context.ChatService.SendTextMessageToServer(Guid.Parse(message.roomId), message.msg);
+            var msg = context.ChatService.SendTextMessageToServer(message.roomId, message.msg);
             var result = new MessageRequest()
             {
                 message = msg,
