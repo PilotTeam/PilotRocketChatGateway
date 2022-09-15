@@ -16,7 +16,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<User> LoadUsers(int count);
         Message SendTextMessageToServer(string roomId, string text);
         void SendReadAllMessageToServer(string roomId);
-        Room CreateChat(IList<string> members, ChatKind kind);
+        Room CreateChat(string name, IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
     }
     public class ChatService : IChatService
@@ -89,11 +89,12 @@ namespace PilotRocketChatGateway.UserContext
             return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(chat.Chat, chat.LastMessage);
         }
 
-        public Room CreateChat(IList<string> members, ChatKind kind)
+        public Room CreateChat(string name, IList<string> members, ChatKind kind)
         {
             var chat = new DChat
             {
                 Id = Guid.NewGuid(),
+                Name = name,
                 Type = kind,
                 CreatorId = _context.RemoteService.ServerApi.CurrentPerson.Id,
                 CreationDateUtc = DateTime.UtcNow

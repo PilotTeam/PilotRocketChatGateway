@@ -32,7 +32,7 @@ namespace PilotRocketChatGateway.Controllers
                 return JsonConvert.SerializeObject(result);
             }    
 
-            room = context.ChatService.CreateChat(new List<string>() { user.username }, ChatKind.Personal);
+            room = context.ChatService.CreateChat(string.Empty, new List<string>() { user.username }, ChatKind.Personal);
             var result1 = new { room = room, success = true };
             return JsonConvert.SerializeObject(result1);
         }
