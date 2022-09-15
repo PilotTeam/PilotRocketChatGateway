@@ -178,6 +178,7 @@ namespace PilotRocketChatGateway
         public Message lastMessage { get; init; }
         [JsonProperty("ts")]
         public object creationDate { get; init; }
+        public string[] usernames { get; init; }
     }
 
     public record Messages : HttpResult

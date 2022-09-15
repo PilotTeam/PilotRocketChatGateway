@@ -14,6 +14,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<Message> LoadUnreadMessages(string roomId);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
+        IList<User> LoadMembers(string roomId);
         Message SendTextMessageToServer(string roomId, string text);
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
@@ -87,6 +88,17 @@ namespace PilotRocketChatGateway.UserContext
             var person = _context.RemoteService.ServerApi.GetPerson(username);
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(chat.Chat, chat.LastMessage);
+        }
+
+        public IList<User> LoadMembers(string roomId)
+        {
+            var id = GetRoomId(roomId);
+            var members = _context.RemoteService.ServerApi.GetChatMembers(id);
+            return members.Select(x =>
+            {
+                var person = _context.RemoteService.ServerApi.GetPerson(x.PersonId);
+                return GetUser(person);
+            }).ToList();
         }
 
         public Room CreateChat(string name, IList<string> members, ChatKind kind)
@@ -273,8 +285,16 @@ namespace PilotRocketChatGateway.UserContext
                 channelType = GetChannelType(chat),
                 creationDate = ConvertToJSDate(chat.CreationDateUtc),
                 lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage, chat) : null,
+                usernames = GetUserNames(chat)
             };
         }
+
+        private string[] GetUserNames(DChat chat)
+        {
+            var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
+            return members.Select(x => _context.RemoteService.ServerApi.GetPerson(x.PersonId).Login).ToArray();
+        }
+
         private string GetRoomId(DChat chat)
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
