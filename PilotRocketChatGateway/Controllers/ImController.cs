@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
 {
@@ -30,7 +31,7 @@ namespace PilotRocketChatGateway.Controllers
             {
                 var result = new { room = room, success = true };
                 return JsonConvert.SerializeObject(result);
-            }    
+            }
 
             room = context.ChatService.CreateChat(string.Empty, new List<string>() { user.username }, ChatKind.Personal);
             var result1 = new { room = room, success = true };
@@ -39,13 +40,25 @@ namespace PilotRocketChatGateway.Controllers
 
         [Authorize]
         [HttpGet("api/v1/im.history")]
-        public string History(string roomId, int count)
+        public string History()
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msgs = context.ChatService.LoadMessages(roomId, count);
+            string roomId;
+            int count;
+            string latest;
 
+            roomId = GetParam(nameof(roomId));
+            count = int.Parse(GetParam(nameof(count)));
+            latest = GetParam(nameof(latest));
+
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var msgs = context.ChatService.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
+        }
+
+        private string GetParam(string query)
+        {
+            return HttpUtility.ParseQueryString(HttpContext.Request.QueryString.ToString()).Get(query) ?? string.Empty;
         }
     }
 }

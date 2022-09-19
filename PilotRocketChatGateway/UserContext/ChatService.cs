@@ -10,7 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(string roomId);
         IList<Subscription> LoadRoomsSubscriptions();
         Room LoadPersonalRoom(string username);
-        IList<Message> LoadMessages(string roomId, int count);
+        IList<Message> LoadMessages(string roomId, int count, string latest);
         IList<Message> LoadUnreadMessages(string roomId);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
@@ -39,10 +39,11 @@ namespace PilotRocketChatGateway.UserContext
             return chats.Select(x => ConvertToSubscription(x)).ToList();
         }
 
-        public IList<Message> LoadMessages(string roomId, int count)
+        public IList<Message> LoadMessages(string roomId, int count, string latest)
         {
             var id = GetRoomId(roomId);
-            return LoadMessages(id, count);
+            var dateTo = ConvertFromJSDate(latest);
+            return LoadMessages(id, dateTo.AddMilliseconds(-1), count);
         }
 
 
@@ -52,7 +53,7 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return new List<Message>();
-            return LoadMessages(id, chat.UnreadMessagesNumber);
+            return LoadMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
         }
 
         public Room LoadRoom(string id)
@@ -129,7 +130,7 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return;
-            var unreads = _context.RemoteService.ServerApi.GetMessages(id, chat.UnreadMessagesNumber);
+            var unreads = _context.RemoteService.ServerApi.GetMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
             foreach (var unread in unreads)
             {
                 var msg = CreateMessage(id, MessageType.MessageRead, unread.Id);
@@ -170,9 +171,9 @@ namespace PilotRocketChatGateway.UserContext
             SetMessageData(msg, memberData);
             _context.RemoteService.ServerApi.SendMessage(msg);
         }
-        private IList<Message> LoadMessages(Guid roomId, int count)
+        private IList<Message> LoadMessages(Guid roomId, DateTime dateTo, int count)
         {
-            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, count);
+            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateTo, count);
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             return msgs.Where(x => x.Type == MessageType.TextMessage).Select(x => ConvertToMessage(x, chat.Chat)).ToList();
         }
@@ -267,7 +268,7 @@ namespace PilotRocketChatGateway.UserContext
             if (chat.UnreadMessagesNumber == 0)
                 return ConvertToJSDate(chat.LastMessage.LocalDate);
 
-            var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, chat.UnreadMessagesNumber);
+            var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, DateTime.MaxValue, chat.UnreadMessagesNumber);
             var earliestUnreadMessage = unread.LastOrDefault(x => x.Type == MessageType.TextMessage);
 
             if (earliestUnreadMessage == null)
@@ -312,6 +313,10 @@ namespace PilotRocketChatGateway.UserContext
         private static string ConvertToJSDate(DateTime date)
         {
             return date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+        }
+        private DateTime ConvertFromJSDate(string date)
+        {
+            return string.IsNullOrEmpty(date) ? DateTime.MaxValue : DateTime.Parse(date).ToUniversalTime();
         }
 
         public void Dispose()

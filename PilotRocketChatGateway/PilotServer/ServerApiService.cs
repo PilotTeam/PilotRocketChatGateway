@@ -12,7 +12,7 @@ namespace PilotRocketChatGateway.PilotServer
         DChatInfo GetChat(Guid id);
         DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
-        List<DMessage> GetMessages(Guid chatId, int count);
+        List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
         List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
@@ -63,9 +63,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _dbInfo;
         }
 
-        public List<DMessage> GetMessages(Guid chatId, int count)
+        public List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count)
         {
-            return _messagesApi.GetMessages(chatId, DateTime.MinValue, DateTime.MaxValue, count).Item1;
+            return _messagesApi.GetMessages(chatId, DateTime.MinValue, dateTo, count).Item1;
         }
 
         public IReadOnlyDictionary<int, INPerson> GetPeople()
