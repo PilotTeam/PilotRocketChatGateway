@@ -29,6 +29,16 @@ namespace PilotRocketChatGateway.Controllers
         }
 
         [Authorize]
+        [HttpGet("api/v1/groups.members")]
+        public string Members(string roomId)
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var users = context.ChatService.LoadMembers(roomId);
+            var result = new { success = true, members = users };
+            return JsonConvert.SerializeObject(result);
+        }
+
+        [Authorize]
         [HttpPost("api/v1/groups.create")]
         public string Create(object request)
         {

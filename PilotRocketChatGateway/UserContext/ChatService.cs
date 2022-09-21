@@ -261,7 +261,7 @@ namespace PilotRocketChatGateway.UserContext
 
         private string GetChannelType(DChat chat)
         {
-            return chat.Type == ChatKind.Personal ? "d" : "g";
+            return chat.Type == ChatKind.Personal ? "d" : "p";
         }
         private string LoadLastSeenChatsDate(DChatInfo chat)
         {
