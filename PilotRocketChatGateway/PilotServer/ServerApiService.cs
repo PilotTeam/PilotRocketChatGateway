@@ -45,17 +45,17 @@ namespace PilotRocketChatGateway.PilotServer
 
         public DChatInfo GetChat(Guid id)
         {
-            return _messagesApi.GetChat(id).DChatInfo;
+            return _messagesApi.GetChat(id);
         }
 
         public DChatInfo GetPersonalChat(int personId)
         {
-            return _messagesApi.GetPersonalChat(personId).DChatInfo;
+            return _messagesApi.GetPersonalChat(personId);
         }
 
         public List<DChatInfo> GetChats()
         {
-            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue).Select(x => x.DChatInfo).ToList();
+            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue).ToList();
         }
 
         public DDatabaseInfo GetDatabaseInfo()
