@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 
@@ -11,10 +12,12 @@ namespace PilotRocketChatGateway.Controllers
     public class DirectoryController : ControllerBase
     {
         private IContextService _contextService;
+        private readonly IAuthHelper _authHelper;
 
-        public DirectoryController(IContextService contextService)
+        public DirectoryController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
+            _authHelper = authHelper;
         }
 
         [Authorize]
@@ -24,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers
             if (requset.type != "users")
                 return string.Empty;
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var users = context.ChatService.LoadUsers(requset.count);
 
             var result = new { success = true, result = users, total = context.RemoteService.ServerApi.GetPeople().Count };

@@ -18,14 +18,16 @@ namespace PilotRocketChatGateway.Controllers
         private IContextService _contextService;
         private readonly IWebSocketsServiceFactory _webSocketsServiceFactory;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
+        private readonly IAuthHelper _authHelper;
 
-        public WebSocketController(ILogger<WebSocketController> logger, IOptions<AuthSettings> authSettings, IContextService contextService, IWebSocketsServiceFactory webSocketsServiceFactory, IWebSocketSessionFactory webSocketSessionFactory)
+        public WebSocketController(ILogger<WebSocketController> logger, IOptions<AuthSettings> authSettings, IContextService contextService, IWebSocketsServiceFactory webSocketsServiceFactory, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
         {
             _logger = logger;
             _authSettings = authSettings.Value;
             _contextService = contextService;
             _webSocketsServiceFactory = webSocketsServiceFactory;
             _webSocketSessionFactory = webSocketSessionFactory;
+            _authHelper = authHelper;
         }
 
         [HttpGet]
@@ -36,7 +38,7 @@ namespace PilotRocketChatGateway.Controllers
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                 _logger.Log(LogLevel.Information, "WebSocket connection established");
 
-                var webSocketService = _webSocketsServiceFactory.CreateWebSocketsService(webSocket, _logger, _authSettings, _contextService, _webSocketSessionFactory);
+                var webSocketService = _webSocketsServiceFactory.CreateWebSocketsService(webSocket, _logger, _authSettings, _contextService, _webSocketSessionFactory, _authHelper);
                 await webSocketService.ProcessAsync();
             }
             else

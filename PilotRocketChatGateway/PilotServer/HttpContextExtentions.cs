@@ -5,13 +5,13 @@ namespace PilotRocketChatGateway.PilotServer
 {
     public static class HttpContextExtentions
     {
-        public static string GetTokenActor(this HttpContext httpContext)
+        public static string GetTokenActor(this HttpContext httpContext, IAuthHelper authHelper)
         {
-            httpContext.Request.Headers.TryGetValue(AuthUtils.AUTH_HEADER_NAME, out var tokenSource);
+            httpContext.Request.Headers.TryGetValue(AuthHelper.AUTH_HEADER_NAME, out var tokenSource);
             if (string.IsNullOrEmpty(tokenSource))
                 return null;
 
-            return AuthUtils.GetTokenActor(tokenSource);
+            return authHelper.GetTokenActor(tokenSource);
         }
     }
 }

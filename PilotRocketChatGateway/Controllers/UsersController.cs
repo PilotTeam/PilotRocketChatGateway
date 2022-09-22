@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 
@@ -10,16 +11,18 @@ namespace PilotRocketChatGateway.Controllers
     public class UsersController : ControllerBase
     {
         private IContextService _contextService;
+        private IAuthHelper _authHelper;
 
-        public UsersController(IContextService contextService)
+        public UsersController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
+            _authHelper = authHelper; 
         }
         [Authorize]
         [HttpGet("api/v1/users.presence")]
         public string Presence(string ids)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
 
             var users = new List<User>();
             foreach (var id in ids.Split(',').Select(x => int.Parse(x)))
@@ -36,7 +39,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/users.info")]
         public string Info(int userId)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var user = context.ChatService.LoadUser(userId);
 
             var result = new { success = true, user = user };

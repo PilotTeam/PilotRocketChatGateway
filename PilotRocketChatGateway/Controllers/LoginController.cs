@@ -17,12 +17,14 @@ namespace PilotRocketChatGateway.Controllers
         private readonly IContextService _contextService;
         private readonly ILogger<LoginController> _logger;
         private readonly AuthSettings _authSettings;
+        private readonly IAuthHelper _authHelper;
 
-        public LoginController(IContextService contextService, IOptions<AuthSettings> authSettings, ILogger<LoginController> logger)
+        public LoginController(IContextService contextService, IOptions<AuthSettings> authSettings, ILogger<LoginController> logger, IAuthHelper authHelper)
         {
             _contextService = contextService;
             _logger = logger;
             _authSettings = authSettings.Value;
+            _authHelper = authHelper;
         }
 
         [HttpPost]
@@ -53,7 +55,7 @@ namespace PilotRocketChatGateway.Controllers
 
         private HttpLoginResponse ContinueSession(LoginRequest? user)
         {
-            var context = _contextService.GetContext(AuthUtils.GetTokenActor(user.token));
+            var context = _contextService.GetContext(_authHelper.GetTokenActor(user.token));
             _logger.Log(LogLevel.Information, $"Resume signed in successfully. Username: {context.RemoteService.ServerApi.CurrentPerson.Login}.");
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, user.token);
         }

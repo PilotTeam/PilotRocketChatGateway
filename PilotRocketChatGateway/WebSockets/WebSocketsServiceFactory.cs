@@ -7,13 +7,13 @@ namespace PilotRocketChatGateway.WebSockets
 {
     public interface IWebSocketsServiceFactory
     {
-        IWebSocksetsService CreateWebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory);
+        IWebSocksetsService CreateWebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper);
     }
     public class WebSocketsServiceFactory : IWebSocketsServiceFactory
     {
-        public IWebSocksetsService CreateWebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory)
+        public IWebSocksetsService CreateWebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
         {
-            return new WebSocketsService(webSocket, logger, authSettings, contextService, webSocketSessionFactory);
+            return new WebSocketsService(webSocket, logger, authSettings, contextService, webSocketSessionFactory, authHelper);
         }
     }
 }

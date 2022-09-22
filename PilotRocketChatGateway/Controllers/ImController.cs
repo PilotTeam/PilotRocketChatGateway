@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.Web;
@@ -12,10 +13,12 @@ namespace PilotRocketChatGateway.Controllers
     public class ImController : ControllerBase
     {
         private IContextService _contextService;
+        private IAuthHelper _authHelper;
 
-        public ImController(IContextService contextService)
+        public ImController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
+            _authHelper = authHelper;
         }
 
         [Authorize]
@@ -23,7 +26,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Create(object request)
         {
             var user = JsonConvert.DeserializeObject<User>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
 
 
             var room = context.ChatService.LoadPersonalRoom(user.username);
@@ -50,7 +53,7 @@ namespace PilotRocketChatGateway.Controllers
             count = int.Parse(GetParam(nameof(count)));
             latest = GetParam(nameof(latest));
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);

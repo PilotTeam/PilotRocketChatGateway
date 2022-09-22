@@ -27,14 +27,16 @@ namespace PilotRocketChatGateway.WebSockets
         private readonly AuthSettings _authSettings;
         private readonly IContextService _contextService;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
+        private readonly IAuthHelper _authHelper;
 
-        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory)
+        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
         {
             _logger = logger;
             _webSocket = webSocket;
             _authSettings = authSettings;
             _contextService = contextService;
             _webSocketSessionFactory = webSocketSessionFactory;
+            _authHelper = authHelper;
         }
 
         public IWebSocketSession Session { get; private set; }
@@ -123,7 +125,7 @@ namespace PilotRocketChatGateway.WebSockets
                 return;
 
             var context = RegisterService(request.@params[0].resume);
-            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, _webSocket);
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, _authHelper, _webSocket);
             var result = new
             {
                 request.id,

@@ -32,10 +32,10 @@ namespace PilotRocketChatGateway.WebSockets
         private readonly WebSocket _webSocket;
         private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
 
-        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, WebSocket webSocket)
+        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IAuthHelper authHelper, WebSocket webSocket)
         {
             var authToken = request.@params[0].resume;
-            if (ValidateCurrentToken(authToken, authSettings) == false)
+            if (authHelper.ValidateToken(authToken, authSettings) == false)
                 throw new UnauthorizedAccessException();
 
             _sessionId = request.id;
@@ -166,20 +166,6 @@ namespace PilotRocketChatGateway.WebSockets
                 }
             };
             await _webSocket.SendResultAsync(result);
-        }
-
-        private bool ValidateCurrentToken(string token, AuthSettings authSettings)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                tokenHandler.ValidateToken(token, AuthUtils.GetTokenValidationParameters(authSettings), out SecurityToken validatedToken);
-            }
-            catch
-            {
-                return false;
-            }
-            return true;
         }
         public void Dispose()
         {

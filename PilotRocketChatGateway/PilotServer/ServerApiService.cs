@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.PilotServer
         INPerson GetPerson(string login);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
+        DObject GetObject(Guid id);
         DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
@@ -96,6 +97,11 @@ namespace PilotRocketChatGateway.PilotServer
         public List<DChatMember> GetChatMembers(Guid chatId)
         {
             return _messagesApi.GetChatMembers(chatId, DateTime.MinValue);
+        }
+
+        public DObject GetObject(Guid id)
+        {
+            return _serverApi.GetObjects(new Guid[] { id }).First();
         }
     }
 }

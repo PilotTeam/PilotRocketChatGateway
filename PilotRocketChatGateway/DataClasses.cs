@@ -198,10 +198,29 @@ namespace PilotRocketChatGateway
         [JsonProperty("ts")]
         public object creationDate { get; init; }
         public User u { get; init; }
+        public IList<Attachment> attachments { get; init; }
     }
+    public record Attachment
+    {
+        public string title { get; init; }
+        public string title_link { get; init; }
+        public Dimension image_dimensions { get; init; }
+        public string image_preview { get; init; }
+        public string image_type { get; init; }
+        public long image_size { get; init; }
+        public string image_url { get; init; }
+        public string type { get; init; }
+    }
+
+    public record Dimension
+    {
+        public int width { get; init; }
+        public int height { get; init; }
+    }
+
     #endregion rooms
     #region directory
-    public record DirectoryRequest
+        public record DirectoryRequest
     {
         public string type { get; init; }
         public string workspace { get; init; }
