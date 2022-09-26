@@ -19,7 +19,8 @@ namespace PilotRocketChatGateway.UserContext
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
-        IFileInfo LoadAttachment(Guid objId);
+        IFileInfo LoadFileInfo(Guid objId);
+        (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
     }
     public class ChatService : IChatService
     {
@@ -155,7 +156,7 @@ namespace PilotRocketChatGateway.UserContext
          //   var attachId = GetMsgAttachmentId()
             return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(id).Chat, Guid.Empty);
         }
-        public IFileInfo LoadAttachment(Guid objId)
+        public IFileInfo LoadFileInfo(Guid objId)
         {
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
             var fileLoader = _context.RemoteService.FileLoader;
@@ -164,26 +165,67 @@ namespace PilotRocketChatGateway.UserContext
             return fileLoader.Download(file);
         }
 
-        private IList<Attachment> LoadAttachments(Guid objId)
+        public (IList<FileAttachment>, int) LoadFiles(string roomId, int offset)
+        {
+            var id = GetRoomId(roomId);
+            var chat = _context.RemoteService.ServerApi.GetChat(id);
+            var attachs = GetAttachmentsIds(chat.Relations).Skip(offset);
+            var user = GetUser(_context.RemoteService.ServerApi.CurrentPerson);
+            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).ToList(), attachs.Count());
+        }
+        public IList<Attachment> LoadAttachments(Guid objId)
+        {
+            var attach = LoadAttachment(objId);
+            return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
+        }
+
+        private Attachment LoadAttachment(Guid objId)
         {
             if (objId == Guid.Empty)
                 return null;
 
-            var attach = LoadAttachment(objId);
+            var attach = LoadFileInfo(objId);
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
             var image = System.Drawing.Image.FromStream(attach.Stream);
-            return new List<Attachment>()
+
+            return new Attachment()
             {
-                new Attachment()
+                title = attach.File.Name,
+                title_link = downloadUrl,
+                image_dimensions = new Dimension { width = image.Width, height = image.Height },
+                image_type = attach.FileType,
+                image_size = attach.File.Size,
+                image_url = downloadUrl,
+                type = "file",
+            };
+        }
+        private FileAttachment LoadFileAttachment(Guid objId, string roomId)
+        {
+            if (objId == Guid.Empty)
+                return null;
+
+            var attach = LoadFileInfo(objId);
+            var creator = LoadUser(attach.File.CreatorId);
+            var image = System.Drawing.Image.FromStream(attach.Stream);
+            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
+
+            return new FileAttachment
+            {
+                name = attach.File.Name,
+                type = attach.FileType,
+                id = attach.File.Id.ToString(),
+                size = attach.File.Size,
+                roomId = roomId,
+                userId = creator.id,
+                identify = new FileIdentity
                 {
-                    title = attach.File.Name,
-                    title_link = downloadUrl,
-                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                    image_type = attach.FileType,
-                    image_size = attach.File.Size,
-                    image_url = downloadUrl,
-                    type = "file"
-                }
+                    format = attach.Format,
+                    size = new Dimension { width = image.Width, height = image.Height },
+                },
+                url = downloadUrl,
+                typeGroup = "image",
+                user = creator,
+                uploadedAt = ConvertToJSDate(attach.File.Created)
             };
         }
         private void SendChatsMemberMessageToServer(Guid roomId, string username)

@@ -12,6 +12,7 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INFile File { get; }
         string FileType { get; }
+        string Format { get; }
 
         MemoryStream Stream { get; }
     }
@@ -20,6 +21,7 @@ namespace PilotRocketChatGateway.PilotServer
     class FileInfo : IFileInfo
     {
         private MemoryStream _stream;
+        private string _format;
         private INFile _file;
         private string _fileType;
 
@@ -28,12 +30,16 @@ namespace PilotRocketChatGateway.PilotServer
             _file = file;
             _stream = stream;
             _fileType = GetFileType(file.Name);
+            _format = GetFileType(file.Name);
+            _format = GetFileFormat(file.Name);
         }
 
         public INFile File => _file;
         public string FileType => _fileType;
 
         public MemoryStream Stream => _stream;
+        public string Format => _format;
+
         private string GetFileType(string filename)
         {
             var fileExtension = Path.GetExtension(filename).ToLower();
@@ -45,6 +51,43 @@ namespace PilotRocketChatGateway.PilotServer
                     return "image/png";
                 case ".bmp":
                     return "image/bmp";
+                case ".gif":
+                case ".3gp":
+                case ".asf":
+                case ".avi":
+                case ".f4v":
+                case ".flv":
+                case ".m2ts":
+                case ".m4v":
+                case ".mkv":
+                case ".mov":
+                case ".mp4":
+                case ".mpeg":
+                case ".mpg":
+                case ".mts":
+                case ".mxf":
+                case ".ogv":
+                case ".ts":
+                case ".vob":
+                case ".webm":
+                case ".wmv":
+                case ".wav":
+                    return string.Empty;
+                default:
+                    return string.Empty;
+            }
+        }
+        private string GetFileFormat(string filename)
+        {
+            var fileExtension = Path.GetExtension(filename).ToLower();
+            switch (fileExtension)
+            {
+                case ".jpg":
+                    return "jpeg";
+                case ".png":
+                    return "png";
+                case ".bmp":
+                    return "bmp";
                 case ".gif":
                 case ".3gp":
                 case ".asf":

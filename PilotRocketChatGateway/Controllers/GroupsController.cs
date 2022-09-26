@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
 {
@@ -52,6 +53,27 @@ namespace PilotRocketChatGateway.Controllers
             var created = context.ChatService.CreateChat(group.name, group.members, ChatKind.Group);
             var result = new { group = created, success = true };
             return JsonConvert.SerializeObject(result);
+        }
+
+        [Authorize]
+        [HttpGet("api/v1/groups.files")]
+        public string Files()
+        {
+            string roomId;
+            int offset;
+
+            roomId = GetParam(nameof(roomId));
+            offset = int.Parse(GetParam(nameof(offset)));
+
+
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var (files, total) = context.ChatService.LoadFiles(roomId, offset);
+            var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
+            return JsonConvert.SerializeObject(result);
+        }
+        private string GetParam(string query)
+        {
+            return HttpUtility.ParseQueryString(HttpContext.Request.QueryString.ToString()).Get(query) ?? string.Empty;
         }
     }
 }
