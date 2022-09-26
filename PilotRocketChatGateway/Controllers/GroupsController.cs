@@ -53,15 +53,5 @@ namespace PilotRocketChatGateway.Controllers
             var result = new { group = created, success = true };
             return JsonConvert.SerializeObject(result);
         }
-
-        [Authorize]
-        [HttpGet("api/v1/groups.files")]
-        public string Files(string roomId)
-        {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var files = context.ChatService.LoadAttachments(roomId);
-            var result = new { files = files, success = true };
-            return JsonConvert.SerializeObject(result);
-        }
     }
 }
