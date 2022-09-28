@@ -59,6 +59,24 @@ namespace PilotRocketChatGateway.Controllers
             return JsonConvert.SerializeObject(result);
         }
 
+
+        [Authorize]
+        [HttpGet("api/v1/im.files")]
+        public string Files()
+        {
+            string roomId;
+            int offset;
+
+            roomId = GetParam(nameof(roomId));
+            offset = int.Parse(GetParam(nameof(offset)));
+
+
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var (files, total) = context.ChatService.LoadFiles(roomId, offset);
+            var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
+            return JsonConvert.SerializeObject(result);
+        }
+   
         private string GetParam(string query)
         {
             return HttpUtility.ParseQueryString(HttpContext.Request.QueryString.ToString()).Get(query) ?? string.Empty;
