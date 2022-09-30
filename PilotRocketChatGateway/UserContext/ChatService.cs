@@ -186,18 +186,20 @@ namespace PilotRocketChatGateway.UserContext
 
             var attach = LoadFileInfo(objId);
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-            var image = System.Drawing.Image.FromStream(attach.Stream);
-
-            return new Attachment()
+            using (var ms = new MemoryStream(attach.Data))
             {
-                title = attach.File.Name,
-                title_link = downloadUrl,
-                image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                image_type = attach.FileType,
-                image_size = attach.File.Size,
-                image_url = downloadUrl,
-                type = "file",
-            };
+                var image = System.Drawing.Image.FromStream(ms);
+                return new Attachment()
+                {
+                    title = attach.File.Name,
+                    title_link = downloadUrl,
+                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
+                    image_type = attach.FileType,
+                    image_size = attach.File.Size,
+                    image_url = downloadUrl,
+                    type = "file",
+                };
+            }
         }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)
         {
@@ -206,27 +208,30 @@ namespace PilotRocketChatGateway.UserContext
 
             var attach = LoadFileInfo(objId);
             var creator = LoadUser(attach.File.CreatorId);
-            var image = System.Drawing.Image.FromStream(attach.Stream);
-            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-
-            return new FileAttachment
+            using (var ms = new MemoryStream(attach.Data))
             {
-                name = attach.File.Name,
-                type = attach.FileType,
-                id = attach.File.Id.ToString(),
-                size = attach.File.Size,
-                roomId = roomId,
-                userId = creator.id,
-                identify = new FileIdentity
+                var image = System.Drawing.Image.FromStream(ms);
+                var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
+
+                return new FileAttachment
                 {
-                    format = attach.Format,
-                    size = new Dimension { width = image.Width, height = image.Height },
-                },
-                url = downloadUrl,
-                typeGroup = "image",
-                user = creator,
-                uploadedAt = ConvertToJSDate(attach.File.Created)
-            };
+                    name = attach.File.Name,
+                    type = attach.FileType,
+                    id = attach.File.Id.ToString(),
+                    size = attach.File.Size,
+                    roomId = roomId,
+                    userId = creator.id,
+                    identify = new FileIdentity
+                    {
+                        format = attach.Format,
+                        size = new Dimension { width = image.Width, height = image.Height },
+                    },
+                    url = downloadUrl,
+                    typeGroup = "image",
+                    user = creator,
+                    uploadedAt = ConvertToJSDate(attach.File.Created)
+                };
+            }
         }
         private void SendChatsMemberMessageToServer(Guid roomId, string username)
         {

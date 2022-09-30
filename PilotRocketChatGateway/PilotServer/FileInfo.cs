@@ -14,21 +14,21 @@ namespace PilotRocketChatGateway.PilotServer
         string FileType { get; }
         string Format { get; }
 
-        MemoryStream Stream { get; }
+        byte[] Data { get; }
     }
 
 
     class FileInfo : IFileInfo
     {
-        private MemoryStream _stream;
+        private byte[] _data;
         private string _format;
         private INFile _file;
         private string _fileType;
 
-        public FileInfo(MemoryStream stream, INFile file)
+        public FileInfo(byte[] data, INFile file)
         {
             _file = file;
-            _stream = stream;
+            _data = data;
             _fileType = GetFileType(file.Name);
             _format = GetFileType(file.Name);
             _format = GetFileFormat(file.Name);
@@ -37,7 +37,7 @@ namespace PilotRocketChatGateway.PilotServer
         public INFile File => _file;
         public string FileType => _fileType;
 
-        public MemoryStream Stream => _stream;
+        public byte[] Data => _data;
         public string Format => _format;
 
         private string GetFileType(string filename)

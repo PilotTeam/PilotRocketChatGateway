@@ -24,22 +24,19 @@ namespace PilotRocketChatGateway.PilotServer
 
         public IFileInfo Download(INFile inFile)
         {
-            return DownloadFileBase(inFile);
-        }
-
-        private IFileInfo DownloadFileBase(INFile inFile)
-        {
-            var stream = new MemoryStream();
-            var filePos = _fileArchiveApi.GetFilePosition(inFile.Id);
-            long fileSize = inFile.Size;
-            while (fileSize > 0)
-            {
-                int chunkSize = fileSize > CHUNK_SIZE ? CHUNK_SIZE : (int)fileSize;
-                var data = _fileArchiveApi.GetFileChunk(inFile.Id, filePos + inFile.Size - fileSize, chunkSize);
-                stream.Write(data);
-                fileSize -= chunkSize;
+            using (var stream = new MemoryStream())
+            { 
+                var filePos = _fileArchiveApi.GetFilePosition(inFile.Id);
+                long fileSize = inFile.Size;
+                while (fileSize > 0)
+                {
+                    int chunkSize = fileSize > CHUNK_SIZE ? CHUNK_SIZE : (int)fileSize;
+                    var data = _fileArchiveApi.GetFileChunk(inFile.Id, filePos + inFile.Size - fileSize, chunkSize);
+                    stream.Write(data);
+                    fileSize -= chunkSize;
+                }
+                return new FileInfo(stream.ToArray(), inFile);
             }
-            return new FileInfo(stream, inFile);
         }
     }
 }

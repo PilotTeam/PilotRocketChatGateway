@@ -33,7 +33,7 @@ namespace PilotRocketChatGateway.Controllers
 
             var context = _contextService.GetContext(_authHelper.GetTokenActor(rc_token));
             var attach = context.ChatService.LoadFileInfo(objId);
-            return File(attach.Stream.ToArray(), attach.FileType);
+            return File(attach.Data, attach.FileType);
         }
 
         private string GetParam(string query)

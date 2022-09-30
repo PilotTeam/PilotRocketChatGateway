@@ -47,7 +47,11 @@ var app = builder.Build();
 
 
 app.UseRouting();
-
+app.Use((context, next) =>
+{
+    context.Request.EnableBuffering();
+    return next();
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseWebSockets();
