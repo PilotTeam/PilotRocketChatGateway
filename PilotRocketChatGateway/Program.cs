@@ -45,10 +45,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .WriteTo.Console()
-    .WriteTo.File("Logs/gateway.log", LogEventLevel.Debug)
+    .ReadFrom.Configuration(configuration)
     .CreateLogger();
 
 builder.Logging.ClearProviders();
