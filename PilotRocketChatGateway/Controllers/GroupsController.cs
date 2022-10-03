@@ -28,7 +28,6 @@ namespace PilotRocketChatGateway.Controllers
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.LoadMessages(roomId, count, string.Empty);
-
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
         }
