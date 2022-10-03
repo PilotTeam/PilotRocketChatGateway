@@ -24,11 +24,18 @@ namespace PilotRocketChatGateway.Controllers
 
         [Authorize]
         [HttpGet("api/v1/groups.history")]
-        public string History(string roomId, int count)
+        public string History()
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var msgs = context.ChatService.LoadMessages(roomId, count, string.Empty);
+            string roomId;
+            int count;
+            string latest;
 
+            roomId = GetParam(nameof(roomId));
+            count = int.Parse(GetParam(nameof(count)));
+            latest = GetParam(nameof(latest));
+
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var msgs = context.ChatService.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
         }
