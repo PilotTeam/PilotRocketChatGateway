@@ -5,7 +5,9 @@ using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.WebSockets;
+using Serilog;
 using System.Text;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 var authHelper = new AuthHelper();
@@ -42,6 +44,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         }
     };
 });
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/gateway.log", LogEventLevel.Debug)
+    .CreateLogger();
+
+builder.Logging.ClearProviders();
+builder.Services.AddLogging(loggingBuilder =>
+    loggingBuilder.AddSerilog(dispose: true));
 
 var app = builder.Build();
 

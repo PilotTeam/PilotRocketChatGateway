@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet]
         public Info Get()
         {
+            throw new Exception("Error");
             return new Info { success = true, version = SERVER_VERSION };
         }
     }
