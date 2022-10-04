@@ -7,14 +7,16 @@ namespace PilotRocketChatGateway.PilotServer
     public interface IRemoteService : IService
     {
         IServerApiService ServerApi { get; }
+        IFileLoader FileLoader { get; }
         bool IsActive { get; }
     }
     public class RemoteService : IRemoteService, IConnectionLostListener
     {
         private HttpPilotClient _client;
         private ServerApiService _serverApi;
+        private IFileLoader _fileLoader;
 
-        public RemoteService(HttpPilotClient client, IContext context, ILogger logger)
+        public RemoteService(HttpPilotClient client, IContext context, IFileLoader fileLoader, ILogger logger)
         {
             _client = client;
             _client.SetConnectionLostListener(this);
@@ -24,12 +26,15 @@ namespace PilotRocketChatGateway.PilotServer
             var dbInfo = serverApi.OpenDatabase();
 
             _serverApi = new ServerApiService(serverApi, messageApi, dbInfo);
+            _fileLoader = fileLoader;
             IsActive = true;
         }
 
         public bool IsActive { get; private set; }
 
         public IServerApiService ServerApi => _serverApi;
+
+        public IFileLoader FileLoader => _fileLoader;
 
         public void ConnectionLost(Exception ex = null)
         {

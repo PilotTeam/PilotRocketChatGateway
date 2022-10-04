@@ -24,7 +24,7 @@ namespace PilotRocketChatGateway.Authentication
         }
         public DateTime? GetTokenLifetime(int days)
         {
-            return DateTime.UtcNow.AddDays(days); // время жизни токена - 2 дня
+            return DateTime.UtcNow.AddDays(days); // время жизни токена
         }
         public TimeSpan GetClockCrew()
         {

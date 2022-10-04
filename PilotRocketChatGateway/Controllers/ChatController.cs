@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 
@@ -11,17 +12,20 @@ namespace PilotRocketChatGateway.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IContextService _contextService;
-        public ChatController(IContextService contextService)
+        private readonly IAuthHelper _authHelper;
+
+        public ChatController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
+            _authHelper = authHelper;
         }
 
         [Authorize]
         [HttpGet("api/v1/chat.syncMessages")]
         public string SyncMessages(string roomId, string lastUpdate) //TODO to use lastUpdate
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msgs = context.ChatService.LoadUnreadMessages(Guid.Parse(roomId));
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var msgs = context.ChatService.LoadUnreadMessages(roomId);
             var res = new MessagesUpdated()
             {
                 updated = msgs,
@@ -36,8 +40,8 @@ namespace PilotRocketChatGateway.Controllers
         public string SendMessage(object request)
         {
             var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            var msg = context.ChatService.SendMessageToServer(MessageType.TextMessage, Guid.Parse(message.roomId), message.msg);
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var msg = context.ChatService.SendTextMessageToServer(message.roomId, message.msg);
             var result = new MessageRequest()
             {
                 message = msg,

@@ -9,21 +9,40 @@ using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
 {
-
     [ApiController]
-    public class GroupsController : ControllerBase
+    public class ImController : ControllerBase
     {
-        private readonly IContextService _contextService;
-        private readonly IAuthHelper _authHelper;
+        private IContextService _contextService;
+        private IAuthHelper _authHelper;
 
-        public GroupsController(IContextService contextService, IAuthHelper authHelper)
+        public ImController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
             _authHelper = authHelper;
         }
 
         [Authorize]
-        [HttpGet("api/v1/groups.history")]
+        [HttpPost("api/v1/im.create")]
+        public string Create(object request)
+        {
+            var user = JsonConvert.DeserializeObject<User>(request.ToString());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+
+
+            var room = context.ChatService.LoadPersonalRoom(user.username);
+            if (room != null)
+            {
+                var result = new { room = room, success = true };
+                return JsonConvert.SerializeObject(result);
+            }
+
+            room = context.ChatService.CreateChat(string.Empty, new List<string>() { user.username }, ChatKind.Personal);
+            var result1 = new { room = room, success = true };
+            return JsonConvert.SerializeObject(result1);
+        }
+
+        [Authorize]
+        [HttpGet("api/v1/im.history")]
         public string History()
         {
             string roomId;
@@ -40,30 +59,9 @@ namespace PilotRocketChatGateway.Controllers
             return JsonConvert.SerializeObject(result);
         }
 
-        [Authorize]
-        [HttpGet("api/v1/groups.members")]
-        public string Members(string roomId)
-        {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var users = context.ChatService.LoadMembers(roomId);
-            var result = new { success = true, members = users };
-            return JsonConvert.SerializeObject(result);
-        }
 
         [Authorize]
-        [HttpPost("api/v1/groups.create")]
-        public string Create(object request)
-        {
-            var group = JsonConvert.DeserializeObject<GroupRequest>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-
-            var created = context.ChatService.CreateChat(group.name, group.members, ChatKind.Group);
-            var result = new { group = created, success = true };
-            return JsonConvert.SerializeObject(result);
-        }
-
-        [Authorize]
-        [HttpGet("api/v1/groups.files")]
+        [HttpGet("api/v1/im.files")]
         public string Files()
         {
             string roomId;
@@ -78,6 +76,7 @@ namespace PilotRocketChatGateway.Controllers
             var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
             return JsonConvert.SerializeObject(result);
         }
+   
         private string GetParam(string query)
         {
             return HttpUtility.ParseQueryString(HttpContext.Request.QueryString.ToString()).Get(query) ?? string.Empty;

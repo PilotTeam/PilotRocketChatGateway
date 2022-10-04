@@ -7,10 +7,14 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
+        INPerson GetPerson(string login);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
+        DObject GetObject(Guid id);
+        DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
-        List<DMessage> GetMessages(Guid chatId, int count);
+        List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
+        List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
@@ -45,9 +49,14 @@ namespace PilotRocketChatGateway.PilotServer
             return _messagesApi.GetChat(id);
         }
 
+        public DChatInfo GetPersonalChat(int personId)
+        {
+            return _messagesApi.GetPersonalChat(personId);
+        }
+
         public List<DChatInfo> GetChats()
         {
-            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue);
+            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue).ToList();
         }
 
         public DDatabaseInfo GetDatabaseInfo()
@@ -55,9 +64,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _dbInfo;
         }
 
-        public List<DMessage> GetMessages(Guid chatId, int count)
+        public List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count)
         {
-            return _messagesApi.GetMessages(chatId, DateTime.MinValue, DateTime.MaxValue, count).Item1;
+            return _messagesApi.GetMessages(chatId, DateTime.MinValue, dateTo, count).Item1;
         }
 
         public IReadOnlyDictionary<int, INPerson> GetPeople()
@@ -67,7 +76,12 @@ namespace PilotRocketChatGateway.PilotServer
 
         public INPerson GetPerson(int id)
         {
-            return _people[id];
+            _people.TryGetValue(id, out var person);
+            return person;
+        }
+        public INPerson GetPerson(string login)
+        {
+            return _people.Values.First(x => x.Login == login);
         }
 
         public void SendMessage(DMessage message)
@@ -78,6 +92,16 @@ namespace PilotRocketChatGateway.PilotServer
         private void LoadPeople()
         {
             _people = _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
+        }
+
+        public List<DChatMember> GetChatMembers(Guid chatId)
+        {
+            return _messagesApi.GetChatMembers(chatId, DateTime.MinValue);
+        }
+
+        public DObject GetObject(Guid id)
+        {
+            return _serverApi.GetObjects(new Guid[] { id }).First();
         }
     }
 }

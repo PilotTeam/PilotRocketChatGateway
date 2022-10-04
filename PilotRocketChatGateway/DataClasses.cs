@@ -20,7 +20,7 @@ namespace PilotRocketChatGateway
     {
         [JsonProperty("$date")]
         public long date { get; init; }
-}
+    }
 
     #region settings
     public record OauthSettings : HttpResult
@@ -57,6 +57,27 @@ namespace PilotRocketChatGateway
         public bool invalidValue { get; init; }
         public string[] modules { get; init; }
     }
+
+    public record Permissions : HttpResult
+    {
+        public IList<Permission> update { get; init; }
+        public IList<Permission> remove { get; init; }
+    }
+    public record Permission
+    {
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        [JsonProperty("_updatedAt")]
+        public object updatedAt { get; init; }
+        public string group { get; init; }
+        public string groupPermissionId { get; init; }
+        public string level { get; init; }
+        public string[] roles { get; init; }
+        public string section { get; init; }
+        public string sectionPermissionId { get; init; }
+        public string settingId { get; init; }
+        public int sorter { get; init; }
+    }
     #endregion settings
     #region websocket
     public class User
@@ -65,6 +86,8 @@ namespace PilotRocketChatGateway
         public string id;
         public string name;
         public string username;
+        public string status;
+        public string[] roles;
     }
     #endregion websocket
     #region login
@@ -118,6 +141,12 @@ namespace PilotRocketChatGateway
         [JsonProperty("rid")]
         public string roomId { get; init; }
     }
+
+    public record GroupRequest
+    {
+        public string name { get; init; }
+        public string[] members { get; init; }
+    }
     public record Subscription
     {
         [JsonProperty("_updatedAt")]
@@ -131,6 +160,8 @@ namespace PilotRocketChatGateway
         public int unread { get; init; }
         public bool alert { get; init; }
         public string name { get; init; }
+        [JsonProperty("fname")]
+        public string displayName { get; init; }
         public bool open { get; init; }
         [JsonProperty("t")]
         public string channelType { get; init; }
@@ -147,6 +178,7 @@ namespace PilotRocketChatGateway
         public Message lastMessage { get; init; }
         [JsonProperty("ts")]
         public object creationDate { get; init; }
+        public string[] usernames { get; init; }
     }
 
     public record Messages : HttpResult
@@ -166,7 +198,58 @@ namespace PilotRocketChatGateway
         [JsonProperty("ts")]
         public object creationDate { get; init; }
         public User u { get; init; }
+        public IList<Attachment> attachments { get; init; }
     }
-    #endregion rooms
+    public record Attachment
+    {
+        public string title { get; init; }
+        public string title_link { get; init; }
+        public Dimension image_dimensions { get; init; }
+        public string image_preview { get; init; }
+        public string image_type { get; init; }
+        public long image_size { get; init; }
+        public string image_url { get; init; }
+        public string type { get; init; }
+    }
+    public record FileAttachment
+    {
+        [JsonProperty("_id")]
+        public string id { get; init; }
+        public string name { get; init; }
+        public string type { get; init; }
+        public long size { get; init; }
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+        public string userId { get; init; }
+        public FileIdentity identify { get; init; }
+        public string uploadedAt { get; init; }
+        public string url { get; init; }
+        public string _updatedAt { get; init; }
+        public string typeGroup { get; init; }
+        public User user { get; init; }
+    }
 
+    public record FileIdentity
+    {
+        public string format { get; init; }
+        public Dimension size { get; init; }
+    }
+
+    public record Dimension
+    {
+        public int width { get; init; }
+        public int height { get; init; }
+    }
+
+    #endregion rooms
+    #region directory
+        public record DirectoryRequest
+    {
+        public string type { get; init; }
+        public string workspace { get; init; }
+        public int count { get; init; }
+        public int offset { get; init; }
+        public string sort { get; init; }
+    }
+    #endregion
 }

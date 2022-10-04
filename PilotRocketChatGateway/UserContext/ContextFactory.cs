@@ -12,8 +12,9 @@ namespace PilotRocketChatGateway.UserContext
     {
         public IContext CreateContext(HttpPilotClient client, ILogger logger)
         {
+            var fileLoader = new FileLoader(client.GetFileArchiveApi());
             var context = new Context();
-            var remoteSerive = new RemoteService(client, context, logger);
+            var remoteSerive = new RemoteService(client, context, fileLoader, logger);
             var chatService = new ChatService(context);
 
             context.SetService(remoteSerive);

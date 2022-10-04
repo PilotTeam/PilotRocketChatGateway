@@ -6,13 +6,13 @@ namespace PilotRocketChatGateway.WebSockets
 {
     public interface IWebSocketSessionFactory
     {
-        IWebSocketSession CreateWebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, WebSocket webSocket);
+        IWebSocketSession CreateWebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IAuthHelper authHelper, WebSocket webSocket);
     }
     public class WebSocketSessionFactory : IWebSocketSessionFactory
     {
-        public IWebSocketSession CreateWebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, WebSocket webSocket)
+        public IWebSocketSession CreateWebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IAuthHelper authHelper, WebSocket webSocket)
         {
-           return new WebSocketSession(request, authSettings, chatService, webSocket);
+           return new WebSocketSession(request, authSettings, chatService, authHelper, webSocket);
         }
     }
 }

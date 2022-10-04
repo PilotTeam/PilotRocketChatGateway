@@ -8,25 +8,24 @@ using PilotRocketChatGateway.UserContext;
 namespace PilotRocketChatGateway.Controllers
 {
     [ApiController]
-    public class RoomsController : ControllerBase
+    public class UndefinedController : ControllerBase
     {
         private IContextService _contextService;
         private IAuthHelper _authHelper;
 
-        public RoomsController(IContextService contextService, IAuthHelper authHelper)
+        public UndefinedController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
             _authHelper = authHelper;
         }
 
         [Authorize]
-        [HttpGet("api/v1/rooms.get")]
-        public string Get()
+        [HttpGet("api/v1/undefined.members")]
+        public string Members(string roomId)
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var rooms = context.ChatService.LoadRooms();
-
-            var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
+            var users = context.ChatService.LoadMembers(roomId);
+            var result = new { success = true, members = users };
             return JsonConvert.SerializeObject(result);
         }
     }

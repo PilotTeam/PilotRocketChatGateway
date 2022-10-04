@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 
@@ -11,17 +12,19 @@ namespace PilotRocketChatGateway.Controllers
     public class SubscriptionsController : ControllerBase
     {
         private IContextService _contextService;
+        private IAuthHelper _authHelper;
 
-        public SubscriptionsController(IContextService contextService)
+        public SubscriptionsController(IContextService contextService, IAuthHelper authHelper)
         {
             _contextService = contextService;
+            _authHelper = authHelper;
         }
 
         [Authorize]
         [HttpGet("api/v1/subscriptions.get")]
         public string Get()
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var subs = context.ChatService.LoadRoomsSubscriptions();
 
             var result = new Subscriptions() { success = true, update = subs, remove = new List<Subscription>() };
@@ -33,8 +36,9 @@ namespace PilotRocketChatGateway.Controllers
         public string Read(object request)
         {
             var room = JsonConvert.DeserializeObject<RoomRequest>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor());
-            context.ChatService.SendMessageToServer(MessageType.MessageRead, Guid.Parse(room.roomId), string.Empty);
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            context.ChatService.SendReadAllMessageToServer(room.roomId);
+
             var result = new HttpResult()
             {
                 success = true
