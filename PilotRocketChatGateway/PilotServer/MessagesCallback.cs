@@ -20,6 +20,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyMessageCreated(NotifiableDMessage message)
         {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. CreatorId: {message.Message.CreatorId} ChatId: {message.Message.ChatId} MessageType: {message.Message.Type}");
             try
             {
                 _context.WebSocketsSession.SendMessageToClientAsync(message.Message);
