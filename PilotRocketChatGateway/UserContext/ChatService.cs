@@ -1,5 +1,6 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -16,6 +17,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
         Message SendTextMessageToServer(string roomId, string text);
+        void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
@@ -93,7 +95,6 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
         }
-
         public IList<User> LoadMembers(string roomId)
         {
             var id = GetRoomId(roomId);
@@ -124,7 +125,7 @@ namespace PilotRocketChatGateway.UserContext
             foreach (var member in members)
                 SendChatsMemberMessageToServer(chat.Id, member);
 
-            NotifyMessageCreated(msg);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(msg, NotifyClientKind.Chat);
             return ConvertToRoom(chat, new List<DChatRelation>(), msg);
         }
         public void SendReadAllMessageToServer(string roomId)
@@ -150,12 +151,19 @@ namespace PilotRocketChatGateway.UserContext
         {
             var id = GetRoomId(roomId);
             var dMessage = CreateMessage(id, MessageType.TextMessage);
-            SetMessageData(dMessage, text);
-            _context.RemoteService.ServerApi.SendMessage(dMessage);
-            NotifyMessageCreated(dMessage);
-         //   var attachId = GetMsgAttachmentId()
-            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(id).Chat, Guid.Empty);
+            return SendMessageToServer(dMessage, text, Guid.Empty, NotifyClientKind.Chat);
         }
+
+        public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
+        {
+            var objId = _context.RemoteService.ServerApi.CreateAttachmentObject(fileName, data);
+            var id = GetRoomId(roomId);
+            var dMessage = CreateMessage(id, MessageType.TextMessage);
+            var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
+
+            SendMessageToServer(dMessage, msgData, objId, NotifyClientKind.FullChat);
+        }
+
         public IFileInfo LoadFileInfo(Guid objId)
         {
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
@@ -178,7 +186,29 @@ namespace PilotRocketChatGateway.UserContext
             var attach = LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
         }
+        private Message SendMessageToServer<T>(DMessage dMessage, T data, Guid objId, NotifyClientKind notify)
+        {
+            SetMessageData(dMessage, data);
+            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, notify);
 
+            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(dMessage.ChatId).Chat, objId);
+        }
+
+        private DTextMessageData GetAttachmentsMessageData(Guid objId, Guid messageId, string text)
+        {
+            var relation = new DChatRelation
+            {
+                Type = ChatRelationType.Attach,
+                ObjectId = objId,
+                MessageId = messageId,
+                IsDeleted = false
+            };
+
+            var data = new DTextMessageData { Text = text };
+            data.Attachments = new List<DChatRelation>() { relation };
+            return data;
+        }
         private Attachment LoadAttachment(Guid objId)
         {
             if (objId == Guid.Empty)
@@ -346,10 +376,6 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        private void NotifyMessageCreated(DMessage dMessage)
-        {
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage);
-        }
 
         private Subscription ConvertToSubscription(DChatInfo chat)
         {

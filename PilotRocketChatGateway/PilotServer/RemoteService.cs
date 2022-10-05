@@ -25,7 +25,11 @@ namespace PilotRocketChatGateway.PilotServer
             var messageApi = _client.GetMessagesApi(new MessagesCallback(context, logger));
             var dbInfo = serverApi.OpenDatabase();
 
-            _serverApi = new ServerApiService(serverApi, messageApi, dbInfo);
+            var archiveApi = _client.GetFileArchiveApi();
+            var fileUploader = new FileUploader(archiveApi);
+            var attachmentHelper = new AttachmentHelper(serverApi, fileUploader, dbInfo.Person);
+
+            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo);
             _fileLoader = fileLoader;
             IsActive = true;
         }
