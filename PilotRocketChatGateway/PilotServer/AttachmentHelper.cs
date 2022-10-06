@@ -17,13 +17,13 @@ namespace PilotRocketChatGateway.PilotServer
         private const string EXTERNAL_FILE_TYPE_NAME = "externalFile_";
 
         private IServerApi _serverApi;
-        private IFileUploader _fileUploader;
+        private IFileFileManager _fileManager;
         private readonly DPerson _currentPerson;
         
-        public AttachmentHelper(IServerApi serverApi, IFileUploader fileUploader, DPerson currentPerson)
+        public AttachmentHelper(IServerApi serverApi, IFileFileManager fileManager, DPerson currentPerson)
         {
             _serverApi = serverApi;
-            _fileUploader = fileUploader;
+            _fileManager = fileManager;
             _currentPerson = currentPerson;
         }
 
@@ -39,7 +39,7 @@ namespace PilotRocketChatGateway.PilotServer
                 var timestamp = DateTime.Now;
 
                 var info = new DocumentInfo(fileName, () => new MemoryStream(data), timestamp, timestamp, timestamp);
-                _fileUploader.AddFileToChange(info, _currentPerson.Id, change);
+                _fileManager.AddFileToChange(info, _currentPerson.Id, change);
 
                 MakeThumbnail(image, fileName, timestamp, change);
 
@@ -71,7 +71,7 @@ namespace PilotRocketChatGateway.PilotServer
             var thumbnailStream = GetThumbnailStream(image);
             if (thumbnailStream != null)
             {
-                _fileUploader.AddFileToChange(new DocumentInfo($"{fileName}_{Constants.THUMBNAIL_FILE_NAME_POSTFIX}", () => thumbnailStream, timestamp, timestamp, timestamp), _currentPerson.Id, chage);
+                _fileManager.AddFileToChange(new DocumentInfo($"{fileName}_{Constants.THUMBNAIL_FILE_NAME_POSTFIX}", () => thumbnailStream, timestamp, timestamp, timestamp), _currentPerson.Id, chage);
             }
         }
 

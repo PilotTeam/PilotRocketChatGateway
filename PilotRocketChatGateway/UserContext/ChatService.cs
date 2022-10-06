@@ -21,7 +21,6 @@ namespace PilotRocketChatGateway.UserContext
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
-        IFileInfo LoadFileInfo(Guid objId);
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
     }
     public class ChatService : IChatService
@@ -167,7 +166,7 @@ namespace PilotRocketChatGateway.UserContext
         public IFileInfo LoadFileInfo(Guid objId)
         {
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
-            var fileLoader = _context.RemoteService.FileLoader;
+            var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
             var file = obj.ActualFileSnapshot.Files.First();
             return fileLoader.Download(file);

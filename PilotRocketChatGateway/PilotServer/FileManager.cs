@@ -6,19 +6,34 @@ using System.Security.Cryptography;
 
 namespace PilotRocketChatGateway.PilotServer
 {
-    public interface IFileUploader
+    public interface IFileFileManager
     {
+        IFileLoader FileLoader { get; }
         void AddFileToChange(IDocumentInfo document, int creatorId, DChange change);
+        IFileInfo LoadFileInfo(Guid objId);
     }
-    public class FileUploader : IFileUploader
+    public class FileManager : IFileFileManager
     {
         private const long MIN_RESUME_UPLOAD_FILE_SIZE = 50 * 1024 * 1024;
         private static int CHUNK_SIZE = 1024 * 1024; // 1 Mb
 
-        IFileArchiveApi _fileArchiveApi;
-        public FileUploader(IFileArchiveApi fileArchiveApi)
+        private readonly IFileArchiveApi _fileArchiveApi;
+        private readonly IServerApi _serverApi;
+        private readonly IFileLoader _fileLoader;
+
+
+        public FileManager(IFileArchiveApi fileArchiveApi, IServerApi serverApi, IFileLoader fileLoader)
         {
             _fileArchiveApi = fileArchiveApi;
+            _serverApi = serverApi;
+            _fileLoader = fileLoader;
+        }
+        public IFileLoader FileLoader => _fileLoader;
+        public IFileInfo LoadFileInfo(Guid objId)
+        {
+            var obj = _serverApi.GetObjects(new Guid[] { objId }).First();
+            var file = obj.ActualFileSnapshot.Files.First();
+            return _fileLoader.Download(file);
         }
         public void AddFileToChange(IDocumentInfo document, int creatorId, DChange change)
         {
