@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
+using SixLabors.ImageSharp;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -215,20 +216,17 @@ namespace PilotRocketChatGateway.UserContext
 
             var attach = LoadFileInfo(objId);
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-            using (var ms = new MemoryStream(attach.Data))
+            var image = Image.Load(attach.Data);
+            return new Attachment()
             {
-                var image = System.Drawing.Image.FromStream(ms);
-                return new Attachment()
-                {
-                    title = attach.File.Name,
-                    title_link = downloadUrl,
-                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                    image_type = attach.FileType,
-                    image_size = attach.File.Size,
-                    image_url = downloadUrl,
-                    type = "file",
-                };
-            }
+                title = attach.File.Name,
+                title_link = downloadUrl,
+                image_dimensions = new Dimension { width = image.Width, height = image.Height },
+                image_type = attach.FileType,
+                image_size = attach.File.Size,
+                image_url = downloadUrl,
+                type = "file",
+            };
         }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)
         {
@@ -239,7 +237,7 @@ namespace PilotRocketChatGateway.UserContext
             var creator = LoadUser(attach.File.CreatorId);
             using (var ms = new MemoryStream(attach.Data))
             {
-                var image = System.Drawing.Image.FromStream(ms);
+                var image = Image.Load(attach.Data);
                 var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
 
                 return new FileAttachment

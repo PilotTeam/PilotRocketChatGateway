@@ -1,9 +1,8 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.DataModifier;
 using Ascon.Pilot.Server.Api.Contracts;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace PilotRocketChatGateway.PilotServer
 {
@@ -29,22 +28,19 @@ namespace PilotRocketChatGateway.PilotServer
 
         public DChange CreateChangeWithAttachmentObject(string fileName, byte[] data)
         {
-            using (var fileStream = new MemoryStream(data))
-            {
-                var image = Image.FromStream(fileStream);
-                var type = _serverApi.GetMetadata(0).Types.First(x => x.Name == EXTERNAL_FILE_TYPE_NAME);
-                var dObj = CreateAttachmentObject(type, image);
-
-                var change = new DChange { New = dObj };
-                var timestamp = DateTime.Now;
-
-                var info = new DocumentInfo(fileName, () => new MemoryStream(data), timestamp, timestamp, timestamp);
-                _fileManager.AddFileToChange(info, _currentPerson.Id, change);
-
-                MakeThumbnail(image, fileName, timestamp, change);
-
-                return change;
-            }
+            var image = Image.Load(data);
+            var type = _serverApi.GetMetadata(0).Types.First(x => x.Name == EXTERNAL_FILE_TYPE_NAME);
+            var dObj = CreateAttachmentObject(type, image);
+            
+            var change = new DChange { New = dObj };
+            var timestamp = DateTime.Now;
+            
+            var info = new DocumentInfo(fileName, () => new MemoryStream(data), timestamp, timestamp, timestamp);
+            _fileManager.AddFileToChange(info, _currentPerson.Id, change);
+            
+            MakeThumbnail(image, fileName, timestamp, change);
+            
+            return change;
         }
 
         private DObject CreateAttachmentObject(MType type, Image image)
@@ -91,42 +87,18 @@ namespace PilotRocketChatGateway.PilotServer
                 }
 
                 var isLandscape = image.Width > image.Height;
-
-                var resized = ResizeImage(image, (int)(isLandscape ? maxSide : minSide),
-                    (int)(isLandscape ? minSide : maxSide));
+                var width = (int)(isLandscape ? maxSide : minSide);
+                var height = (int)(isLandscape ? minSide : maxSide);
 
                 var stream = new MemoryStream();
-                resized.Save(stream, ImageFormat.Png);
+
+                image.Mutate(x => x.Resize(width, height));
+                image.SaveAsPng(stream);
 
                 return stream;
             }
 
             return null;
-        }
-
-        private static Bitmap ResizeImage(System.Drawing.Image image, int width, int height)
-        {
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height);
-
-            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-
-            return destImage;
         }
     }
 }
