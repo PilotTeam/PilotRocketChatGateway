@@ -215,6 +215,10 @@ namespace PilotRocketChatGateway.UserContext
                 return null;
 
             var attach = LoadFileInfo(objId);
+
+            if (string.IsNullOrEmpty(attach.FileType) || string.IsNullOrEmpty(attach.Format))
+                return null;
+
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
             var image = Image.Load(attach.Data);
             return new Attachment()
@@ -282,6 +286,10 @@ namespace PilotRocketChatGateway.UserContext
         private IList<Message> LoadMessages(Guid roomId, DateTime dateTo, int count)
         {
             var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateTo, count);
+
+            if (msgs == null)
+                return new List<Message>();
+
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             var attachs = GetAttachmentsIds(chat.Relations);
 
