@@ -27,7 +27,6 @@ namespace PilotRocketChatGateway.UserContext
     public class ChatService : IChatService
     {
         private const string DOWNLOAD_URL = "/download";
-        Dictionary<Guid, string> _idMap = new Dictionary<Guid, string>();
         IContext _context;
         public ChatService(IContext context)
         {
@@ -148,12 +147,12 @@ namespace PilotRocketChatGateway.UserContext
             var attachId = GetMsgAttachmentId(chat.Relations, msg.Id);
             return ConvertToMessage(msg, chat.Chat, attachId);
         }
-        public Message SendTextMessageToServer(string roomId, string msgId, string text)
+        public Message SendTextMessageToServer(string roomId, string rcMsgId, string text)
         {
             var id = GetRoomId(roomId);
             var dMessage = CreateMessage(id, MessageType.TextMessage);
-            _idMap[dMessage.Id] = msgId;
-            return SendMessageToServer(dMessage, text, Guid.Empty, NotifyClientKind.Chat);
+            var data = new DTextMessageData { Text = text, ThridPartyInfo = rcMsgId };
+            return SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
         }
 
         public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
@@ -329,7 +328,7 @@ namespace PilotRocketChatGateway.UserContext
             {
                 return new Message()
                 {
-                    id = GetMessageId(msg.Id),
+                    id = GetMessageId(msg),
                     roomId = roomId,
                     updatedAt = ConvertToJSDate(msg.LocalDate),
                     creationDate = ConvertToJSDate(msg.LocalDate),
@@ -340,10 +339,10 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        private string GetMessageId(Guid id)
+        private string GetMessageId(DMessage msg)
         {
-            _idMap.TryGetValue(id, out var rcId);
-            return string.IsNullOrEmpty(rcId) ? id.ToString() : rcId;
+            var msgData = GetMessageData<DTextMessageData>(msg);
+            return string.IsNullOrEmpty(msgData.ThridPartyInfo) ? msg.Id.ToString() : msgData.ThridPartyInfo;
         }
 
         private static string MakeDownloadLink(IList<(string, string)> @params)
@@ -388,7 +387,13 @@ namespace PilotRocketChatGateway.UserContext
                 message.Data = stream.ToArray();
             }
         }
-
+        public static T GetMessageData<T>(DMessage msg)
+        {
+            using (var stream = new MemoryStream(msg.Data))
+            {
+                return ProtoSerializer.Deserialize<T>(stream);
+            }
+        }
 
         private Subscription ConvertToSubscription(DChatInfo chat)
         {
@@ -479,7 +484,6 @@ namespace PilotRocketChatGateway.UserContext
 
         public void Dispose()
         {
-            _idMap.Clear();
         }
     }
 }
