@@ -27,6 +27,7 @@ namespace PilotRocketChatGateway.UserContext
     public class ChatService : IChatService
     {
         private const string DOWNLOAD_URL = "/download";
+        Dictionary<Guid, string> _idMap = new Dictionary<Guid, string>();
         IContext _context;
         public ChatService(IContext context)
         {
@@ -471,6 +472,7 @@ namespace PilotRocketChatGateway.UserContext
 
         public void Dispose()
         {
+            _idMap.Clear();
         }
     }
 }
