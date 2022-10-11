@@ -17,7 +17,7 @@ namespace PilotRocketChatGateway.UserContext
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
-        Message SendTextMessageToServer(string roomId, string text);
+        Message SendTextMessageToServer(string roomId, string msgId, string text);
         void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
@@ -148,10 +148,11 @@ namespace PilotRocketChatGateway.UserContext
             var attachId = GetMsgAttachmentId(chat.Relations, msg.Id);
             return ConvertToMessage(msg, chat.Chat, attachId);
         }
-        public Message SendTextMessageToServer(string roomId, string text)
+        public Message SendTextMessageToServer(string roomId, string msgId, string text)
         {
             var id = GetRoomId(roomId);
             var dMessage = CreateMessage(id, MessageType.TextMessage);
+            _idMap[dMessage.Id] = msgId;
             return SendMessageToServer(dMessage, text, Guid.Empty, NotifyClientKind.Chat);
         }
 
@@ -328,7 +329,7 @@ namespace PilotRocketChatGateway.UserContext
             {
                 return new Message()
                 {
-                    id = msg.Id.ToString(),
+                    id = GetMessageId(msg.Id),
                     roomId = roomId,
                     updatedAt = ConvertToJSDate(msg.LocalDate),
                     creationDate = ConvertToJSDate(msg.LocalDate),
@@ -337,6 +338,12 @@ namespace PilotRocketChatGateway.UserContext
                     attachments = LoadAttachments(objId)
                 };
             }
+        }
+
+        private string GetMessageId(Guid id)
+        {
+            _idMap.TryGetValue(id, out var rcId);
+            return string.IsNullOrEmpty(rcId) ? id.ToString() : rcId;
         }
 
         private static string MakeDownloadLink(IList<(string, string)> @params)
