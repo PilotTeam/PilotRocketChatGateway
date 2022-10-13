@@ -24,7 +24,10 @@ namespace PilotRocketChatGateway.UserContext
             get
             {
                 if (_remoteService.IsActive == false)
+                {
+                    Dispose();
                     throw new UnauthorizedAccessException();
+                }
                 return _remoteService;
             }
         }
@@ -34,7 +37,10 @@ namespace PilotRocketChatGateway.UserContext
             get
             {
                 if (_remoteService.IsActive == false)
+                {
+                    Dispose();
                     throw new UnauthorizedAccessException();
+                }
                 return _chatService;
             }
         }
