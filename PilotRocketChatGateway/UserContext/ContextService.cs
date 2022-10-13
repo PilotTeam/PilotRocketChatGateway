@@ -32,8 +32,8 @@ namespace PilotRocketChatGateway.UserContext
                 if (string.IsNullOrEmpty(credentials.Username))
                     throw new UnauthorizedAccessException("Access denied. The user name or password is incorrect.");
 
-                if (_services.ContainsKey(credentials.Username))
-                    return;
+                if (_services.TryGetValue(credentials.Username, out var old))
+                    old.Dispose();                
 
                 var httpClient = _connectionService.Connect(credentials);
                 var context = _contextFactory.CreateContext(httpClient, _logger);
