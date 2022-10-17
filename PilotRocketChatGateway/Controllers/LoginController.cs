@@ -53,7 +53,7 @@ namespace PilotRocketChatGateway.Controllers
                 var error = MekeLogOutError(e);
                 return JsonConvert.SerializeObject(error);
             }
-            catch (Exception e) //if pilot-server is unavailbel
+            catch (Exception e) //if pilot-server is unavailable
             {
                 var error = MekeLogOutError(e);
                 return JsonConvert.SerializeObject(error);
@@ -62,7 +62,7 @@ namespace PilotRocketChatGateway.Controllers
 
         private Error MekeLogOutError(Exception e)
         {
-            _logger.Log(LogLevel.Information, $"Signed in with token failed");
+            _logger.Log(LogLevel.Information, $"Log in with token failed");
             _logger.LogError(0, e, e.Message);
             var code = 403;
             Response.StatusCode = code;
@@ -72,7 +72,7 @@ namespace PilotRocketChatGateway.Controllers
 
         private Error MekeLoginError(Exception e)
         {
-            _logger.Log(LogLevel.Information, $"Signed in failed");
+            _logger.Log(LogLevel.Information, $"Log in failed");
             _logger.LogError(0, e, e.Message);
             var code = 401;
             Response.StatusCode = code;
@@ -107,7 +107,7 @@ namespace PilotRocketChatGateway.Controllers
             var context = CreateContext(credentials);
             var tokenString = CreateToken(user);
 
-            _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
+            _logger.Log(LogLevel.Information, $"Logged in successfully successfully. Username: {user.user}.");
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, tokenString);
         }
 
