@@ -132,7 +132,7 @@ namespace PilotRocketChatGateway
     {
         public Message message { get; init; }
     }
-    public record MessagesUpdated : HttpResult
+    public record MessagesUpdated 
     {
         public IList<Message> updated { get; init; }
         public IList<Message> deleted { get; init; }
