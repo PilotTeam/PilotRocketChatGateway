@@ -26,10 +26,13 @@ namespace PilotRocketChatGateway.Controllers
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.LoadUnreadMessages(roomId);
-            var res = new MessagesUpdated()
+            var res = new
             {
-                updated = msgs,
-                deleted = new List<Message>(),
+                result = new
+                {
+                    updated = msgs,
+                    deleted = new List<Message>(),
+                },
                 success = true
             };
             return JsonConvert.SerializeObject(res);
@@ -41,7 +44,7 @@ namespace PilotRocketChatGateway.Controllers
         {
             var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var msg = context.ChatService.SendTextMessageToServer(message.roomId, message.msg);
+            var msg = context.ChatService.SendTextMessageToServer(message.roomId, message.id, message.msg);
             var result = new MessageRequest()
             {
                 message = msg,

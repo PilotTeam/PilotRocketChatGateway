@@ -9,7 +9,7 @@ namespace PilotRocketChatGateway
     public record Error
     {
         public string status { get; init; }
-        public string error { get; init; }
+        public int error { get; init; }
         public string message { get; init; }
     }
     public record Info : HttpResult
@@ -103,6 +103,7 @@ namespace PilotRocketChatGateway
     public class HttpLoginResponse
     {
         public string status;
+        public bool success;
         public LoginData data;
 
     }
@@ -131,7 +132,7 @@ namespace PilotRocketChatGateway
     {
         public Message message { get; init; }
     }
-    public record MessagesUpdated : HttpResult
+    public record MessagesUpdated 
     {
         public IList<Message> updated { get; init; }
         public IList<Message> deleted { get; init; }

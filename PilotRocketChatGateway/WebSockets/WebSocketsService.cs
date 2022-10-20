@@ -153,7 +153,15 @@ namespace PilotRocketChatGateway.WebSockets
 
         public async void Dispose()
         {
-            await CloseAsync(WebSocketCloseStatus.NormalClosure);
+            try
+            {
+                await CloseAsync(WebSocketCloseStatus.NormalClosure);
+            }
+            catch(Exception e)
+            {
+                _logger.Log(LogLevel.Information, "Failed to close websocket");
+                _logger.LogError(0, e, e.Message);
+            }
             Session?.Dispose();
             _webSocket.Dispose();
         }

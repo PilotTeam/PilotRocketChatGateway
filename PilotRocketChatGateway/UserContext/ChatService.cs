@@ -1,5 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.WebSockets;
+using SixLabors.ImageSharp;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -15,11 +17,11 @@ namespace PilotRocketChatGateway.UserContext
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
-        Message SendTextMessageToServer(string roomId, string text);
+        Message SendTextMessageToServer(string roomId, string msgId, string text);
+        void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
         Message ConvertToMessage(DMessage msg);
-        IFileInfo LoadFileInfo(Guid objId);
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
     }
     public class ChatService : IChatService
@@ -93,7 +95,6 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
         }
-
         public IList<User> LoadMembers(string roomId)
         {
             var id = GetRoomId(roomId);
@@ -124,7 +125,7 @@ namespace PilotRocketChatGateway.UserContext
             foreach (var member in members)
                 SendChatsMemberMessageToServer(chat.Id, member);
 
-            NotifyMessageCreated(msg);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(msg, NotifyClientKind.Chat);
             return ConvertToRoom(chat, new List<DChatRelation>(), msg);
         }
         public void SendReadAllMessageToServer(string roomId)
@@ -146,20 +147,28 @@ namespace PilotRocketChatGateway.UserContext
             var attachId = GetMsgAttachmentId(chat.Relations, msg.Id);
             return ConvertToMessage(msg, chat.Chat, attachId);
         }
-        public Message SendTextMessageToServer(string roomId, string text)
+        public Message SendTextMessageToServer(string roomId, string rcMsgId, string text)
         {
             var id = GetRoomId(roomId);
             var dMessage = CreateMessage(id, MessageType.TextMessage);
-            SetMessageData(dMessage, text);
-            _context.RemoteService.ServerApi.SendMessage(dMessage);
-            NotifyMessageCreated(dMessage);
-         //   var attachId = GetMsgAttachmentId()
-            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(id).Chat, Guid.Empty);
+            var data = new DTextMessageData { Text = text, ThridPartyInfo = rcMsgId };
+            return SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
         }
+
+        public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
+        {
+            var objId = _context.RemoteService.ServerApi.CreateAttachmentObject(fileName, data);
+            var id = GetRoomId(roomId);
+            var dMessage = CreateMessage(id, MessageType.TextMessage);
+            var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
+
+            SendMessageToServer(dMessage, msgData, objId, NotifyClientKind.FullChat);
+        }
+
         public IFileInfo LoadFileInfo(Guid objId)
         {
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
-            var fileLoader = _context.RemoteService.FileLoader;
+            var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
             var file = obj.ActualFileSnapshot.Files.First();
             return fileLoader.Download(file);
@@ -178,28 +187,51 @@ namespace PilotRocketChatGateway.UserContext
             var attach = LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
         }
+        private Message SendMessageToServer<T>(DMessage dMessage, T data, Guid objId, NotifyClientKind notify)
+        {
+            SetMessageData(dMessage, data);
+            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, notify);
 
+            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(dMessage.ChatId).Chat, objId);
+        }
+
+        private DTextMessageData GetAttachmentsMessageData(Guid objId, Guid messageId, string text)
+        {
+            var relation = new DChatRelation
+            {
+                Type = ChatRelationType.Attach,
+                ObjectId = objId,
+                MessageId = messageId,
+                IsDeleted = false
+            };
+
+            var data = new DTextMessageData { Text = text };
+            data.Attachments = new List<DChatRelation>() { relation };
+            return data;
+        }
         private Attachment LoadAttachment(Guid objId)
         {
             if (objId == Guid.Empty)
                 return null;
 
             var attach = LoadFileInfo(objId);
+
+            if (string.IsNullOrEmpty(attach.FileType) || string.IsNullOrEmpty(attach.Format))
+                return null;
+
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-            using (var ms = new MemoryStream(attach.Data))
+            var image = Image.Load(attach.Data);
+            return new Attachment()
             {
-                var image = System.Drawing.Image.FromStream(ms);
-                return new Attachment()
-                {
-                    title = attach.File.Name,
-                    title_link = downloadUrl,
-                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                    image_type = attach.FileType,
-                    image_size = attach.File.Size,
-                    image_url = downloadUrl,
-                    type = "file",
-                };
-            }
+                title = attach.File.Name,
+                title_link = downloadUrl,
+                image_dimensions = new Dimension { width = image.Width, height = image.Height },
+                image_type = attach.FileType,
+                image_size = attach.File.Size,
+                image_url = downloadUrl,
+                type = "file",
+            };
         }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)
         {
@@ -210,7 +242,7 @@ namespace PilotRocketChatGateway.UserContext
             var creator = LoadUser(attach.File.CreatorId);
             using (var ms = new MemoryStream(attach.Data))
             {
-                var image = System.Drawing.Image.FromStream(ms);
+                var image = Image.Load(attach.Data);
                 var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
 
                 return new FileAttachment
@@ -255,6 +287,10 @@ namespace PilotRocketChatGateway.UserContext
         private IList<Message> LoadMessages(Guid roomId, DateTime dateTo, int count)
         {
             var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateTo, count);
+
+            if (msgs == null)
+                return new List<Message>();
+
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             var attachs = GetAttachmentsIds(chat.Relations);
 
@@ -292,7 +328,7 @@ namespace PilotRocketChatGateway.UserContext
             {
                 return new Message()
                 {
-                    id = msg.Id.ToString(),
+                    id = GetMessageId(msg),
                     roomId = roomId,
                     updatedAt = ConvertToJSDate(msg.LocalDate),
                     creationDate = ConvertToJSDate(msg.LocalDate),
@@ -301,6 +337,12 @@ namespace PilotRocketChatGateway.UserContext
                     attachments = LoadAttachments(objId)
                 };
             }
+        }
+
+        private string GetMessageId(DMessage msg)
+        {
+            var msgData = GetMessageData<DTextMessageData>(msg);
+            return string.IsNullOrEmpty(msgData.ThridPartyInfo) ? msg.Id.ToString() : msgData.ThridPartyInfo;
         }
 
         private static string MakeDownloadLink(IList<(string, string)> @params)
@@ -345,10 +387,12 @@ namespace PilotRocketChatGateway.UserContext
                 message.Data = stream.ToArray();
             }
         }
-
-        private void NotifyMessageCreated(DMessage dMessage)
+        public static T GetMessageData<T>(DMessage msg)
         {
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage);
+            using (var stream = new MemoryStream(msg.Data))
+            {
+                return ProtoSerializer.Deserialize<T>(stream);
+            }
         }
 
         private Subscription ConvertToSubscription(DChatInfo chat)

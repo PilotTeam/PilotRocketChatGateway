@@ -29,5 +29,24 @@ namespace PilotRocketChatGateway.Controllers
             var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
             return JsonConvert.SerializeObject(result);
         }
+        [Authorize]
+        [HttpPost("api/v1/rooms.upload/{roomId}")]
+        public string Upload(string roomId)
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var file = HttpContext.Request.Form.Files[0];
+            var text = HttpContext.Request.Form["description"];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                context.ChatService.SendAttachmentMessageToServer(roomId, file.FileName, ms.ToArray(), text);
+
+                var result = new MessageRequest()
+                {
+                    success = true
+                };
+                return JsonConvert.SerializeObject(result);
+            }
+        }
     }
 }

@@ -32,7 +32,7 @@ namespace PilotRocketChatGateway.Controllers
                 throw new UnauthorizedAccessException();
 
             var context = _contextService.GetContext(_authHelper.GetTokenActor(rc_token));
-            var attach = context.ChatService.LoadFileInfo(objId);
+            var attach = context.RemoteService.FileManager.LoadFileInfo(objId);
             return File(attach.Data, attach.FileType);
         }
 

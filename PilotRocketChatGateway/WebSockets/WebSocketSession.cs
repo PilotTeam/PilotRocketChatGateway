@@ -7,6 +7,14 @@ using System.Net.WebSockets;
 
 namespace PilotRocketChatGateway.WebSockets
 {
+    public enum NotifyClientKind
+    {
+        Room = 0,
+        Subscription = 1,
+        Message = 2,
+        Chat = Room | Subscription,
+        FullChat = Room | Subscription | Message
+    }
     public class Streams
     {
         public const string STREAM_NOTIFY_USER = "stream-notify-user";
@@ -20,7 +28,7 @@ namespace PilotRocketChatGateway.WebSockets
     public interface IWebSocketSession : IDisposable
     {
         Task SendMessageToClientAsync(DMessage dMessage);
-        Task NotifyMessageCreatedAsync(DMessage dMessage);
+        Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify);
         void Subscribe(dynamic request);
         void Unsubscribe(dynamic request);
     }
@@ -64,13 +72,12 @@ namespace PilotRocketChatGateway.WebSockets
             switch (dMessage.Type)
             {
                 case MessageType.TextMessage:
-                    await NotifyMessageCreatedAsync(dMessage);
-                    await SendMessageUpdate(dMessage);
+                    await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
                     return;
 
                 case MessageType.ChatCreation:
                 case MessageType.ChatMembers:
-                    await NotifyMessageCreatedAsync(dMessage);
+                    await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.Chat);
                     return;
 
                 default:
@@ -78,10 +85,16 @@ namespace PilotRocketChatGateway.WebSockets
             }
         }
 
-        public async Task NotifyMessageCreatedAsync(DMessage dMessage)
+        public async Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify)
         {
-            await UpdateRoomsSubscription(dMessage);
-            await UpdateRoom(dMessage);
+            if (notify.HasFlag(NotifyClientKind.Subscription))
+                await UpdateRoomsSubscription(dMessage);
+
+            if (notify.HasFlag(NotifyClientKind.Room))
+                await UpdateRoom(dMessage);
+
+            if (notify.HasFlag(NotifyClientKind.Message))
+                await SendMessageUpdate(dMessage);
         }
 
         private async Task SendChatCreated(DMessage dMessage)

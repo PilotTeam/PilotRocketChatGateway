@@ -18,21 +18,24 @@ namespace PilotRocketChatGateway.PilotServer
         void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
+        Guid CreateAttachmentObject(string fileName, byte[] attach);
     }
     public class ServerApiService : IServerApiService
     {
         private readonly IServerApi _serverApi;
         private readonly IMessagesApi _messagesApi;
+        private readonly IAttachmentHelper _attachmentHelper;
         private readonly DDatabaseInfo _dbInfo;
         private readonly DPerson _currentPerson;
         private Dictionary<int, INPerson> _people;
 
-        public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, DDatabaseInfo dbInfo)
+        public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, IAttachmentHelper attachmentHelper, DDatabaseInfo dbInfo)
         {
             _serverApi = serverApi;
             _messagesApi = messagesApi;
             _dbInfo = dbInfo;
             _currentPerson = dbInfo.Person;
+            _attachmentHelper = attachmentHelper;
 
             LoadPeople();
         }
@@ -103,5 +106,14 @@ namespace PilotRocketChatGateway.PilotServer
         {
             return _serverApi.GetObjects(new Guid[] { id }).First();
         }
+
+        public Guid CreateAttachmentObject(string fileName, byte[] data)
+        {
+            var change = _attachmentHelper.CreateChangeWithAttachmentObject(fileName, data);
+            var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, new List<Guid>() { });
+            _serverApi.Change(changeset);
+            return change.New.Id;
+        }
     }
+
 }

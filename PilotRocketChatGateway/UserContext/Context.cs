@@ -13,6 +13,7 @@ namespace PilotRocketChatGateway.UserContext
     }
     public class Context : IContext
     {
+        private IList<IDisposable> _disposables = new List<IDisposable>();
         private IRemoteService _remoteService;
         private IChatService _chatService;
         private IWebSocksetsService _webSocksetsService;
@@ -23,12 +24,11 @@ namespace PilotRocketChatGateway.UserContext
             get
             {
                 if (_remoteService.IsActive == false)
+                {
+                    Dispose();
                     throw new UnauthorizedAccessException();
+                }
                 return _remoteService;
-            }
-            set
-            {
-                _remoteService = value;
             }
         }
         public IChatService ChatService
@@ -37,12 +37,11 @@ namespace PilotRocketChatGateway.UserContext
             get
             {
                 if (_remoteService.IsActive == false)
+                {
+                    Dispose();
                     throw new UnauthorizedAccessException();
+                }
                 return _chatService;
-            }
-            set
-            {
-                _chatService = value;
             }
         }
 
@@ -64,11 +63,13 @@ namespace PilotRocketChatGateway.UserContext
                 default: 
                     throw new Exception($"unknown service: {service.GetType()}");
             }
+
+            _disposables.Add(service);
         }
         public void Dispose()
         {
-            _remoteService.Dispose();
-            _webSocksetsService?.Dispose();
+            foreach (var disposable in _disposables)
+                disposable.Dispose();
         }
     }
 }

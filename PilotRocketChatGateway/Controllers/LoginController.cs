@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Ascon.Pilot.DataClasses;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -10,6 +11,12 @@ using System.Security.Claims;
 
 namespace PilotRocketChatGateway.Controllers
 {
+    class ERROR_CONSTS
+    {
+        public const string NEED_TO_LOG_OUT = "You've been logged out by the server. Please log in again";
+        public const string UNAUTHORIZED = "Unauthorized";
+    }
+
     [Route("api/v1/[controller]")]
     [ApiController]
     public class LoginController : ControllerBase
@@ -36,13 +43,41 @@ namespace PilotRocketChatGateway.Controllers
                 var response = Login(user);
                 return JsonConvert.SerializeObject(response);
             }
-            catch (Exception e)
+            catch(PilotSecurityAccessDeniedException e) //if login or password is incorrect
             {
-                _logger.Log(LogLevel.Information, $"Signed in failed");
-                _logger.LogError(0, e, e.Message);
-                var error = new Error() { status = "error", error = "Unauthorized", message = e.Message };
+                var error = MekeLoginError(e);
                 return JsonConvert.SerializeObject(error);
             }
+            catch (UnauthorizedAccessException e) //if need to relogin
+            {
+                var error = MekeLogOutError(e);
+                return JsonConvert.SerializeObject(error);
+            }
+            catch (Exception e) //if pilot-server is unavailable
+            {
+                var error = MekeLogOutError(e);
+                return JsonConvert.SerializeObject(error);
+            }
+        }
+
+        private Error MekeLogOutError(Exception e)
+        {
+            _logger.Log(LogLevel.Information, $"Log in with token failed");
+            _logger.LogError(0, e, e.Message);
+            var code = 403;
+            Response.StatusCode = code;
+            var error = new Error() { status = "error", error = code, message = ERROR_CONSTS.NEED_TO_LOG_OUT };
+            return error;
+        }
+
+        private Error MekeLoginError(Exception e)
+        {
+            _logger.Log(LogLevel.Information, $"Log in failed");
+            _logger.LogError(0, e, e.Message);
+            var code = 401;
+            Response.StatusCode = code;
+            var error = new Error() { status = "error", error = code, message = ERROR_CONSTS.UNAUTHORIZED };
+            return error;
         }
 
         private HttpLoginResponse Login(LoginRequest? user)
@@ -72,7 +107,7 @@ namespace PilotRocketChatGateway.Controllers
             var context = CreateContext(credentials);
             var tokenString = CreateToken(user);
 
-            _logger.Log(LogLevel.Information, $"Signed in successfully. Username: {user.user}.");
+            _logger.Log(LogLevel.Information, $"Logged in successfully successfully. Username: {user.user}.");
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, tokenString);
         }
 
