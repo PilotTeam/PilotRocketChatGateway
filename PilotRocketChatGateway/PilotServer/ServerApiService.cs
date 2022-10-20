@@ -8,6 +8,7 @@ namespace PilotRocketChatGateway.PilotServer
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
         INPerson GetPerson(string login);
+        bool IsOnline(int person);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
         DObject GetObject(Guid id);
@@ -37,7 +38,8 @@ namespace PilotRocketChatGateway.PilotServer
             _currentPerson = dbInfo.Person;
             _attachmentHelper = attachmentHelper;
 
-            LoadPeople();
+            _people = LoadPeople();
+
         }
 
         public INPerson CurrentPerson => _currentPerson;
@@ -50,6 +52,11 @@ namespace PilotRocketChatGateway.PilotServer
         public DChatInfo GetChat(Guid id)
         {
             return _messagesApi.GetChat(id);
+        }
+
+        public bool IsOnline(int person)
+        {
+            return _messagesApi.CheckIsOnline(person);
         }
 
         public DChatInfo GetPersonalChat(int personId)
@@ -92,9 +99,9 @@ namespace PilotRocketChatGateway.PilotServer
             _messagesApi.SendMessage(message);
         }
 
-        private void LoadPeople()
+        private Dictionary<int, INPerson> LoadPeople()
         {
-            _people = _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
+            return _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
         }
 
         public List<DChatMember> GetChatMembers(Guid chatId)

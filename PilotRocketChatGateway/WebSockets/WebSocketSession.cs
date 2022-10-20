@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Microsoft.IdentityModel.Tokens;
 using PilotRocketChatGateway.Authentication;
+using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
@@ -15,10 +16,18 @@ namespace PilotRocketChatGateway.WebSockets
         Chat = Room | Subscription,
         FullChat = Room | Subscription | Message
     }
+    public enum UserStatuses
+    {
+        offline,
+        online,
+        away,
+        busy
+    }
     public class Streams
     {
         public const string STREAM_NOTIFY_USER = "stream-notify-user";
         public const string STREAM_ROOM_MESSAGES = "stream-room-messages";
+        public const string STREAM_USER_PRESENCE = "stream-user-presence";
     }
     public class Events
     {
@@ -28,6 +37,7 @@ namespace PilotRocketChatGateway.WebSockets
     public interface IWebSocketSession : IDisposable
     {
         Task SendMessageToClientAsync(DMessage dMessage);
+        Task SendUserStatusChangeAsync(int person, UserStatuses status);
         Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify);
         void Subscribe(dynamic request);
         void Unsubscribe(dynamic request);
@@ -37,10 +47,11 @@ namespace PilotRocketChatGateway.WebSockets
     {
         private readonly string _sessionId;
         private readonly IChatService _chatService;
+        private readonly IServerApiService _serverApi;
         private readonly WebSocket _webSocket;
         private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
 
-        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IAuthHelper authHelper, WebSocket webSocket)
+        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IServerApiService serverApi, IAuthHelper authHelper, WebSocket webSocket)
         {
             var authToken = request.@params[0].resume;
             if (authHelper.ValidateToken(authToken, authSettings) == false)
@@ -48,12 +59,13 @@ namespace PilotRocketChatGateway.WebSockets
 
             _sessionId = request.id;
             _chatService = chatService;
+            _serverApi = serverApi;
             _webSocket = webSocket;
         }
 
         public void Subscribe(dynamic request)
         {
-            _subscriptions[request.@params[0]] = request.id;
+            _subscriptions[GetSubsName(request)] = request.id;
             var result = new 
             {
                 msg = "ready",
@@ -61,6 +73,12 @@ namespace PilotRocketChatGateway.WebSockets
             };
             _webSocket.SendResultAsync(result);
         }
+
+        private string GetSubsName(dynamic request)
+        {
+            return string.IsNullOrEmpty(request.@params[0]) ? request.name : request.@params[0];
+        }
+
         public void Unsubscribe(dynamic request)
         {
             var sub = _subscriptions.FirstOrDefault(x => x.Value == request.id).Key;
@@ -95,6 +113,33 @@ namespace PilotRocketChatGateway.WebSockets
 
             if (notify.HasFlag(NotifyClientKind.Message))
                 await SendMessageUpdate(dMessage);
+        }
+        public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
+        {
+            if (!_subscriptions.TryGetValue(Streams.STREAM_USER_PRESENCE, out var id))
+                return;
+
+            var person = _serverApi.GetPerson(personId);
+            var result = new
+            {
+                msg = "updated",
+                collection = Streams.STREAM_USER_PRESENCE,
+                id,
+                fields = new
+                {
+                    args = new object[]
+                    {
+                        new object[]
+                        {
+                            person.Login,
+                            (int) status,
+                            ""
+                        }
+                    },
+                    uid = personId
+                }
+            };
+            await _webSocket.SendResultAsync(result);
         }
 
         private async Task SendChatCreated(DMessage dMessage)

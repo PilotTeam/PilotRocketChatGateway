@@ -125,7 +125,7 @@ namespace PilotRocketChatGateway.WebSockets
                 return;
 
             var context = RegisterService(request.@params[0].resume);
-            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, _authHelper, _webSocket);
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
                 request.id,

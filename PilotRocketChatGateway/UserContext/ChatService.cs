@@ -374,10 +374,18 @@ namespace PilotRocketChatGateway.UserContext
                 id = person.Id.ToString(),
                 username = person.Login,
                 name = person.DisplayName,
-                status = "online",
+                status = GetUserStatus(person.Id),
                 roles = new string[] { "user" }
             };
         }
+
+        private string GetUserStatus(int person)
+        {
+            if (_context.RemoteService.ServerApi.IsOnline(person))
+                return nameof(UserStatuses.online);
+            return nameof(UserStatuses.offline);
+        }
+
         private static void SetMessageData<T>(DMessage message, T data)
         {
             using (var stream = new MemoryStream())

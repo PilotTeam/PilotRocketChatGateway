@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.UserContext;
+using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.PilotServer
 {
@@ -24,6 +25,32 @@ namespace PilotRocketChatGateway.PilotServer
             try
             {
                 _context.WebSocketsSession.SendMessageToClientAsync(message.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
+        }
+
+        public void NotifyOffline(int personId)
+        {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. PersonId: {personId}");
+            try
+            {
+                _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.offline);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
+        }
+
+        public void NotifyOnline(int personId)
+        {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. PersonId: {personId}");
+            try
+            {
+                _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.online);
             }
             catch (Exception e)
             {

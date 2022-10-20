@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ascon.Pilot.Server.Api" Version="22.30.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.18" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Serilog" Version="2.12.0" />
@@ -37,5 +36,23 @@
 
   <ItemGroup>
     <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Ascon.Pilot.Common">
+      <HintPath>..\..\main\Bin\Debug\Server\Ascon.Pilot.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Ascon.Pilot.DataClasses">
+      <HintPath>..\..\main\Bin\Debug\Server\Ascon.Pilot.DataClasses.dll</HintPath>
+    </Reference>
+    <Reference Include="Ascon.Pilot.DataModifier">
+      <HintPath>..\..\main\Bin\Debug\Server\Ascon.Pilot.DataModifier.dll</HintPath>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Server.Api">
+      <HintPath>..\..\main\Bin\Debug\Server\Ascon.Pilot.Server.Api.dll</HintPath>
+    </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>..\..\main\Bin\Debug\Server\protobuf-net.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>
