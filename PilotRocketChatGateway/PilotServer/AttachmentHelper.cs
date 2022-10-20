@@ -36,8 +36,9 @@ namespace PilotRocketChatGateway.PilotServer
             var timestamp = DateTime.Now;
             
             var info = new DocumentInfo(fileName, () => new MemoryStream(data), timestamp, timestamp, timestamp);
-            _fileManager.AddFileToChange(info, _currentPerson.Id, change);
-            
+            var file = _fileManager.CreateFile(info, _currentPerson.Id);
+            change.New.ActualFileSnapshot.AddFile(file, _currentPerson.Id);
+
             MakeThumbnail(image, fileName, timestamp, change);
             
             return change;
@@ -61,13 +62,14 @@ namespace PilotRocketChatGateway.PilotServer
             return dObj;
         }
 
-        private void MakeThumbnail(Image image, string fileName, DateTime timestamp, DChange chage)
+        private void MakeThumbnail(Image image, string fileName, DateTime timestamp, DChange change)
         {
             
             var thumbnailStream = GetThumbnailStream(image);
             if (thumbnailStream != null)
             {
-                _fileManager.AddFileToChange(new DocumentInfo($"{fileName}_{Constants.THUMBNAIL_FILE_NAME_POSTFIX}", () => thumbnailStream, timestamp, timestamp, timestamp), _currentPerson.Id, chage);
+                var file = _fileManager.CreateFile(new DocumentInfo($"{fileName}_{Constants.THUMBNAIL_FILE_NAME_POSTFIX}", () => thumbnailStream, timestamp, timestamp, timestamp), _currentPerson.Id);
+                change.New.ActualFileSnapshot.AddFile(file, _currentPerson.Id);
             }
         }
 

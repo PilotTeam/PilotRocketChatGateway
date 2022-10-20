@@ -9,7 +9,7 @@ namespace PilotRocketChatGateway.PilotServer
     public interface IFileFileManager
     {
         IFileLoader FileLoader { get; }
-        void AddFileToChange(IDocumentInfo document, int creatorId, DChange change);
+        DFile CreateFile(IDocumentInfo document, int creatorId);
         IFileInfo LoadFileInfo(Guid objId);
     }
     public class FileManager : IFileFileManager
@@ -35,7 +35,7 @@ namespace PilotRocketChatGateway.PilotServer
             var file = obj.ActualFileSnapshot.Files.First();
             return _fileLoader.Download(file);
         }
-        public void AddFileToChange(IDocumentInfo document, int creatorId, DChange change)
+        public DFile CreateFile(IDocumentInfo document, int creatorId)
         {
             using (var stream = document.GetStream())
             {
@@ -65,7 +65,7 @@ namespace PilotRocketChatGateway.PilotServer
                 };
 
                 CreateFile(file, stream);
-                change.New.ActualFileSnapshot.AddFile(file, creatorId);
+                return file;
             }
         }
         private void CreateFile(INFile file, Stream stream)
