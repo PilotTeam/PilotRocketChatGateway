@@ -15,9 +15,11 @@ namespace PilotRocketChatGateway.UserContext
         IList<Message> LoadMessages(string roomId, int count, string latest);
         IList<Message> LoadUnreadMessages(string roomId);
         User LoadUser(int usderId);
+        string GetRoomId(DChat chat);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
         Message SendTextMessageToServer(string roomId, string msgId, string text);
+        void SendEditMessageToServer(string roomId, string msgId, string text);
         void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         Room CreateChat(string name, IList<string> members, ChatKind kind);
@@ -105,7 +107,10 @@ namespace PilotRocketChatGateway.UserContext
                 return GetUser(person);
             }).ToList();
         }
-
+        public string GetRoomId(DChat chat)
+        {
+            return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
+        }
         public Room CreateChat(string name, IList<string> members, ChatKind kind)
         {
             var chat = new DChat
@@ -163,6 +168,10 @@ namespace PilotRocketChatGateway.UserContext
             var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
 
             SendMessageToServer(dMessage, msgData, objId, NotifyClientKind.FullChat);
+        }
+
+        public void SendEditMessageToServer(string roomId, string msgId, string text)
+        {
         }
 
         public IFileInfo LoadFileInfo(Guid objId)
@@ -467,10 +476,6 @@ namespace PilotRocketChatGateway.UserContext
             return members.Select(x => _context.RemoteService.ServerApi.GetPerson(x.PersonId).Login).ToArray();
         }
 
-        private string GetRoomId(DChat chat)
-        {
-            return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
-        }
         private Guid GetRoomId(string strId)
         {
             if (Guid.TryParse(strId, out var id))

@@ -26,6 +26,7 @@ namespace PilotRocketChatGateway.WebSockets
     public class Streams
     {
         public const string STREAM_NOTIFY_USER = "stream-notify-user";
+        public const string STREAM_NOTIFY_ROOM = "stream-notify-room";
         public const string STREAM_ROOM_MESSAGES = "stream-room-messages";
         public const string STREAM_USER_PRESENCE = "stream-user-presence";
     }
@@ -38,6 +39,7 @@ namespace PilotRocketChatGateway.WebSockets
     {
         Task SendMessageToClientAsync(DMessage dMessage);
         Task SendUserStatusChangeAsync(int person, UserStatuses status);
+        Task SendTypingMessageToClientAsync(DChat chat, int personId);
         Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify);
         void Subscribe(dynamic request);
         void Unsubscribe(dynamic request);
@@ -83,6 +85,32 @@ namespace PilotRocketChatGateway.WebSockets
         {
             var sub = _subscriptions.FirstOrDefault(x => x.Value == request.id).Key;
             _subscriptions.Remove(sub);
+        }
+
+        public async Task SendTypingMessageToClientAsync(DChat chat, int personId)
+        {
+            var roomId = _chatService.GetRoomId(chat);
+            var person = _serverApi.GetPerson(personId);
+            var eventName = $"{roomId}/typing";
+            if (!_subscriptions.TryGetValue(eventName, out var id))
+                return;
+
+            var result = new
+            {
+                msg = "",
+                collection = Streams.STREAM_NOTIFY_ROOM,
+                id = id,
+                fields = new
+                {
+                    eventName = eventName,
+                    args = new object[] 
+                    { 
+                        person.DisplayName,
+                        true
+                    }
+                }
+            };
+            await _webSocket.SendResultAsync(result);
         }
 
         public async Task SendMessageToClientAsync(DMessage dMessage)

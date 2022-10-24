@@ -21,7 +21,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyMessageCreated(NotifiableDMessage message)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. CreatorId: {message.Message.CreatorId} ChatId: {message.Message.ChatId} MessageType: {message.Message.Type}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
                 _context.WebSocketsSession.SendMessageToClientAsync(message.Message);
@@ -34,7 +34,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyOffline(int personId)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. PersonId: {personId}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. personId: {personId}");
             try
             {
                 _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.offline);
@@ -47,7 +47,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyOnline(int personId)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. PersonId: {personId}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. personId: {personId}");
             try
             {
                 _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.online);
@@ -60,6 +60,16 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyTypingMessage(Guid chatId, int personId)
         {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyTypingMessage)}. chatId: {chatId}, personId: {personId}");
+            try
+            {
+                var chat = _context.RemoteService.ServerApi.GetChat(chatId);
+                _context.WebSocketsSession.SendTypingMessageToClientAsync(chat.Chat, personId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
         }
     }
 }
