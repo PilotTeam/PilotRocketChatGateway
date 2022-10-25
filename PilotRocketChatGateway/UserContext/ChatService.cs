@@ -37,7 +37,7 @@ namespace PilotRocketChatGateway.UserContext
         public IList<Room> LoadRooms()
         {
             var chats = _context.RemoteService.ServerApi.GetChats();
-            return chats.Select(x => ConvertToRoom(x.Chat, x.Relations,x.LastMessage)).ToList();
+            return chats.Select(x => ConvertToRoom(GetRoomId(x.Chat), x.Chat, x.Relations,x.LastMessage)).ToList();
         }
 
         public IList<Subscription> LoadRoomsSubscriptions()
@@ -67,7 +67,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             var roomId = GetRoomId(id);
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
-            return ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+            return ConvertToRoom(GetRoomId(chat.Chat), chat.Chat, chat.Relations, chat.LastMessage);
         }
         public Subscription LoadRoomsSubscription(string roomId)
         {
@@ -95,7 +95,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             var person = _context.RemoteService.ServerApi.GetPerson(username);
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
-            return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+            return chat.Chat.Id == Guid.Empty ? null : ConvertToRoom(GetRoomId(chat.Chat), chat.Chat, chat.Relations, chat.LastMessage);
         }
         public IList<User> LoadMembers(string roomId)
         {
@@ -131,7 +131,9 @@ namespace PilotRocketChatGateway.UserContext
                 SendChatsMemberMessageToServer(chat.Id, member);
 
             _context.WebSocketsSession.NotifyMessageCreatedAsync(msg, NotifyClientKind.Chat);
-            return ConvertToRoom(chat, new List<DChatRelation>(), msg);
+
+            string roomId = kind == ChatKind.Personal ? _context.RemoteService.ServerApi.GetPerson(members.First()).Id.ToString() : chat.Id.ToString();
+            return ConvertToRoom(roomId, chat, new List<DChatRelation>(), msg);
         }
         public void SendReadAllMessageToServer(string roomId)
         {
@@ -156,7 +158,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             var id = GetRoomId(roomId);
             var dMessage = CreateMessage(id, MessageType.TextMessage);
-            var data = new DTextMessageData { Text = text, ThridPartyInfo = rcMsgId };
+            var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
             return SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
         }
 
@@ -172,6 +174,19 @@ namespace PilotRocketChatGateway.UserContext
 
         public void SendEditMessageToServer(string roomId, string msgId, string text)
         {
+            var chatId = GetRoomId(roomId);
+            var isRcId = IsRocketChatId(msgId);
+
+            Guid id = isRcId ? _context.RemoteService.ServerApi.GetMessage(msgId).Id : Guid.Parse(msgId);
+
+            var dMessage = CreateMessage(Guid.NewGuid(), MessageType.EditTextMessage, id);
+            var data = new DTextMessageData { Text = text };
+            SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
+        }
+
+        private bool IsRocketChatId(string msgId)
+        {
+            return msgId.Length == 17;
         }
 
         public IFileInfo LoadFileInfo(Guid objId)
@@ -351,7 +366,7 @@ namespace PilotRocketChatGateway.UserContext
         private string GetMessageId(DMessage msg)
         {
             var msgData = GetMessageData<DTextMessageData>(msg);
-            return string.IsNullOrEmpty(msgData.ThridPartyInfo) ? msg.Id.ToString() : msgData.ThridPartyInfo;
+            return string.IsNullOrEmpty(msgData.ThirdPartyInfo) ? msg.Id.ToString() : msgData.ThirdPartyInfo;
         }
 
         private static string MakeDownloadLink(IList<(string, string)> @params)
@@ -455,14 +470,14 @@ namespace PilotRocketChatGateway.UserContext
 
             return ConvertToJSDate(earliestUnreadMessage.LocalDate);
         }
-        private Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage)
+        private Room ConvertToRoom(string roomId, DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage)
         {
             var attachId = GetMsgAttachmentId(chatRelations, lastMessage.Id);
             return new Room()
             {
                 updatedAt = ConvertToJSDate(lastMessage.LocalDate),
                 name = chat.Type == ChatKind.Personal ? string.Empty : chat.Name,
-                id = GetRoomId(chat),
+                id = roomId,
                 channelType = GetChannelType(chat),
                 creationDate = ConvertToJSDate(chat.CreationDateUtc),
                 lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage, chat, attachId) : null,
