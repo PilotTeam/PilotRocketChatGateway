@@ -52,5 +52,15 @@ namespace PilotRocketChatGateway.Controllers
             };
             return JsonConvert.SerializeObject(result);
         }
+
+        [Authorize]
+        [HttpPost("api/v1/chat.update")]
+        public string Update(object request)
+        {
+            var message = JsonConvert.DeserializeObject<MessageEdit>(request.ToString());
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            context.ChatService.SendEditMessageToServer(message.roomId, message.msgId, message.text);
+            return string.Empty;
+        }
     }
 }

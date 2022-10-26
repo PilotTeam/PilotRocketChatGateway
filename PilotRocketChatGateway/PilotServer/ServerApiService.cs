@@ -15,6 +15,7 @@ namespace PilotRocketChatGateway.PilotServer
         DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
+        DMessage GetMessage(string thirdPartyInfo);
         List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
@@ -120,6 +121,11 @@ namespace PilotRocketChatGateway.PilotServer
             var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, new List<Guid>() { });
             _serverApi.Change(changeset);
             return change.New.Id;
+        }
+
+        public DMessage GetMessage(string thirdPartyInfo)
+        {
+            return _messagesApi.GetThirdPartyMessage(thirdPartyInfo);
         }
     }
 

@@ -132,6 +132,12 @@ namespace PilotRocketChatGateway
     {
         public Message message { get; init; }
     }
+    public record MessageEdit 
+    {
+        public string roomId { get; init; }
+        public string msgId { get; init; }
+        public string text { get; init; }
+    }
     public record MessagesUpdated 
     {
         public IList<Message> updated { get; init; }

@@ -156,8 +156,8 @@ namespace PilotRocketChatGateway.UserContext
         }
         public Message SendTextMessageToServer(string roomId, string rcMsgId, string text)
         {
-            var id = GetRoomId(roomId);
-            var dMessage = CreateMessage(id, MessageType.TextMessage);
+            var chatId = GetRoomId(roomId);
+            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
             var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
             return SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
         }
@@ -165,23 +165,34 @@ namespace PilotRocketChatGateway.UserContext
         public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
         {
             var objId = _context.RemoteService.ServerApi.CreateAttachmentObject(fileName, data);
-            var id = GetRoomId(roomId);
-            var dMessage = CreateMessage(id, MessageType.TextMessage);
+            var chatId = GetRoomId(roomId);
+            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
             var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
 
             SendMessageToServer(dMessage, msgData, objId, NotifyClientKind.FullChat);
         }
 
-        public void SendEditMessageToServer(string roomId, string msgId, string text)
+        public void SendEditMessageToServer(string roomId, string strMsgId, string text)
         {
+            var relatedMsgId = GetGuidMsgId(strMsgId);
+            if (relatedMsgId == Guid.Empty)
+                return;
+
             var chatId = GetRoomId(roomId);
-            var isRcId = IsRocketChatId(msgId);
-
-            Guid id = isRcId ? _context.RemoteService.ServerApi.GetMessage(msgId).Id : Guid.Parse(msgId);
-
-            var dMessage = CreateMessage(Guid.NewGuid(), MessageType.EditTextMessage, id);
+            var dMessage = CreateMessage(chatId, MessageType.EditTextMessage, relatedMsgId);
             var data = new DTextMessageData { Text = text };
             SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
+        }
+
+        private Guid GetGuidMsgId(string msgId)
+        {
+            if (IsRocketChatId(msgId))
+            {
+                var msg = _context.RemoteService.ServerApi.GetMessage(msgId);
+                return msg == null ? Guid.Empty : msg.Id;
+            }
+
+            return Guid.Parse(msgId);
         }
 
         private bool IsRocketChatId(string msgId)
