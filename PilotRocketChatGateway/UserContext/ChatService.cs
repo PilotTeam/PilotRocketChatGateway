@@ -7,7 +7,7 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IChatService : IService
     {
-        Room LoadRoom(string id);
+        Room LoadRoom(Guid id);
         IList<Room> LoadRooms();
         Subscription LoadRoomsSubscription(string roomId);
         IList<Subscription> LoadRoomsSubscriptions();
@@ -18,7 +18,7 @@ namespace PilotRocketChatGateway.UserContext
         string GetRoomId(DChat chat);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
-        Message SendTextMessageToServer(string roomId, string msgId, string text);
+        void SendTextMessageToServer(string roomId, string msgId, string text);
         void SendEditMessageToServer(string roomId, string msgId, string text);
         void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
@@ -63,9 +63,9 @@ namespace PilotRocketChatGateway.UserContext
             return LoadMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
         }
 
-        public Room LoadRoom(string id)
+        public Room LoadRoom(Guid id)
         {
-            var roomId = GetRoomId(id);
+            var roomId = GetRoomId(id.ToString());
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             return ConvertToRoom(GetRoomId(chat.Chat), chat.Chat, chat.Relations, chat.LastMessage);
         }
@@ -154,12 +154,15 @@ namespace PilotRocketChatGateway.UserContext
             var attachId = GetMsgAttachmentId(chat.Relations, msg.Id);
             return ConvertToMessage(msg, chat.Chat, attachId);
         }
-        public Message SendTextMessageToServer(string roomId, string rcMsgId, string text)
+        public void SendTextMessageToServer(string roomId, string rcMsgId, string text)
         {
             var chatId = GetRoomId(roomId);
             var dMessage = CreateMessage(chatId, MessageType.TextMessage);
             var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
-            return SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
+
+            SetMessageData(dMessage, data);
+            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.Chat);
         }
 
         public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
@@ -169,7 +172,9 @@ namespace PilotRocketChatGateway.UserContext
             var dMessage = CreateMessage(chatId, MessageType.TextMessage);
             var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
 
-            SendMessageToServer(dMessage, msgData, objId, NotifyClientKind.FullChat);
+            SetMessageData(dMessage, msgData);
+            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
         }
 
         public void SendEditMessageToServer(string roomId, string strMsgId, string text)
@@ -179,9 +184,22 @@ namespace PilotRocketChatGateway.UserContext
                 return;
 
             var chatId = GetRoomId(roomId);
-            var dMessage = CreateMessage(chatId, MessageType.EditTextMessage, relatedMsgId);
+
+            var edit = CreateMessage(chatId, MessageType.EditTextMessage, relatedMsgId);
             var data = new DTextMessageData { Text = text };
-            SendMessageToServer(dMessage, data, Guid.Empty, NotifyClientKind.Chat);
+
+            var origin = LoadMessage(chatId, relatedMsgId);
+            origin.RelatedMessages.Add(edit);
+
+            SetMessageData(edit, data);
+            _context.RemoteService.ServerApi.SendMessage(edit);
+            _context.WebSocketsSession.NotifyMessageCreatedAsync(origin, NotifyClientKind.FullChat);
+        }
+
+        private DMessage LoadMessage(Guid chatId, Guid relatedMsgId)
+        {
+            var msgs = _context.RemoteService.ServerApi.GetMessages(chatId, DateTime.Now, int.MaxValue);
+            return msgs.FirstOrDefault(x => x.Id == relatedMsgId);
         }
 
         private Guid GetGuidMsgId(string msgId)
@@ -221,14 +239,6 @@ namespace PilotRocketChatGateway.UserContext
         {
             var attach = LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
-        }
-        private Message SendMessageToServer<T>(DMessage dMessage, T data, Guid objId, NotifyClientKind notify)
-        {
-            SetMessageData(dMessage, data);
-            _context.RemoteService.ServerApi.SendMessage(dMessage);
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, notify);
-
-            return ConvertToMessage(dMessage, _context.RemoteService.ServerApi.GetChat(dMessage.ChatId).Chat, objId);
         }
 
         private DTextMessageData GetAttachmentsMessageData(Guid objId, Guid messageId, string text)
@@ -335,7 +345,7 @@ namespace PilotRocketChatGateway.UserContext
                 if (msg.Type != MessageType.TextMessage)
                     continue;
 
-                attachs.TryGetValue(msg.Id, out var objId);
+                    attachs.TryGetValue(msg.Id, out var objId);
                 result.Add(ConvertToMessage(msg, chat.Chat, objId));
             }
 
@@ -359,19 +369,54 @@ namespace PilotRocketChatGateway.UserContext
         {
             var user = LoadUser(msg.CreatorId);
             var roomId = GetRoomId(chat);
-            using (var stream = new MemoryStream(msg.Data))
+            var editedAt = GetEditedAt(msg);
+            return new Message()
             {
-                return new Message()
-                {
-                    id = GetMessageId(msg),
-                    roomId = roomId,
-                    updatedAt = ConvertToJSDate(msg.LocalDate),
-                    creationDate = ConvertToJSDate(msg.LocalDate),
-                    msg = ProtoBuf.Serializer.Deserialize<string>(stream),
-                    u = user,
-                    attachments = LoadAttachments(objId)
-                };
+                id = GetMessageId(msg),
+                roomId = roomId,
+                updatedAt = ConvertToJSDate(msg.LocalDate),
+                creationDate = ConvertToJSDate(msg.LocalDate),
+                msg = GetMessageText(msg),
+                u = user,
+                attachments = LoadAttachments(objId),
+                editedAt = editedAt,
+                editedBy = GetEditor(msg)
+            };
+        }
+
+        private string GetMessageText(DMessage msg)
+        {
+            var edit = GetEditMessage(msg);
+            if (edit != null)
+            {
+                using (var editStream = new MemoryStream(edit.Data))
+                    return ProtoBuf.Serializer.Deserialize<string>(editStream);
             }
+
+            using (var stream = new MemoryStream(msg.Data))
+                return ProtoBuf.Serializer.Deserialize<string>(stream);
+        }
+
+        private string GetEditedAt(DMessage msg)
+        {
+            var edit = GetEditMessage(msg);
+            if (edit == null)
+                return string.Empty;
+
+            return ConvertToJSDate(edit.LocalDate);
+        }
+        private User GetEditor(DMessage msg)
+        {
+            var edit = GetEditMessage(msg);
+            if (edit == null)
+                return null;
+
+            return LoadUser(edit.CreatorId);
+        }
+
+        private DMessage GetEditMessage(DMessage msg)
+        {
+            return msg.RelatedMessages.Where(x => x.Type == MessageType.EditTextMessage).LastOrDefault();
         }
 
         private string GetMessageId(DMessage msg)

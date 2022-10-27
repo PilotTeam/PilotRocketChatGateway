@@ -198,14 +198,16 @@ namespace PilotRocketChatGateway
         [JsonProperty("_id")]
         public string id { get; init; }
         [JsonProperty("_updatedAt")]
-        public object updatedAt { get; init; }
+        public string updatedAt { get; init; }
         [JsonProperty("rid")]
         public string roomId { get; init; }
         public string msg { get; init; }
         [JsonProperty("ts")]
-        public object creationDate { get; init; }
+        public string creationDate { get; init; }
         public User u { get; init; }
         public IList<Attachment> attachments { get; init; }
+        public string editedAt { get; init; }
+        public User editedBy { get; init; }
     }
     public record Attachment
     {
