@@ -39,7 +39,7 @@ namespace PilotRocketChatGateway.WebSockets
     {
         Task SendMessageToClientAsync(DMessage dMessage);
         Task SendUserStatusChangeAsync(int person, UserStatuses status);
-        Task SendTypingMessageToClientAsync(DChat chat, int personId);
+        void SendTypingMessageToClient(DChat chat, int personId);
         Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify);
         void Subscribe(dynamic request);
         void Unsubscribe(dynamic request);
@@ -51,6 +51,7 @@ namespace PilotRocketChatGateway.WebSockets
         private readonly IChatService _chatService;
         private readonly IServerApiService _serverApi;
         private readonly WebSocket _webSocket;
+        private readonly TypingTimer _typingTimer;
         private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
 
         public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IServerApiService serverApi, IAuthHelper authHelper, WebSocket webSocket)
@@ -63,6 +64,11 @@ namespace PilotRocketChatGateway.WebSockets
             _chatService = chatService;
             _serverApi = serverApi;
             _webSocket = webSocket;
+            _typingTimer = new TypingTimer
+            (
+                (chat, personId) => SendTypingMessageToClientAsync(chat, personId, true),
+                (chat, personId) => SendTypingMessageToClientAsync(chat, personId, false)
+            );
         }
 
         public void Subscribe(dynamic request)
@@ -85,43 +91,6 @@ namespace PilotRocketChatGateway.WebSockets
         {
             var sub = _subscriptions.FirstOrDefault(x => x.Value == request.id).Key;
             _subscriptions.Remove(sub);
-        }
-
-        public async Task SendTypingMessageToClientAsync(DChat chat, int personId)
-        {
-            var roomId = _chatService.GetRoomId(chat);
-            var person = _serverApi.GetPerson(personId);
-            var eventName = $"{roomId}/typing";
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
-
-            var result = new
-            {
-                msg = "",
-                collection = Streams.STREAM_NOTIFY_ROOM,
-                id = id,
-                fields = new
-                {
-                    eventName = eventName,
-                    args = new object[]
-                    {
-                        person.DisplayName,
-                        true
-                    }
-                }
-            };
-            await SendToClientDelayedAsync(result, 0);
-            result.fields.args[1] = false;
-            await SendToClientDelayedAsync(result, 1000);
-        }
-
-        private Task SendToClientDelayedAsync(object result, int delay)
-        {
-            return Task.Run(() =>
-            {
-                Thread.Sleep(delay);
-                _webSocket.SendResultAsync(result);
-            });
         }
 
         public async Task SendMessageToClientAsync(DMessage dMessage)
@@ -153,6 +122,11 @@ namespace PilotRocketChatGateway.WebSockets
 
             if (notify.HasFlag(NotifyClientKind.Message))
                 await SendMessageUpdate(dMessage);
+        }
+        public void SendTypingMessageToClient(DChat chat, int personId)
+        {
+            var roomId = _chatService.GetRoomId(chat);
+            _typingTimer.Start(roomId, personId);
         }
         public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
         {
@@ -203,6 +177,31 @@ namespace PilotRocketChatGateway.WebSockets
             await _webSocket.SendResultAsync(result);
         }
 
+        private async Task SendTypingMessageToClientAsync(string roomId, int personId, bool isTyping)
+        {
+            var person = _serverApi.GetPerson(personId);
+            var eventName = $"{roomId}/typing";
+            if (!_subscriptions.TryGetValue(eventName, out var id))
+                return;
+
+            var result = new
+            {
+                msg = "",
+                collection = Streams.STREAM_NOTIFY_ROOM,
+                id = id,
+                fields = new
+                {
+                    eventName = eventName,
+                    args = new object[]
+                    {
+                        person.DisplayName,
+                        isTyping
+                    }
+                }
+            };
+            await _webSocket.SendResultAsync(result);
+        }
+
         private async Task SendMessageUpdate(DMessage message)
         {
             var rocketChatMessage = _chatService.ConvertToMessage(message);
@@ -221,6 +220,8 @@ namespace PilotRocketChatGateway.WebSockets
                     args = new object[] { rocketChatMessage }
                 }
             };
+
+            await SendTypingMessageToClientAsync(rocketChatMessage.roomId, message.CreatorId, false);
             await _webSocket.SendResultAsync(result);
         }
 
@@ -267,6 +268,7 @@ namespace PilotRocketChatGateway.WebSockets
         }
         public void Dispose()
         {
+            _typingTimer.Dispose();
             _subscriptions.Clear();
         }
     }

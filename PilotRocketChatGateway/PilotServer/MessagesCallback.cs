@@ -64,7 +64,7 @@ namespace PilotRocketChatGateway.PilotServer
             try
             {
                 var chat = _context.RemoteService.ServerApi.GetChat(chatId);
-                _context.WebSocketsSession.SendTypingMessageToClientAsync(chat.Chat, personId);
+                _context.WebSocketsSession.SendTypingMessageToClient(chat.Chat, personId);
             }
             catch (Exception e)
             {
