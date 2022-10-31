@@ -7,7 +7,7 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
-        INPerson GetPerson(string login);
+        INPerson GetPerson(Predicate<INPerson> predicate);
         bool IsOnline(int person);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
@@ -19,6 +19,7 @@ namespace PilotRocketChatGateway.PilotServer
         DMessage GetMessage(Guid id);
         List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
+        void SendTypingMessage(Guid chatId);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
         Guid CreateAttachmentObject(string fileName, byte[] attach);
@@ -91,9 +92,9 @@ namespace PilotRocketChatGateway.PilotServer
             _people.TryGetValue(id, out var person);
             return person;
         }
-        public INPerson GetPerson(string login)
+        public INPerson GetPerson(Predicate<INPerson> predicate)
         {
-            return _people.Values.First(x => x.Login == login);
+            return _people.Values.First(x => predicate(x));
         }
 
         public void SendMessage(DMessage message)
@@ -132,6 +133,11 @@ namespace PilotRocketChatGateway.PilotServer
         public DMessage GetMessage(Guid id)
         {
             return _messagesApi.GetMessage(id);
+        }
+
+        public void SendTypingMessage(Guid chatId)
+        {
+            _messagesApi.TypingMessage(chatId);
         }
     }
 

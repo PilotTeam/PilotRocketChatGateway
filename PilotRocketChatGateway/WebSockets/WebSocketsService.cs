@@ -28,6 +28,7 @@ namespace PilotRocketChatGateway.WebSockets
         private readonly IContextService _contextService;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
         private readonly IAuthHelper _authHelper;
+        private IContext _context;
 
         public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
         {
@@ -101,6 +102,9 @@ namespace PilotRocketChatGateway.WebSockets
                 case "login":
                     await LoginAsync(request);
                     break;
+                case Streams.STREAM_NOTIFY_ROOM:
+                    await SendTypingMessageToServer(request);
+                    break;
             }
         }
         private async Task HandleSubRequestAsync(dynamic request)
@@ -124,14 +128,28 @@ namespace PilotRocketChatGateway.WebSockets
             if (Session != null)
                 return;
 
-            var context = RegisterService(request.@params[0].resume);
-            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, context.RemoteService.ServerApi, _authHelper, _webSocket);
+            _context = RegisterService(request.@params[0].resume);
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
                 request.id,
                 msg = "result"
             };
             await _webSocket.SendResultAsync(result);
+        }
+
+
+        private async Task SendTypingMessageToServer(dynamic request)
+        {
+            var eventParam = request.@params[0].Split('/');
+            if (eventParam.Length != 2 || eventParam[1] != "typing")
+                return;
+
+            var isTyping = request.@params[2];
+            if (isTyping == false)
+                return;
+
+            _context.ChatService.SendTypingMessageToServer(eventParam[0]);
         }
 
         private IContext RegisterService(string authToken)

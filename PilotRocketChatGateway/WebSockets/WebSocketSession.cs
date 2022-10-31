@@ -68,7 +68,7 @@ namespace PilotRocketChatGateway.WebSockets
         public void Subscribe(dynamic request)
         {
             _subscriptions[GetSubsName(request)] = request.id;
-            var result = new 
+            var result = new
             {
                 msg = "ready",
                 subs = new string[] { request.id.ToString() }
@@ -103,14 +103,25 @@ namespace PilotRocketChatGateway.WebSockets
                 fields = new
                 {
                     eventName = eventName,
-                    args = new object[] 
-                    { 
+                    args = new object[]
+                    {
                         person.DisplayName,
                         true
                     }
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            await SendToClientDelayedAsync(result, 0);
+            result.fields.args[1] = false;
+            await SendToClientDelayedAsync(result, 1000);
+        }
+
+        private Task SendToClientDelayedAsync(object result, int delay)
+        {
+            return Task.Run(() =>
+            {
+                Thread.Sleep(delay);
+                _webSocket.SendResultAsync(result);
+            });
         }
 
         public async Task SendMessageToClientAsync(DMessage dMessage)
