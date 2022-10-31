@@ -118,6 +118,7 @@ namespace PilotRocketChatGateway.WebSockets
             switch (dMessage.Type)
             {
                 case MessageType.TextMessage:
+                case MessageType.EditTextMessage:
                     await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
                     return;
 

@@ -16,6 +16,7 @@ namespace PilotRocketChatGateway.PilotServer
         DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
         DMessage GetMessage(string thirdPartyInfo);
+        DMessage GetMessage(Guid id);
         List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
         DDatabaseInfo GetDatabaseInfo();
@@ -126,6 +127,11 @@ namespace PilotRocketChatGateway.PilotServer
         public DMessage GetMessage(string thirdPartyInfo)
         {
             return _messagesApi.GetThirdPartyMessage(thirdPartyInfo);
+        }
+
+        public DMessage GetMessage(Guid id)
+        {
+            return _messagesApi.GetMessage(id);
         }
     }
 

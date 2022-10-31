@@ -67,7 +67,8 @@ namespace PilotRocketChatGateway.UserContext
         {
             var roomId = GetRoomId(id.ToString());
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
-            return ConvertToRoom(GetRoomId(chat.Chat), chat.Chat, chat.Relations, chat.LastMessage);
+            var lastMsg = _context.RemoteService.ServerApi.GetMessage(chat.LastMessage.Id);
+            return ConvertToRoom(GetRoomId(chat.Chat), chat.Chat, chat.Relations, lastMsg );
         }
         public Subscription LoadRoomsSubscription(string roomId)
         {
@@ -148,12 +149,21 @@ namespace PilotRocketChatGateway.UserContext
                 _context.RemoteService.ServerApi.SendMessage(msg);
             }
         }
-        public Message ConvertToMessage(DMessage msg)
+        public Message ConvertToMessage(DMessage msg1)
         {
-            var chat = _context.RemoteService.ServerApi.GetChat(msg.ChatId);
-            var attachId = GetMsgAttachmentId(chat.Relations, msg.Id);
-            return ConvertToMessage(msg, chat.Chat, attachId);
+            var origin = GetOriginMessage(msg1);
+            var chat = _context.RemoteService.ServerApi.GetChat(origin.ChatId);
+            var attachId = GetMsgAttachmentId(chat.Relations, origin.Id);
+            return ConvertToMessage(origin, chat.Chat, attachId);
         }
+
+        private DMessage GetOriginMessage(DMessage msg)
+        {
+            if (msg.Type == MessageType.EditTextMessage)
+                return _context.RemoteService.ServerApi.GetMessage(msg.RelatedMessageId.Value);
+            return msg;
+        }
+
         public void SendTextMessageToServer(string roomId, string rcMsgId, string text)
         {
             var chatId = GetRoomId(roomId);
@@ -188,18 +198,12 @@ namespace PilotRocketChatGateway.UserContext
             var edit = CreateMessage(chatId, MessageType.EditTextMessage, relatedMsgId);
             var data = new DTextMessageData { Text = text };
 
-            var origin = LoadMessage(chatId, relatedMsgId);
+            var origin = _context.RemoteService.ServerApi.GetMessage(relatedMsgId);
             origin.RelatedMessages.Add(edit);
 
             SetMessageData(edit, data);
             _context.RemoteService.ServerApi.SendMessage(edit);
             _context.WebSocketsSession.NotifyMessageCreatedAsync(origin, NotifyClientKind.FullChat);
-        }
-
-        private DMessage LoadMessage(Guid chatId, Guid relatedMsgId)
-        {
-            var msgs = _context.RemoteService.ServerApi.GetMessages(chatId, DateTime.Now, int.MaxValue);
-            return msgs.FirstOrDefault(x => x.Id == relatedMsgId);
         }
 
         private Guid GetGuidMsgId(string msgId)
