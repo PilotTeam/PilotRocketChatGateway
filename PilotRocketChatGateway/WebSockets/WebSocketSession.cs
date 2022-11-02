@@ -125,7 +125,7 @@ namespace PilotRocketChatGateway.WebSockets
         }
         public void SendTypingMessageToClient(DChat chat, int personId)
         {
-            var roomId = _chatService.GetRoomId(chat);
+            var roomId = _chatService.DataLoader.RCDataConverter.ConvertToRoomId(chat);
             _typingTimer.Start(roomId, personId);
         }
         public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
@@ -159,7 +159,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task SendChatCreated(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.LoadRoom(dMessage.ChatId);
+            var room = _chatService.DataLoader.LoadRoom(dMessage.ChatId);
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 
@@ -204,7 +204,7 @@ namespace PilotRocketChatGateway.WebSockets
 
         private async Task SendMessageUpdate(DMessage message)
         {
-            var rocketChatMessage = _chatService.ConvertToMessage(message);
+            var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(message);
             var eventName = $"{rocketChatMessage.roomId}";
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
@@ -228,7 +228,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task UpdateRoomsSubscription(Guid chatId)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_SUBSCRIPTIONS_CHANGED}";
-            var sub = _chatService.LoadRoomsSubscription(chatId.ToString());
+            var sub = _chatService.DataLoader.LoadRoomsSubscription(chatId.ToString());
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 
@@ -249,7 +249,7 @@ namespace PilotRocketChatGateway.WebSockets
         private async Task UpdateRoom(Guid chatId)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.LoadRoom(chatId);
+            var room = _chatService.DataLoader.LoadRoom(chatId);
             if (!_subscriptions.TryGetValue(eventName, out var id))
                 return;
 

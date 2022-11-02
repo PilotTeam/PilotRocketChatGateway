@@ -120,7 +120,7 @@ namespace PilotRocketChatGateway.Controllers
                 {
                     authToken = tokenString,
                     userId = serverApi.CurrentPerson.Id.ToString(),
-                    me = chatService.LoadUser(serverApi.CurrentPerson.Id)
+                    me = chatService.DataLoader.LoadUser(serverApi.CurrentPerson.Id)
                 }
             };
         }

@@ -149,7 +149,7 @@ namespace PilotRocketChatGateway.WebSockets
             if (isTyping == false)
                 return;
 
-            _context.ChatService.SendTypingMessageToServer(eventParam[0]);
+            _context.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
         }
 
         private IContext RegisterService(string authToken)

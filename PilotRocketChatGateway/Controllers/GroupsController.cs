@@ -35,7 +35,7 @@ namespace PilotRocketChatGateway.Controllers
             latest = GetParam(nameof(latest));
 
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var msgs = context.ChatService.LoadMessages(roomId, count, latest);
+            var msgs = context.ChatService.DataLoader.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
         }
@@ -45,7 +45,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Members(string roomId)
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var users = context.ChatService.LoadMembers(roomId);
+            var users = context.ChatService.DataLoader.LoadMembers(roomId);
             var result = new { success = true, members = users };
             return JsonConvert.SerializeObject(result);
         }
@@ -57,7 +57,7 @@ namespace PilotRocketChatGateway.Controllers
             var group = JsonConvert.DeserializeObject<GroupRequest>(request.ToString());
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
 
-            var created = context.ChatService.CreateChat(group.name, group.members, ChatKind.Group);
+            var created = context.ChatService.DataSender.SendChatCreationMessageToServer(group.name, group.members, ChatKind.Group);
             var result = new { group = created, success = true };
             return JsonConvert.SerializeObject(result);
         }
@@ -74,7 +74,7 @@ namespace PilotRocketChatGateway.Controllers
 
 
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var (files, total) = context.ChatService.LoadFiles(roomId, offset);
+            var (files, total) = context.ChatService.DataLoader.RCDataConverter.AttachmentLoader.LoadFiles(roomId, offset);
             var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
             return JsonConvert.SerializeObject(result);
         }
