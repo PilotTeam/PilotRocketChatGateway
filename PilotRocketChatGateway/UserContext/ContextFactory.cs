@@ -5,16 +5,15 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IContextFactory
     {
-        IContext CreateContext(HttpPilotClient client, ILogger logger);
+        IContext CreateContext(Credentials credentials, IConnectionService connector, ILogger logger);
     }
 
     public class ContextFactory : IContextFactory
     {
-        public IContext CreateContext(HttpPilotClient client, ILogger logger)
+        public IContext CreateContext(Credentials credentials, IConnectionService connector, ILogger logger)
         {
-            var fileLoader = new FileLoader(client.GetFileArchiveApi());
-            var context = new Context();
-            var remoteSerive = new RemoteService(client, context, fileLoader, logger);
+            var context = new Context(credentials);
+            var remoteSerive = new RemoteService(context, connector, logger);
 
             var commonConverter = new CommonDataConverter(context);
             var attachLoader = new AttachmentLoader(commonConverter, context);

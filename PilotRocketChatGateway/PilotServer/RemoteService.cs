@@ -1,4 +1,5 @@
-﻿using Ascon.Pilot.Server.Api;
+﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api;
 using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.PilotServer
@@ -8,32 +9,28 @@ namespace PilotRocketChatGateway.PilotServer
     {
         IServerApiService ServerApi { get; }
         IFileFileManager FileManager { get; }
-        bool IsActive { get; }
+        bool IsConnected { get; }
     }
     public class RemoteService : IRemoteService, IConnectionLostListener
     {
+        const int RECONNECT_TIME_OUT = 5000;
+        private ILogger _logger;
+        private IContext _context;
+        private IConnectionService _connector;
         private HttpPilotClient _client;
         private ServerApiService _serverApi;
         private IFileFileManager _fileManager;
 
-        public RemoteService(HttpPilotClient client, IContext context, IFileLoader fileLoader, ILogger logger)
+        public RemoteService(IContext context, IConnectionService connector, ILogger logger)
         {
-            _client = client;
-            _client.SetConnectionLostListener(this);
+            _logger = logger;
+            _context = context;
+            _connector = connector;
 
-            var serverApi = _client.GetServerApi(new NullableServerCallback());
-            var messageApi = _client.GetMessagesApi(new MessagesCallback(context, logger));
-            var dbInfo = serverApi.OpenDatabase();
-
-            var archiveApi = _client.GetFileArchiveApi();
-            _fileManager = new FileManager(archiveApi, serverApi, fileLoader);
-            var attachmentHelper = new AttachmentHelper(serverApi, _fileManager, dbInfo.Person);
-
-            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo);
-            IsActive = true;
+            Connect();
         }
 
-        public bool IsActive { get; private set; }
+        public bool IsConnected { get; private set; }
 
         public IServerApiService ServerApi => _serverApi;
 
@@ -41,7 +38,52 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void ConnectionLost(Exception ex = null)
         {
-            IsActive = false;
+            _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
+            _logger.LogError(0, ex, ex.Message);
+
+            IsConnected = false;
+            TryConnect();
+        }
+
+        private void TryConnect()
+        {
+            bool firstTry = true;
+            while (!IsConnected)
+            {
+                try
+                {
+                    Connect();
+                }
+                catch (Exception)
+                {
+                    if (firstTry)
+                    {
+                        _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
+                        firstTry = false;
+                    }
+                    Thread.Sleep(RECONNECT_TIME_OUT);
+                }
+            }
+        }
+
+        private void Connect()
+        {
+            _client = _connector.Connect(_context.Credentials);
+
+            var fileLoader = new FileLoader(_client.GetFileArchiveApi());
+            _client.SetConnectionLostListener(this);
+            var serverApi = _client.GetServerApi(new NullableServerCallback());
+            var messageApi = _client.GetMessagesApi(new MessagesCallback(_context, _logger));
+            var dbInfo = serverApi.OpenDatabase();
+
+            var archiveApi = _client.GetFileArchiveApi();
+            _fileManager = new FileManager(archiveApi, serverApi, fileLoader);
+            var attachmentHelper = new AttachmentHelper(serverApi, _fileManager, dbInfo.Person);
+
+            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo);
+
+            IsConnected = true;
+            _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");
         }
 
         public void Dispose()

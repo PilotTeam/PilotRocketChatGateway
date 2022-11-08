@@ -20,7 +20,7 @@ namespace PilotRocketChatGateway.Authentication
                 ValidIssuer = authSettings.Issuer,
                 ValidateAudience = false,
                 ValidAudience = authSettings.GetAudience(),
-                ValidateLifetime = true,
+                ValidateLifetime = false,
                 IssuerSigningKey = authSettings.GetSymmetricSecurityKey(),
                 ValidateIssuerSigningKey = true,
                 ClockSkew = authSettings.GetClockCrew()

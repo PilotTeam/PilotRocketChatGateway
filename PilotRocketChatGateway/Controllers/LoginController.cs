@@ -137,7 +137,6 @@ namespace PilotRocketChatGateway.Controllers
 
             var tokeOptions = new JwtSecurityToken(
                 claims: claims,
-                expires: _authSettings.GetTokenLifetime(_authSettings.TokenLifeTimeDays),
                 signingCredentials: signinCredentials,
                 audience: _authSettings.GetAudience(),
                 issuer: _authSettings.Issuer

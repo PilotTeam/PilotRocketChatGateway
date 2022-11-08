@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         IChatService ChatService { get; }
         IWebSocketSession WebSocketsSession { get; }
         void SetService(IService service);
+        Credentials Credentials { get; }
     }
     public class Context : IContext
     {
@@ -18,16 +19,20 @@ namespace PilotRocketChatGateway.UserContext
         private IChatService _chatService;
         private IWebSocksetsService _webSocksetsService;
 
+        public Context(Credentials credentials)
+        {
+            Credentials = credentials;
+        }
+        public Credentials Credentials { get; }
+        
         public IRemoteService RemoteService
         {
 
             get
             {
-                if (_remoteService.IsActive == false)
-                {
-                    Dispose();
-                    throw new UnauthorizedAccessException();
-                }
+                if (_remoteService.IsConnected == false)
+                    return null;
+
                 return _remoteService;
             }
         }
@@ -36,17 +41,15 @@ namespace PilotRocketChatGateway.UserContext
 
             get
             {
-                if (_remoteService.IsActive == false)
-                {
-                    Dispose();
-                    throw new UnauthorizedAccessException();
-                }
+                if (_remoteService.IsConnected == false)
+                    return null;
+
                 return _chatService;
             }
         }
 
         public IWebSocketSession WebSocketsSession => _webSocksetsService.Session;
-        
+
         public void SetService(IService service)
         {
             switch (service)
