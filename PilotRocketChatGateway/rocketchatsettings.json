@@ -1,6 +1,11 @@
 {
   "settings": [
     {
+      "_id": "API_Gitlab_URL",
+      "value": "https://gitlab.com",
+      "enterprise": false
+    },
+    {
       "_id": "Accounts_EmailOrUsernamePlaceholder",
       "value": "",
       "enterprise": false
@@ -21,8 +26,18 @@
       "enterprise": false
     },
     {
+      "_id": "Accounts_ManuallyApproveNewUsers",
+      "value": false,
+      "enterprise": false
+    },
+    {
       "_id": "Accounts_PasswordPlaceholder",
       "value": "",
+      "enterprise": false
+    },
+    {
+      "_id": "Accounts_PasswordReset",
+      "value": false,
       "enterprise": false
     },
     {
@@ -31,8 +46,18 @@
       "enterprise": false
     },
     {
-      "_id": "Site_Url",
-      "value": "demo",
+      "_id": "Accounts_iframe_enabled",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "CAS_enabled",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "CAS_login_url",
+      "value": "",
       "enterprise": false
     },
     {
@@ -44,6 +69,11 @@
       "_id": "Accounts_AllowEmailChange",
       "value": true,
       "enterprise": false
+    },
+    {
+      "_id": "Accounts_AllowInvisibleStatusOption",
+      "enterprise": false,
+      "value": false
     },
     {
       "_id": "Accounts_AllowPasswordChange",
@@ -73,6 +103,11 @@
     {
       "_id": "Accounts_AllowUsernameChange",
       "value": true,
+      "enterprise": false
+    },
+    {
+      "_id": "Accounts_AvatarBlockUnauthenticatedAccess",
+      "value": false,
       "enterprise": false
     },
     {
@@ -106,6 +141,18 @@
       "enterprise": false
     },
     {
+      "_id": "CROWD_Enable",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "Canned_Responses_Enable",
+      "value": false,
+      "enterprise": true,
+      "invalidValue": false,
+      "modules": [ "canned-responses" ]
+    },
+    {
       "_id": "DirectMesssage_maxUsers",
       "value": 8,
       "enterprise": false
@@ -116,6 +163,11 @@
       "enterprise": false
     },
     {
+      "_id": "FEDERATION_Enabled",
+      "value": false,
+      "enterprise": false
+    },
+    {
       "_id": "FileUpload_MaxFileSize",
       "value": 600857600,
       "enterprise": false
@@ -123,6 +175,11 @@
     {
       "_id": "FileUpload_MediaTypeWhiteList",
       "value": "",
+      "enterprise": false
+    },
+    {
+      "_id": "Force_Screen_Lock",
+      "value": false,
       "enterprise": false
     },
     {
@@ -141,6 +198,26 @@
       "enterprise": false
     },
     {
+      "_id": "Jitsi_Enable_Channels",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "Jitsi_Enable_Teams",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "Jitsi_Enabled",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "Jitsi_Enabled_TokenAuth",
+      "value": false,
+      "enterprise": false
+    },
+    {
       "_id": "Jitsi_SSL",
       "value": true,
       "enterprise": false
@@ -153,6 +230,11 @@
     {
       "_id": "Jitsi_URL_Room_Prefix",
       "value": "RocketChat",
+      "enterprise": false
+    },
+    {
+      "_id": "LDAP_Enable",
+      "value": false,
       "enterprise": false
     },
     {
@@ -208,6 +290,16 @@
       "enterprise": false
     },
     {
+      "_id": "Message_Read_Receipt_Enabled",
+      "value": false,
+      "enterprise": false
+    },
+    {
+      "_id": "Message_Read_Receipt_Store_Users",
+      "value": false,
+      "enterprise": false
+    },
+    {
       "_id": "Message_TimeAndDateFormat",
       "value": "LLL",
       "enterprise": false
@@ -228,23 +320,8 @@
       "enterprise": false
     },
     {
-      "_id": "Threads_enabled",
-      "value": true,
-      "enterprise": false
-    },
-    {
-      "_id": "UI_Allow_room_names_with_special_chars",
-      "value": true,
-      "enterprise": false
-    },
-    {
       "_id": "UI_Use_Real_Name",
       "value": true,
-      "enterprise": false
-    },
-    {
-      "_id": "uniqueID",
-      "value": "58de9e3b10757d76213eaf13",
       "enterprise": false
     }
   ]
