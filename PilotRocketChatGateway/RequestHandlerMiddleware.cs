@@ -13,10 +13,10 @@ namespace PilotRocketChatGateway
             _logger = logger;
         }
 
-        public async Task Invoke(HttpContext context)
+        public Task Invoke(HttpContext context)
         {
             _logger.Log(LogLevel.Information, $"User id: {GetUserId(context)} Http method: {context.Request.Method} path: {context.Request.Path} query: {context.Request.QueryString}");
-            await _next(context);
+            return _next(context);
         }
 
         private string GetUserId(HttpContext context)

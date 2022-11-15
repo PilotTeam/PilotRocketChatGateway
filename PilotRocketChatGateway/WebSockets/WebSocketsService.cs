@@ -88,10 +88,10 @@ namespace PilotRocketChatGateway.WebSockets
                     await HandleMethodRequestAsync(request);
                     break;
                 case "sub":
-                    await HandleSubRequestAsync(request);
+                    HandleSubRequest(request);
                     break;
                 case "unsub":
-                    await HandleUnsubRequestAsync(request);
+                    HandleUnsubRequest(request);
                     break;
             }
         }
@@ -107,7 +107,7 @@ namespace PilotRocketChatGateway.WebSockets
                     break;
             }
         }
-        private async Task HandleSubRequestAsync(dynamic request)
+        private void HandleSubRequest(dynamic request)
         {
             if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
@@ -115,7 +115,7 @@ namespace PilotRocketChatGateway.WebSockets
             Session.Subscribe(request);
         }
 
-        private async Task HandleUnsubRequestAsync(dynamic request)
+        private void HandleUnsubRequest(dynamic request)
         {
             if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
@@ -123,10 +123,10 @@ namespace PilotRocketChatGateway.WebSockets
             Session.Unsubscribe(request);
         }
 
-        private async Task LoginAsync(dynamic request)
+        private Task LoginAsync(dynamic request)
         {
             if (Session != null)
-                return;
+                return Task.CompletedTask;
 
             _context = RegisterService(request.@params[0].resume);
             Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
@@ -135,11 +135,11 @@ namespace PilotRocketChatGateway.WebSockets
                 request.id,
                 msg = "result"
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
 
-        private async Task SendTypingMessageToServer(dynamic request)
+        private void SendTypingMessageToServer(dynamic request)
         {
             var eventParam = request.@params[0].Split('/');
             if (eventParam.Length != 2 || eventParam[1] != "typing")
@@ -159,14 +159,14 @@ namespace PilotRocketChatGateway.WebSockets
             context.SetService(this);
             return context;
         }
-        private async Task CloseAsync(WebSocketCloseStatus status)
+        private Task CloseAsync(WebSocketCloseStatus status)
         {
             if (IsActive == false)
-                return;
+                return Task.CompletedTask;
 
             IsActive = false;
-            await _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
             _logger.Log(LogLevel.Information, "WebSocket connection closed");
+            return _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
         }
 
         public async void Dispose()

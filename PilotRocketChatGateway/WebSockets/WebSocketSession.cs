@@ -128,10 +128,10 @@ namespace PilotRocketChatGateway.WebSockets
             var roomId = _chatService.DataLoader.RCDataConverter.ConvertToRoomId(chat);
             _typingTimer.Start(roomId, personId);
         }
-        public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
+        public Task SendUserStatusChangeAsync(int personId, UserStatuses status)
         {
             if (!_subscriptions.TryGetValue(Streams.STREAM_USER_PRESENCE, out var id))
-                return;
+                return Task.CompletedTask;
 
             var person = _serverApi.GetPerson(personId);
             var result = new
@@ -153,15 +153,15 @@ namespace PilotRocketChatGateway.WebSockets
                     uid = personId
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
-        private async Task SendChatCreated(DMessage dMessage)
+        private Task SendChatCreated(DMessage dMessage)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
             var room = _chatService.DataLoader.LoadRoom(dMessage.ChatId);
             if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
+                return Task.CompletedTask;
 
             var result = new
             {
@@ -174,15 +174,15 @@ namespace PilotRocketChatGateway.WebSockets
                     args = new object[] { "updated", room }
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
-        private async Task SendTypingMessageToClientAsync(string roomId, int personId, bool isTyping)
+        private Task SendTypingMessageToClientAsync(string roomId, int personId, bool isTyping)
         {
             var person = _serverApi.GetPerson(personId);
             var eventName = $"{roomId}/typing";
             if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
+                return Task.CompletedTask;
 
             var result = new
             {
@@ -199,7 +199,7 @@ namespace PilotRocketChatGateway.WebSockets
                     }
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
         private async Task SendMessageUpdate(DMessage message)
@@ -225,12 +225,12 @@ namespace PilotRocketChatGateway.WebSockets
             await _webSocket.SendResultAsync(result);
         }
 
-        private async Task UpdateRoomsSubscription(Guid chatId)
+        private Task UpdateRoomsSubscription(Guid chatId)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_SUBSCRIPTIONS_CHANGED}";
             var sub = _chatService.DataLoader.LoadRoomsSubscription(chatId.ToString());
             if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
+                return Task.CompletedTask;
 
             var result = new
             {
@@ -243,15 +243,15 @@ namespace PilotRocketChatGateway.WebSockets
                     args = new object[] { "updated", sub }
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
-        private async Task UpdateRoom(Guid chatId)
+        private Task UpdateRoom(Guid chatId)
         {
             var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
             var room = _chatService.DataLoader.LoadRoom(chatId);
             if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
+                return Task.CompletedTask;
 
             var result = new
             {
@@ -264,7 +264,7 @@ namespace PilotRocketChatGateway.WebSockets
                     args = new object[] { "updated", room }
                 }
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
         public void Dispose()
         {
