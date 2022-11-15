@@ -1,5 +1,6 @@
 ﻿using Ascon.Pilot.Server.Api;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -20,11 +21,13 @@ namespace PilotRocketChatGateway.UserContext
             var rcConverter = new RCDataConverter(context, attachLoader, commonConverter);
             var loader = new DataLoader(rcConverter, commonConverter, context);
             var sender = new DataSender(rcConverter, commonConverter, context);
+            var notifyer = new WebSocketsNotifyer(); 
 
             var chatService = new ChatService(sender, loader);
 
             context.SetService(remoteSerive);
             context.SetService(chatService);
+            context.SetService(notifyer);
             return context;
         }
     }

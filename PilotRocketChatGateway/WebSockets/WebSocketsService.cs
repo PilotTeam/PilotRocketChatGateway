@@ -128,7 +128,8 @@ namespace PilotRocketChatGateway.WebSockets
             if (Session != null)
                 return Task.CompletedTask;
 
-            _context = RegisterService(request.@params[0].resume);
+            _context = GetContext(request.@params[0].resume);
+            _context.WebSocketsNotifyer.RegisterWebSocketServise(this);
             Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
@@ -152,11 +153,10 @@ namespace PilotRocketChatGateway.WebSockets
             _context.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
         }
 
-        private IContext RegisterService(string authToken)
+        private IContext GetContext(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken);
             var context = _contextService.GetContext(jwtToken.Actor);
-            context.SetService(this);
             return context;
         }
         private Task CloseAsync(WebSocketCloseStatus status)

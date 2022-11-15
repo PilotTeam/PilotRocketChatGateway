@@ -32,7 +32,7 @@ namespace PilotRocketChatGateway.UserContext
 
             SetMessageData(dMessage, data);
             _context.RemoteService.ServerApi.SendMessage(dMessage);
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.Chat);
+            _context.WebSocketsNotifyer.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.Chat);
         }
         public void SendEditMessageToServer(string roomId, string strMsgId, string text)
         {
@@ -50,7 +50,7 @@ namespace PilotRocketChatGateway.UserContext
 
             SetMessageData(edit, data);
             _context.RemoteService.ServerApi.SendMessage(edit);
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(origin, NotifyClientKind.FullChat);
+            _context.WebSocketsNotifyer.NotifyMessageCreatedAsync(origin, NotifyClientKind.FullChat);
         }
         public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
         {
@@ -61,7 +61,7 @@ namespace PilotRocketChatGateway.UserContext
 
             SetMessageData(dMessage, msgData);
             _context.RemoteService.ServerApi.SendMessage(dMessage);
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
+            _context.WebSocketsNotifyer.NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
         }
         public void SendReadAllMessageToServer(string roomId)
         {
@@ -100,7 +100,7 @@ namespace PilotRocketChatGateway.UserContext
             foreach (var member in members)
                 SendChatsMemberMessageToServer(chat.Id, member);
 
-            _context.WebSocketsSession.NotifyMessageCreatedAsync(msg, NotifyClientKind.Chat);
+            _context.WebSocketsNotifyer.NotifyMessageCreatedAsync(msg, NotifyClientKind.Chat);
 
             return _rcConverter.ConvertToRoom(chat, new List<DChatRelation>(), msg);
         }

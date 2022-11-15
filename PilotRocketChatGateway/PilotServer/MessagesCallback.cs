@@ -24,7 +24,7 @@ namespace PilotRocketChatGateway.PilotServer
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
-                _context.WebSocketsSession.SendMessageToClientAsync(message.Message);
+                _context.WebSocketsNotifyer.SendMessageAsync(message.Message);
             }
             catch (Exception e)
             {
@@ -37,7 +37,7 @@ namespace PilotRocketChatGateway.PilotServer
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. personId: {personId}");
             try
             {
-                _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.offline);
+                _context.WebSocketsNotifyer.SendUserStatusChangeAsync(personId, UserStatuses.offline);
             }
             catch (Exception e)
             {
@@ -50,7 +50,7 @@ namespace PilotRocketChatGateway.PilotServer
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. personId: {personId}");
             try
             {
-                _context.WebSocketsSession.SendUserStatusChangeAsync(personId, UserStatuses.online);
+                _context.WebSocketsNotifyer.SendUserStatusChangeAsync(personId, UserStatuses.online);
             }
             catch (Exception e)
             {
@@ -64,7 +64,7 @@ namespace PilotRocketChatGateway.PilotServer
             try
             {
                 var chat = _context.RemoteService.ServerApi.GetChat(chatId);
-                _context.WebSocketsSession.SendTypingMessageToClient(chat.Chat, personId);
+                _context.WebSocketsNotifyer.SendTypingMessage(chat.Chat, personId);
             }
             catch (Exception e)
             {
