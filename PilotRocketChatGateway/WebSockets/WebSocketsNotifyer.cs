@@ -5,7 +5,9 @@ namespace PilotRocketChatGateway.WebSockets
 {
     public interface IWebSocketsNotifyer : IService
     {
+        bool IsEmpty { get; }
         void RegisterWebSocketServise(IWebSocksetsService service);
+        void RemoveWebSocketServise(IWebSocksetsService service);
         void SendMessage(DMessage dMessage);
         void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessage(DChat chat, int personId);
@@ -14,6 +16,9 @@ namespace PilotRocketChatGateway.WebSockets
     public class WebSocketsNotifyer : IWebSocketsNotifyer
     {
         private IList<IWebSocksetsService> _servises;
+
+        public bool IsEmpty => _servises.Any() == false;
+
         public WebSocketsNotifyer()
         {
             _servises = new List<IWebSocksetsService>();
@@ -21,6 +26,10 @@ namespace PilotRocketChatGateway.WebSockets
         public void RegisterWebSocketServise(IWebSocksetsService service)
         {
             _servises.Add(service);
+        }
+        public void RemoveWebSocketServise(IWebSocksetsService service)
+        {
+            _servises.Remove(service);
         }
 
         public void SendMessage(DMessage dMessage)

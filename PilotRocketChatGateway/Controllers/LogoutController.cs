@@ -25,9 +25,6 @@ namespace PilotRocketChatGateway.Controllers
         [HttpPost]
         public object Post()
         {
-            var actor = HttpContext.GetTokenActor(_authHelper);
-            _context.RemoveContext(actor);
-            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {actor}.");
             return new { success = true };
         }
     }

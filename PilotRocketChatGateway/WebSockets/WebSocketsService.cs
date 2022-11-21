@@ -52,7 +52,7 @@ namespace PilotRocketChatGateway.WebSockets
                 var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.CloseStatus.HasValue)
                 {
-                    await CloseAsync(result.CloseStatus.Value);
+                    await CloseAsync(result);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -65,10 +65,23 @@ namespace PilotRocketChatGateway.WebSockets
                 }
                 catch (Exception e)
                 {
-                    //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
                     _logger.LogError(0, e, e.Message);
                 }
             }
+        }
+
+        private async Task CloseAsync(WebSocketReceiveResult result)
+        {
+            await CloseAsync(result.CloseStatus.Value);
+            if (_context == null)
+                return;
+
+            _context.WebSocketsNotifyer.RemoveWebSocketServise(this);
+            if (_context.WebSocketsNotifyer.IsEmpty == false)
+                return;
+            
+            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {_context.RemoteService.ServerApi.CurrentPerson.Login}.");
+            _context.Dispose();
         }
 
         private async Task HandleRequestAsync(dynamic request)
