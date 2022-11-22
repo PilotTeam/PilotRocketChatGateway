@@ -34,26 +34,41 @@ namespace PilotRocketChatGateway.WebSockets
 
         public void SendMessage(DMessage dMessage)
         {
+            CheckServises();
             foreach (var service in _servises)
                 service.Session.SendMessageToClientAsync(dMessage);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
         {
+            CheckServises();
             foreach (var service in _servises)
                 service.Session.SendUserStatusChangeAsync(person, status);
         }
 
         public void SendTypingMessage(DChat chat, int personId)
         {
+            CheckServises();
             foreach (var service in _servises)
                 service.Session.SendTypingMessageToClient(chat, personId);
         }
 
         public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
+            CheckServises();
             foreach (var service in _servises)
                 service.Session.NotifyMessageCreatedAsync(dMessage, notify);
+        }
+        private void CheckServises()
+        {
+            foreach (var service in _servises.ToArray())
+            {
+                if (service.State != System.Net.WebSockets.WebSocketState.Open)
+                {
+                    _servises.Remove(service);
+                    service.Dispose();
+                }
+            }
         }
         public void Dispose()
         {

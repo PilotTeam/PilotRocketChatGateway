@@ -19,6 +19,7 @@ namespace PilotRocketChatGateway.WebSockets
         Task ProcessAsync();
         IWebSocketSession Session { get; }
         bool IsActive { get; }
+        WebSocketState State { get; }
     }
     public class WebSocketsService : IWebSocksetsService
     {
@@ -43,6 +44,8 @@ namespace PilotRocketChatGateway.WebSockets
         public IWebSocketSession Session { get; private set; }
 
         public bool IsActive { get; private set; }
+
+        public WebSocketState State => _webSocket.State;
 
         public async Task ProcessAsync()
         {
