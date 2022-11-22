@@ -13,7 +13,7 @@ namespace PilotRocketChatGateway.UserContext
 
     public class ContextService : IContextService
     {
-        private readonly ConcurrentDictionary<string, IContext> _services = new ConcurrentDictionary<string, IContext>();
+        private readonly ConcurrentDictionary<string, IContext> _contexts = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
         private readonly ILogger<ContextService> _logger;
@@ -27,23 +27,21 @@ namespace PilotRocketChatGateway.UserContext
 
         public void CreateContext(Credentials credentials)
         {
-            lock (_services)
+            lock (_contexts)
             {
-                if (_services.TryGetValue(credentials.Username, out var old))
+                if (_contexts.TryGetValue(credentials.Username, out var old))
                     old?.Dispose();                
 
-                var httpClient = _connectionService.Connect(credentials);
-                var context = _contextFactory.CreateContext(httpClient, _logger);
-
-                _services[credentials.Username] = context;
+                var context = _contextFactory.CreateContext(credentials, _connectionService, _logger);
+                _contexts[credentials.Username] = context;
             }
         }
 
         public void RemoveContext(string actor)
         {
-            lock (_services)
+            lock (_contexts)
             {
-                if (_services.Remove(actor, out var context))
+                if (_contexts.Remove(actor, out var context))
                 {
                     context.Dispose();
                 }
@@ -52,9 +50,9 @@ namespace PilotRocketChatGateway.UserContext
 
         public IContext GetContext(string actor)
         {
-            lock (_services)
+            lock (_contexts)
             {
-                _services.TryGetValue(actor, out var context);
+                _contexts.TryGetValue(actor, out var context);
 
                 if (context == null)
                     throw new UnauthorizedAccessException();

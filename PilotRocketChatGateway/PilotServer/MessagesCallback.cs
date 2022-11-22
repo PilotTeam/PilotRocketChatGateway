@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.UserContext;
+using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.PilotServer
 {
@@ -20,10 +21,36 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyMessageCreated(NotifiableDMessage message)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. CreatorId: {message.Message.CreatorId} ChatId: {message.Message.ChatId} MessageType: {message.Message.Type}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
-                _context.WebSocketsSession.SendMessageToClientAsync(message.Message);
+                _context.WebSocketsNotifyer.SendMessage(message.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
+        }
+
+        public void NotifyOffline(int personId)
+        {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. personId: {personId}");
+            try
+            {
+                _context.WebSocketsNotifyer.SendUserStatusChange(personId, UserStatuses.offline);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
+        }
+
+        public void NotifyOnline(int personId)
+        {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. personId: {personId}");
+            try
+            {
+                _context.WebSocketsNotifyer.SendUserStatusChange(personId, UserStatuses.online);
             }
             catch (Exception e)
             {
@@ -33,6 +60,16 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyTypingMessage(Guid chatId, int personId)
         {
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyTypingMessage)}. chatId: {chatId}, personId: {personId}");
+            try
+            {
+                var chat = _context.RemoteService.ServerApi.GetChat(chatId);
+                _context.WebSocketsNotifyer.SendTypingMessage(chat.Chat, personId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
         }
     }
 }

@@ -7,15 +7,19 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
-        INPerson GetPerson(string login);
+        INPerson GetPerson(Predicate<INPerson> predicate);
+        bool IsOnline(int person);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
         DObject GetObject(Guid id);
         DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
         List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
+        DMessage GetMessage(string thirdPartyInfo);
+        DMessage GetMessage(Guid id);
         List<DChatMember> GetChatMembers(Guid chatId);
         void SendMessage(DMessage message);
+        void SendTypingMessage(Guid chatId);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
         Guid CreateAttachmentObject(string fileName, byte[] attach);
@@ -37,7 +41,8 @@ namespace PilotRocketChatGateway.PilotServer
             _currentPerson = dbInfo.Person;
             _attachmentHelper = attachmentHelper;
 
-            LoadPeople();
+            _people = LoadPeople();
+
         }
 
         public INPerson CurrentPerson => _currentPerson;
@@ -50,6 +55,11 @@ namespace PilotRocketChatGateway.PilotServer
         public DChatInfo GetChat(Guid id)
         {
             return _messagesApi.GetChat(id);
+        }
+
+        public bool IsOnline(int person)
+        {
+            return _messagesApi.CheckIsOnline(person);
         }
 
         public DChatInfo GetPersonalChat(int personId)
@@ -82,9 +92,9 @@ namespace PilotRocketChatGateway.PilotServer
             _people.TryGetValue(id, out var person);
             return person;
         }
-        public INPerson GetPerson(string login)
+        public INPerson GetPerson(Predicate<INPerson> predicate)
         {
-            return _people.Values.First(x => x.Login == login);
+            return _people.Values.First(x => predicate(x));
         }
 
         public void SendMessage(DMessage message)
@@ -92,9 +102,9 @@ namespace PilotRocketChatGateway.PilotServer
             _messagesApi.SendMessage(message);
         }
 
-        private void LoadPeople()
+        private Dictionary<int, INPerson> LoadPeople()
         {
-            _people = _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
+            return _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
         }
 
         public List<DChatMember> GetChatMembers(Guid chatId)
@@ -113,6 +123,21 @@ namespace PilotRocketChatGateway.PilotServer
             var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, new List<Guid>() { });
             _serverApi.Change(changeset);
             return change.New.Id;
+        }
+
+        public DMessage GetMessage(string thirdPartyInfo)
+        {
+            return _messagesApi.GetThirdPartyMessage(thirdPartyInfo);
+        }
+
+        public DMessage GetMessage(Guid id)
+        {
+            return _messagesApi.GetMessage(id);
+        }
+
+        public void SendTypingMessage(Guid chatId)
+        {
+            _messagesApi.TypingMessage(chatId);
         }
     }
 

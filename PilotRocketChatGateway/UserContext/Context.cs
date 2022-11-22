@@ -8,26 +8,31 @@ namespace PilotRocketChatGateway.UserContext
         IRemoteService RemoteService { get; }
 
         IChatService ChatService { get; }
-        IWebSocketSession WebSocketsSession { get; }
+        IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
+        Credentials Credentials { get; }
     }
     public class Context : IContext
     {
         private IList<IDisposable> _disposables = new List<IDisposable>();
         private IRemoteService _remoteService;
         private IChatService _chatService;
-        private IWebSocksetsService _webSocksetsService;
+        private IWebSocketsNotifyer _webSocketsNotifyer;
 
+        public Context(Credentials credentials)
+        {
+            Credentials = credentials;
+        }
+        public Credentials Credentials { get; }
+        
         public IRemoteService RemoteService
         {
 
             get
             {
-                if (_remoteService.IsActive == false)
-                {
-                    Dispose();
-                    throw new UnauthorizedAccessException();
-                }
+                if (_remoteService.IsConnected == false)
+                    return null;
+
                 return _remoteService;
             }
         }
@@ -36,17 +41,15 @@ namespace PilotRocketChatGateway.UserContext
 
             get
             {
-                if (_remoteService.IsActive == false)
-                {
-                    Dispose();
-                    throw new UnauthorizedAccessException();
-                }
+                if (_remoteService.IsConnected == false)
+                    return null;
+
                 return _chatService;
             }
         }
 
-        public IWebSocketSession WebSocketsSession => _webSocksetsService.Session;
-        
+        public IWebSocketsNotifyer WebSocketsNotifyer => _webSocketsNotifyer;
+
         public void SetService(IService service)
         {
             switch (service)
@@ -57,8 +60,8 @@ namespace PilotRocketChatGateway.UserContext
                 case IChatService chatService:
                     _chatService = chatService;
                     break;
-                case IWebSocksetsService webSocksetsService: 
-                    _webSocksetsService = webSocksetsService;
+                case IWebSocketsNotifyer webSocksetsService:
+                    _webSocketsNotifyer = webSocksetsService;
                     break;
                 default: 
                     throw new Exception($"unknown service: {service.GetType()}");

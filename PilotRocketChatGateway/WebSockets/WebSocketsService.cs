@@ -28,6 +28,7 @@ namespace PilotRocketChatGateway.WebSockets
         private readonly IContextService _contextService;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
         private readonly IAuthHelper _authHelper;
+        private IContext _context;
 
         public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
         {
@@ -51,7 +52,7 @@ namespace PilotRocketChatGateway.WebSockets
                 var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.CloseStatus.HasValue)
                 {
-                    await CloseAsync(result.CloseStatus.Value);
+                    await CloseAsync(result);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -64,10 +65,23 @@ namespace PilotRocketChatGateway.WebSockets
                 }
                 catch (Exception e)
                 {
-                    //   _logger.Log(LogLevel.Information, $"WebSocket request is failed. Username: {user.user}.");
                     _logger.LogError(0, e, e.Message);
                 }
             }
+        }
+
+        private async Task CloseAsync(WebSocketReceiveResult result)
+        {
+            await CloseAsync(result.CloseStatus.Value);
+            if (_context == null)
+                return;
+
+            _context.WebSocketsNotifyer.RemoveWebSocketServise(this);
+            if (_context.WebSocketsNotifyer.IsEmpty == false)
+                return;
+            
+            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {_context.RemoteService.ServerApi.CurrentPerson.Login}.");
+            _context.Dispose();
         }
 
         private async Task HandleRequestAsync(dynamic request)
@@ -87,10 +101,10 @@ namespace PilotRocketChatGateway.WebSockets
                     await HandleMethodRequestAsync(request);
                     break;
                 case "sub":
-                    await HandleSubRequestAsync(request);
+                    HandleSubRequest(request);
                     break;
                 case "unsub":
-                    await HandleUnsubRequestAsync(request);
+                    HandleUnsubRequest(request);
                     break;
             }
         }
@@ -101,9 +115,12 @@ namespace PilotRocketChatGateway.WebSockets
                 case "login":
                     await LoginAsync(request);
                     break;
+                case Streams.STREAM_NOTIFY_ROOM:
+                    await SendTypingMessageToServer(request);
+                    break;
             }
         }
-        private async Task HandleSubRequestAsync(dynamic request)
+        private void HandleSubRequest(dynamic request)
         {
             if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
@@ -111,7 +128,7 @@ namespace PilotRocketChatGateway.WebSockets
             Session.Subscribe(request);
         }
 
-        private async Task HandleUnsubRequestAsync(dynamic request)
+        private void HandleUnsubRequest(dynamic request)
         {
             if (Session == null || !IsActive)
                 throw new UnauthorizedAccessException();
@@ -119,36 +136,50 @@ namespace PilotRocketChatGateway.WebSockets
             Session.Unsubscribe(request);
         }
 
-        private async Task LoginAsync(dynamic request)
+        private Task LoginAsync(dynamic request)
         {
             if (Session != null)
-                return;
+                return Task.CompletedTask;
 
-            var context = RegisterService(request.@params[0].resume);
-            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, context.ChatService, _authHelper, _webSocket);
+            _context = GetContext(request.@params[0].resume);
+            _context.WebSocketsNotifyer.RegisterWebSocketServise(this);
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
                 request.id,
                 msg = "result"
             };
-            await _webSocket.SendResultAsync(result);
+            return _webSocket.SendResultAsync(result);
         }
 
-        private IContext RegisterService(string authToken)
+
+        private void SendTypingMessageToServer(dynamic request)
+        {
+            var eventParam = request.@params[0].Split('/');
+            if (eventParam.Length != 2 || eventParam[1] != "typing")
+                return;
+
+            var isTyping = request.@params[2];
+            if (isTyping == false)
+                return;
+
+            _context.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
+        }
+
+        private IContext GetContext(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken);
             var context = _contextService.GetContext(jwtToken.Actor);
-            context.SetService(this);
             return context;
         }
-        private async Task CloseAsync(WebSocketCloseStatus status)
+        private Task CloseAsync(WebSocketCloseStatus status)
         {
             if (IsActive == false)
-                return;
+                return Task.CompletedTask;
 
             IsActive = false;
-            await _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
             _logger.Log(LogLevel.Information, "WebSocket connection closed");
+            return _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
         }
 
         public async void Dispose()

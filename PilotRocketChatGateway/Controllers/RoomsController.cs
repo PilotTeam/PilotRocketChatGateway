@@ -24,7 +24,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Get()
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var rooms = context.ChatService.LoadRooms();
+            var rooms = context.ChatService.DataLoader.LoadRooms();
 
             var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
             return JsonConvert.SerializeObject(result);
@@ -39,7 +39,7 @@ namespace PilotRocketChatGateway.Controllers
             using (var ms = new MemoryStream())
             {
                 file.CopyTo(ms);
-                context.ChatService.SendAttachmentMessageToServer(roomId, file.FileName, ms.ToArray(), text);
+                context.ChatService.DataSender.SendAttachmentMessageToServer(roomId, file.FileName, ms.ToArray(), text);
 
                 var result = new MessageRequest()
                 {

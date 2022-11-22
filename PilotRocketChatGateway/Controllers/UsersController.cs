@@ -27,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers
             var users = new List<User>();
             foreach (var id in ids.Split(',').Select(x => int.Parse(x)))
             {
-                var user = context.ChatService.LoadUser(id);
+                var user = context.ChatService.DataLoader.LoadUser(id);
                 users.Add(user);
             }
 
@@ -40,7 +40,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Info(int userId)
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var user = context.ChatService.LoadUser(userId);
+            var user = context.ChatService.DataLoader.LoadUser(userId);
 
             var result = new { success = true, user = user };
             return JsonConvert.SerializeObject(result);
