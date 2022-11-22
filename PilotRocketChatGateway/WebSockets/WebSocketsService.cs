@@ -53,6 +53,7 @@ namespace PilotRocketChatGateway.WebSockets
                 if (result.CloseStatus.HasValue)
                 {
                     await CloseAsync(result);
+                    Dispose();
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
