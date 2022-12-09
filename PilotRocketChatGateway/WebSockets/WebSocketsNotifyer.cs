@@ -1,13 +1,15 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
+using System.Collections.Concurrent;
 
 namespace PilotRocketChatGateway.WebSockets
 {
     public interface IWebSocketsNotifyer : IService
     {
         bool IsEmpty { get; }
-        void RegisterWebSocketServise(IWebSocksetsService service);
-        void RemoveWebSocketServise(IWebSocksetsService service);
+        void RegisterWebSocketService(IWebSocksetsService service);
+        void RemoveWebSocketService(IWebSocksetsService service);
         void SendMessage(DMessage dMessage);
         void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessage(DChat chat, int personId);
@@ -15,65 +17,56 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public class WebSocketsNotifyer : IWebSocketsNotifyer
     {
-        private IList<IWebSocksetsService> _servises;
+        private IWebSocketBank _bank;
+        private IContext _context;
+        private ConcurrentDictionary<int, IWebSocksetsService> _servises => _bank.GetServises(_context.Credentials.Username);
 
         public bool IsEmpty => _servises.Any() == false;
 
-        public WebSocketsNotifyer()
+        public WebSocketsNotifyer(IWebSocketBank bank, IContext context)
         {
-            _servises = new List<IWebSocksetsService>();
+            _context = context;
+            _bank = bank;
         }
-        public void RegisterWebSocketServise(IWebSocksetsService service)
+        public void RegisterWebSocketService(IWebSocksetsService service)
         {
-            _servises.Add(service);
+            _bank.RegisterWebSocketService(_context.Credentials.Username, service);
         }
-        public void RemoveWebSocketServise(IWebSocksetsService service)
+        public void RemoveWebSocketService(IWebSocksetsService service)
         {
-            _servises.Remove(service);
+            _bank.RemoveWebSocketService(_context.Credentials.Username, service);
         }
 
         public void SendMessage(DMessage dMessage)
         {
-            CheckServises();
             foreach (var service in _servises)
-                service.Session.SendMessageToClientAsync(dMessage);
+                service.Value.Session.SendMessageToClientAsync(dMessage);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
         {
-            CheckServises();
             foreach (var service in _servises)
-                service.Session.SendUserStatusChangeAsync(person, status);
+                service.Value.Session.SendUserStatusChangeAsync(person, status);
         }
 
         public void SendTypingMessage(DChat chat, int personId)
         {
-            CheckServises();
             foreach (var service in _servises)
-                service.Session.SendTypingMessageToClient(chat, personId);
+                service.Value.Session.SendTypingMessageToClient(chat, personId);
         }
 
         public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
-            CheckServises();
             foreach (var service in _servises)
-                service.Session.NotifyMessageCreatedAsync(dMessage, notify);
-        }
-        private void CheckServises()
-        {
-            foreach (var service in _servises.ToArray())
-            {
-                if (service.State != System.Net.WebSockets.WebSocketState.Open)
-                {
-                    _servises.Remove(service);
-                    service.Dispose();
-                }
-            }
+                service.Value.Session.NotifyMessageCreatedAsync(dMessage, notify);
         }
         public void Dispose()
         {
             foreach (var service in _servises)
-                service.Dispose();
+            {
+                _bank.RemoveWebSocketService(_context.Credentials.Username, service.Value);
+                service.Value.Dispose();
+            }
         }
     }
 }

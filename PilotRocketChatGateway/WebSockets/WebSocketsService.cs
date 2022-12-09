@@ -80,7 +80,7 @@ namespace PilotRocketChatGateway.WebSockets
             if (_context == null)
                 return;
 
-            _context.WebSocketsNotifyer.RemoveWebSocketServise(this);
+            _context.WebSocketsNotifyer.RemoveWebSocketService(this);
             if (_context.WebSocketsNotifyer.IsEmpty == false)
                 return;
             
@@ -146,7 +146,7 @@ namespace PilotRocketChatGateway.WebSockets
                 return Task.CompletedTask;
 
             _context = GetContext(request.@params[0].resume);
-            _context.WebSocketsNotifyer.RegisterWebSocketServise(this);
+            _context.WebSocketsNotifyer.RegisterWebSocketService(this);
             Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
