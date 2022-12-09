@@ -1,4 +1,5 @@
 ﻿using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.WebSockets;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -16,12 +17,14 @@ namespace PilotRocketChatGateway.UserContext
         private readonly ConcurrentDictionary<string, IContext> _contexts = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
+        private readonly IWebSocketBank _bank;
         private readonly ILogger<ContextService> _logger;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextService> logger)
+        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, IWebSocketBank bank, ILogger<ContextService> logger)
         {
             _connectionService = connectionService;
             _contextFactory = contextFactory;
+            _bank = bank;
             _logger = logger;
         }
 
@@ -32,7 +35,7 @@ namespace PilotRocketChatGateway.UserContext
                 if (_contexts.TryGetValue(credentials.Username, out var old))
                     old?.Dispose();                
 
-                var context = _contextFactory.CreateContext(credentials, _connectionService, _logger);
+                var context = _contextFactory.CreateContext(credentials, _connectionService, _bank, _logger);
                 _contexts[credentials.Username] = context;
             }
         }

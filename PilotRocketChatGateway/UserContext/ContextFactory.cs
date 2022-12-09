@@ -6,12 +6,12 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IContextFactory
     {
-        IContext CreateContext(Credentials credentials, IConnectionService connector, ILogger logger);
+        IContext CreateContext(Credentials credentials, IConnectionService connector, IWebSocketBank bank, ILogger logger);
     }
 
     public class ContextFactory : IContextFactory
     {
-        public IContext CreateContext(Credentials credentials, IConnectionService connector, ILogger logger)
+        public IContext CreateContext(Credentials credentials, IConnectionService connector, IWebSocketBank bank, ILogger logger)
         {
             var context = new Context(credentials);
             var remoteSerive = new RemoteService(context, connector, logger);
@@ -21,7 +21,7 @@ namespace PilotRocketChatGateway.UserContext
             var rcConverter = new RCDataConverter(context, attachLoader, commonConverter);
             var loader = new DataLoader(rcConverter, commonConverter, context);
             var sender = new DataSender(rcConverter, commonConverter, context);
-            var notifyer = new WebSocketsNotifyer(); 
+            var notifyer = new WebSocketsNotifyer(bank, context); 
 
             var chatService = new ChatService(sender, loader);
 

@@ -19,6 +19,7 @@ namespace PilotRocketChatGateway.WebSockets
         Task ProcessAsync();
         IWebSocketSession Session { get; }
         bool IsActive { get; }
+        WebSocketState State { get; }
     }
     public class WebSocketsService : IWebSocksetsService
     {
@@ -44,6 +45,8 @@ namespace PilotRocketChatGateway.WebSockets
 
         public bool IsActive { get; private set; }
 
+        public WebSocketState State => _webSocket.State;
+
         public async Task ProcessAsync()
         {
             var buffer = new byte[1024 * 4];
@@ -53,6 +56,7 @@ namespace PilotRocketChatGateway.WebSockets
                 if (result.CloseStatus.HasValue)
                 {
                     await CloseAsync(result);
+                    Dispose();
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -76,7 +80,7 @@ namespace PilotRocketChatGateway.WebSockets
             if (_context == null)
                 return;
 
-            _context.WebSocketsNotifyer.RemoveWebSocketServise(this);
+            _context.WebSocketsNotifyer.RemoveWebSocketService(this);
             if (_context.WebSocketsNotifyer.IsEmpty == false)
                 return;
             
@@ -142,7 +146,7 @@ namespace PilotRocketChatGateway.WebSockets
                 return Task.CompletedTask;
 
             _context = GetContext(request.@params[0].resume);
-            _context.WebSocketsNotifyer.RegisterWebSocketServise(this);
+            _context.WebSocketsNotifyer.RegisterWebSocketService(this);
             Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
