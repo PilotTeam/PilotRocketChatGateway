@@ -9,7 +9,7 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public class WebSocketsWatcher : IWebSocketsWatcher
     {
-        private readonly int _timeout = 10 * 6 * 1000; //10 min
+        private readonly int _timeout = 24 * 60 * 60 * 1000; //24h
         private readonly System.Timers.Timer _timer;
         public WebSocketsWatcher()
         {
