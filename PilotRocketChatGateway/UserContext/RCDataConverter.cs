@@ -1,32 +1,36 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
+using System.Collections.Generic;
+using static System.Net.WebRequestMethods;
 
 namespace PilotRocketChatGateway.UserContext
 {
     public interface IRCDataConverter
     {
         ICommonDataConverter CommonDataConverter { get; }
-        IAttachmentLoader AttachmentLoader { get; }
+        IMediaAttachmentLoader AttachmentLoader { get; }
+        IList<MessageType> ShowedMessageType { get; }
         Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage);
         Subscription ConvertToSubscription(DChatInfo chat);
         Message ConvertToMessage(DMessage msg);
-        Message ConvertToMessage(DMessage msg, DChat chat, Guid objId);
+        Message ConvertToMessage(DMessage msg, DChat chat, Dictionary<Guid, Guid> attachs);
         string ConvertToRoomId(DChat chat);
     }
     public class RCDataConverter : IRCDataConverter
     {
+        private readonly IList<MessageType> _showedMessageType = new List<MessageType>() { MessageType.TextMessage, MessageType.MessageAnswer };
         private readonly IContext _context;
-
-        public RCDataConverter(IContext context, IAttachmentLoader attachLoader, ICommonDataConverter commonDataConverter)
+        public RCDataConverter(IContext context, IMediaAttachmentLoader attachLoader, ICommonDataConverter commonDataConverter)
         {
             _context = context;
             AttachmentLoader = attachLoader;
             CommonDataConverter = commonDataConverter;
         }
 
+        public IList<MessageType> ShowedMessageType => _showedMessageType;
         public ICommonDataConverter CommonDataConverter { get; }
-        public IAttachmentLoader AttachmentLoader { get; }
+        public IMediaAttachmentLoader AttachmentLoader { get; }
 
         public static T GetMessageData<T>(DMessage msg)
         {
@@ -38,7 +42,7 @@ namespace PilotRocketChatGateway.UserContext
         public Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage)
         {
             var roomId = ConvertToRoomId(chat);
-            var attachId = GetMsgAttachmentId(chatRelations, lastMessage.Id);
+            var attachs = AttachmentLoader.GetAttachmentsIds(chatRelations);
             return new Room()
             {
                 updatedAt = CommonDataConverter.ConvertToJSDate(lastMessage.LocalDate),
@@ -46,7 +50,7 @@ namespace PilotRocketChatGateway.UserContext
                 id = roomId,
                 channelType = GetChannelType(chat),
                 creationDate = CommonDataConverter.ConvertToJSDate(chat.CreationDateUtc),
-                lastMessage = lastMessage.Type == MessageType.TextMessage ? ConvertToMessage(lastMessage, chat, attachId) : null,
+                lastMessage = ShowedMessageType.Contains(lastMessage.Type) ? ConvertToMessage(lastMessage, chat, attachs) : null,
                 usernames = GetUserNames(chat)
             };
         }
@@ -70,10 +74,10 @@ namespace PilotRocketChatGateway.UserContext
         {
             var origin = GetOriginMessage(msg);
             var chat = _context.RemoteService.ServerApi.GetChat(origin.ChatId);
-            var attachId = GetMsgAttachmentId(chat.Relations, origin.Id);
-            return ConvertToMessage(origin, chat.Chat, attachId);
+            var attachs = AttachmentLoader.GetAttachmentsIds(chat.Relations);
+            return ConvertToMessage(origin, chat.Chat, attachs);
         }
-        public Message ConvertToMessage(DMessage msg, DChat chat, Guid objId)
+        public Message ConvertToMessage(DMessage msg, DChat chat, Dictionary<Guid, Guid>  attachs)
         {
             var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId));
             var roomId = ConvertToRoomId(chat);
@@ -86,9 +90,9 @@ namespace PilotRocketChatGateway.UserContext
                 creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
                 msg = GetMessageText(msg),
                 u = user,
-                attachments = LoadAttachments(objId),
+                attachments = LoadAttachments(roomId, msg, attachs),
                 editedAt = editedAt,
-                editedBy = GetEditor(msg)
+                editedBy = GetEditor(msg),
             };
         }
         public string ConvertToRoomId(DChat chat)
@@ -99,11 +103,6 @@ namespace PilotRocketChatGateway.UserContext
         {
             var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
             return members.Select(x => _context.RemoteService.ServerApi.GetPerson(x.PersonId).Login).ToArray();
-        }
-        private Guid GetMsgAttachmentId(IList<DChatRelation> chatRelations, Guid msgId)
-        {
-            var attachs = AttachmentLoader.GetAttachmentsIds(chatRelations);
-            return attachs.Where(x => x.Key == msgId).FirstOrDefault().Value;
         }
         private DMessage GetOriginMessage(DMessage msg)
         {
@@ -117,14 +116,44 @@ namespace PilotRocketChatGateway.UserContext
                 return CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate);
 
             var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, DateTime.MaxValue, chat.UnreadMessagesNumber);
-            var earliestUnreadMessage = unread.LastOrDefault(x => x.Type == MessageType.TextMessage);
+            var earliestUnreadMessage = unread.LastOrDefault(x => ShowedMessageType.Contains(x.Type));
 
             if (earliestUnreadMessage == null)
                 return CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate);
 
             return CommonDataConverter.ConvertToJSDate(earliestUnreadMessage.LocalDate);
         }
-        private IList<Attachment> LoadAttachments(Guid objId)
+
+        private IList<Attachment> LoadAttachments(string roomId, DMessage msg, Dictionary<Guid, Guid> attachGuids)
+        {
+            List<Attachment> attachments = new List<Attachment>();
+            if (msg.Type == MessageType.MessageAnswer)
+            {
+                var related = _context.RemoteService.ServerApi.GetMessage(msg.RelatedMessageId.Value);
+                var replyAttachId = attachGuids.Where(x => x.Key == related.Id).FirstOrDefault().Value;
+                attachments.Add(new Attachment()
+                {
+                    text = GetMessageText(related),
+                    author_name = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId)).username,
+                    creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
+                    message_link = $"{roomId}?msg={GetMessageId(related)}",
+                    attachments = LoadImageAttachments(replyAttachId)
+                });
+            }
+
+            //using (var stream = new MemoryStream(msg.Data))
+            //{
+            //    var data = ProtoBuf.Serializer.Deserialize<DTextMessageData>(stream);
+            //    if (data.Attachments.Any() == false)
+            //        return null;
+
+            //    return LoadImageAttachments(data.Attachments.First().ObjectId);
+            //}
+
+            var attachId = attachGuids.Where(x => x.Key == msg.Id).FirstOrDefault().Value;
+            return attachments.Concat(LoadImageAttachments(attachId)).ToList();
+        }
+        private IList<Attachment> LoadImageAttachments(Guid objId)
         {
             var attach = AttachmentLoader.LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };

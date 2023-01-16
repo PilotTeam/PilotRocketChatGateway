@@ -5,18 +5,18 @@ using SixLabors.ImageSharp;
 
 namespace PilotRocketChatGateway.UserContext
 {
-    public interface IAttachmentLoader
+    public interface IMediaAttachmentLoader
     {
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
         Attachment LoadAttachment(Guid objId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
-    public class AttachmentLoader : IAttachmentLoader
+    public class MediaAttachmentLoader : IMediaAttachmentLoader
     {
         private const string DOWNLOAD_URL = "/download";
         private readonly ICommonDataConverter _commonDataConverter;
         private readonly IContext _context;
-        public AttachmentLoader(ICommonDataConverter commonDataConverter, IContext context)
+        public MediaAttachmentLoader(ICommonDataConverter commonDataConverter, IContext context)
         {
             _commonDataConverter = commonDataConverter;
             _context = context;
@@ -34,6 +34,8 @@ namespace PilotRocketChatGateway.UserContext
                 return null;
 
             var attach = LoadFileInfo(objId);
+            if (attach == null)
+                return null;
 
             if (string.IsNullOrEmpty(attach.FileType) || string.IsNullOrEmpty(attach.Format))
                 return null;
@@ -71,7 +73,7 @@ namespace PilotRocketChatGateway.UserContext
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
             var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
-            var file = obj.ActualFileSnapshot.Files.First();
+            var file = obj.ActualFileSnapshot.Files.FirstOrDefault();
             return fileLoader.Download(file);
         }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)

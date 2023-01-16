@@ -219,6 +219,13 @@ namespace PilotRocketChatGateway
         public long image_size { get; init; }
         public string image_url { get; init; }
         public string type { get; init; }
+        public string text { get; init; }
+        public string author_name { get; init; }
+        [JsonProperty("ts")]
+        public object creationDate { get; init; }
+        public string message_link { get; init; }
+        public string author_icon { get; init; }
+        public IList<Attachment> attachments { get; init; }
     }
     public record FileAttachment
     {
