@@ -1,11 +1,12 @@
 ﻿using Ascon.Pilot.DataClasses;
+using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
 {
     public interface IDataSender
     {
-        void SendTextMessageToServer(string roomId, string msgId, string text);
+        void SendTextMessageToServer(string roomId, string msgId, string text, Uri replyLink);
         void SendEditMessageToServer(string roomId, string msgId, string text);
         void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
@@ -24,15 +25,28 @@ namespace PilotRocketChatGateway.UserContext
             _commonConverter = commonConverter;
             _context = context;
         }
-        public void SendTextMessageToServer(string roomId, string rcMsgId, string text)
+        public void SendTextMessageToServer(string roomId, string rcMsgId, string text, Uri replyLink)
         {
             var chatId = _commonConverter.ConvertToChatId(roomId);
-            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            DMessage dMessage = null;
+            if (replyLink == null)
+            {
+                dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            }
+            else
+            {
+                var id = replyLink.GetParameter("msg");
+                var reply = _commonConverter.IsRocketChatId(id) ?
+                            _context.RemoteService.ServerApi.GetMessage(id) :
+                            _context.RemoteService.ServerApi.GetMessage(Guid.Parse(id));
+                dMessage = CreateMessage(chatId, MessageType.MessageAnswer, reply.Id);
+                dMessage.RelatedMessages.Add(reply); 
+            }
             var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
 
             SetMessageData(dMessage, data);
             _context.RemoteService.ServerApi.SendMessage(dMessage);
-            _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, NotifyClientKind.Chat);
+            _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, NotifyClientKind.FullChat);
         }
         public void SendEditMessageToServer(string roomId, string strMsgId, string text)
         {

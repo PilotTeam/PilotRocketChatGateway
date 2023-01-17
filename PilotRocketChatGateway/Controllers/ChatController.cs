@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using PilotRocketChatGateway.Utils;
 
 namespace PilotRocketChatGateway.Controllers
 {
@@ -44,7 +45,8 @@ namespace PilotRocketChatGateway.Controllers
         {
             var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            context.ChatService.DataSender.SendTextMessageToServer(message.roomId, message.id, message.msg);
+            var (link, text) = MarkdownHelper.CutHyperLink(message.msg);
+            context.ChatService.DataSender.SendTextMessageToServer(message.roomId, message.id, text, link);
             var result = new MessageRequest()
             {
                 success = true
