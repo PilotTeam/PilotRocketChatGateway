@@ -16,7 +16,7 @@ namespace PilotRocketChatGateway.Utils
             if (flags.Count < 2) // chek 3
                 return (null, result);
 
-            return (new Uri(flags[0]), result.Replace(flags[1], string.Empty));
+            return (new Uri(flags[0]), result.Replace(flags[1], string.Empty).TrimStart());
         }
         private static (IList<string>, string) GetFlags(string input, UriMarkdown[] regexes)
         {

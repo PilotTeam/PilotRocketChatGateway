@@ -2,6 +2,7 @@
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Generic;
+using System.Net.Mail;
 using static System.Net.WebRequestMethods;
 
 namespace PilotRocketChatGateway.UserContext
@@ -90,7 +91,7 @@ namespace PilotRocketChatGateway.UserContext
                 creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
                 msg = GetMessageText(msg),
                 u = user,
-                attachments = LoadAttachments(roomId, msg, attachs),
+                attachments = LoadAttachments(roomId, msg),
                 editedAt = editedAt,
                 editedBy = GetEditor(msg),
             };
@@ -124,36 +125,49 @@ namespace PilotRocketChatGateway.UserContext
             return CommonDataConverter.ConvertToJSDate(earliestUnreadMessage.LocalDate);
         }
 
-        private IList<Attachment> LoadAttachments(string roomId, DMessage msg, Dictionary<Guid, Guid> attachGuids)
+
+        private Guid? GetAttachmentId(byte[] msgData)
+        {
+            using (var stream = new MemoryStream(msgData))
+            {
+                var data = ProtoBuf.Serializer.Deserialize<DTextMessageData>(stream);
+                if (data.Attachments.Any() == false)
+                    return null;
+
+                return data.Attachments.Where(x => x.Type == ChatRelationType.Attach).FirstOrDefault()?.ObjectId;
+            }
+        }
+
+        private Attachment LoadReplyAttachments(string roomId, DMessage msg)
+        {
+            var related = _context.RemoteService.ServerApi.GetMessage(msg.RelatedMessageId.Value);
+            var edited = GetEditMessage(related);
+            var replyAttachId = edited == null ? GetAttachmentId(related.Data) : GetAttachmentId(edited.Data);
+
+            return new Attachment()
+            {
+                text = GetMessageText(related),
+                author_name = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId)).username,
+                creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
+                message_link = $"{roomId}?msg={GetMessageId(related)}",
+                attachments = LoadImageAttachments(replyAttachId)
+            };
+        }
+
+        private IList<Attachment> LoadAttachments(string roomId, DMessage msg)
         {
             List<Attachment> attachments = new List<Attachment>();
             if (msg.Type == MessageType.MessageAnswer)
             {
-                var related = _context.RemoteService.ServerApi.GetMessage(msg.RelatedMessageId.Value);
-                var replyAttachId = attachGuids.Where(x => x.Key == related.Id).FirstOrDefault().Value;
-                attachments.Add(new Attachment()
-                {
-                    text = GetMessageText(related),
-                    author_name = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId)).username,
-                    creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
-                    message_link = $"{roomId}?msg={GetMessageId(related)}",
-                    attachments = LoadImageAttachments(replyAttachId)
-                });
+                var replyAttach = LoadReplyAttachments(roomId, msg); 
+                attachments.Add(replyAttach); 
             }
 
-            //using (var stream = new MemoryStream(msg.Data))
-            //{
-            //    var data = ProtoBuf.Serializer.Deserialize<DTextMessageData>(stream);
-            //    if (data.Attachments.Any() == false)
-            //        return null;
-
-            //    return LoadImageAttachments(data.Attachments.First().ObjectId);
-            //}
-
-            var attachId = attachGuids.Where(x => x.Key == msg.Id).FirstOrDefault().Value;
+            var edited = GetEditMessage(msg);
+            var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
             return attachments.Concat(LoadImageAttachments(attachId)).ToList();
         }
-        private IList<Attachment> LoadImageAttachments(Guid objId)
+        private IList<Attachment> LoadImageAttachments(Guid? objId)
         {
             var attach = AttachmentLoader.LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };

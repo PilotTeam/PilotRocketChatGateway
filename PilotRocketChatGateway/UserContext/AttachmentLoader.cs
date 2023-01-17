@@ -8,7 +8,7 @@ namespace PilotRocketChatGateway.UserContext
     public interface IMediaAttachmentLoader
     {
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
-        Attachment LoadAttachment(Guid objId);
+        Attachment LoadAttachment(Guid? objId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
     public class MediaAttachmentLoader : IMediaAttachmentLoader
@@ -26,14 +26,14 @@ namespace PilotRocketChatGateway.UserContext
             var id = _commonDataConverter.ConvertToChatId(roomId);
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             var attachs = GetAttachmentsIds(chat.Relations).Skip(offset);
-            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).ToList(), attachs.Count());
+            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), attachs.Count());
         }
-        public Attachment LoadAttachment(Guid objId)
+        public Attachment LoadAttachment(Guid? objId)
         {
-            if (objId == Guid.Empty)
+            if (objId == null || objId == Guid.Empty)
                 return null;
 
-            var attach = LoadFileInfo(objId);
+            var attach = LoadFileInfo(objId.Value);
             if (attach == null)
                 return null;
 
@@ -82,6 +82,9 @@ namespace PilotRocketChatGateway.UserContext
                 return null;
 
             var attach = LoadFileInfo(objId);
+            if (attach == null)
+                return null;
+
             var creator = _commonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId));
             using (var ms = new MemoryStream(attach.Data))
             {
