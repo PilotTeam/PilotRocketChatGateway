@@ -10,6 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         Guid ConvertToChatId(string roomId);
         Guid ConvertToMsgId(string rcMsgId);
         DateTime ConvertFromJSDate(string date);
+        bool IsRocketChatId(string msgId);
     }
     public class CommonDataConverter : ICommonDataConverter
     {
@@ -57,7 +58,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             return string.IsNullOrEmpty(date) ? DateTime.MaxValue : DateTime.Parse(date).ToUniversalTime();
         }
-        private bool IsRocketChatId(string msgId)
+        public bool IsRocketChatId(string msgId)
         {
             return msgId.Length == 17;
         }

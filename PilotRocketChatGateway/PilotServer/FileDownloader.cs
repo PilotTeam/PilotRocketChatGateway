@@ -24,6 +24,9 @@ namespace PilotRocketChatGateway.PilotServer
 
         public IFileInfo Download(INFile inFile)
         {
+            if (inFile == null)
+                return null;
+
             using (var stream = new MemoryStream())
             { 
                 var filePos = _fileArchiveApi.GetFilePosition(inFile.Id);

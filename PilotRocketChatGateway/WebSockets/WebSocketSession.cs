@@ -99,6 +99,7 @@ namespace PilotRocketChatGateway.WebSockets
             {
                 case MessageType.TextMessage:
                 case MessageType.EditTextMessage:
+                case MessageType.MessageAnswer:
                     await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
                     return;
 

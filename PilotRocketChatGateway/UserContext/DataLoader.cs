@@ -106,11 +106,10 @@ namespace PilotRocketChatGateway.UserContext
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
-                if (msg.Type != MessageType.TextMessage)
+                if (RCDataConverter.ShowedMessageType.Contains(msg.Type) == false)
                     continue;
 
-                attachs.TryGetValue(msg.Id, out var objId);
-                result.Add(RCDataConverter.ConvertToMessage(msg, chat.Chat, objId));
+                result.Add(RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs));
             }
 
             return result;

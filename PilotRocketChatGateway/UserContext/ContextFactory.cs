@@ -17,7 +17,7 @@ namespace PilotRocketChatGateway.UserContext
             var remoteSerive = new RemoteService(context, connector, logger);
 
             var commonConverter = new CommonDataConverter(context);
-            var attachLoader = new AttachmentLoader(commonConverter, context);
+            var attachLoader = new MediaAttachmentLoader(commonConverter, context);
             var rcConverter = new RCDataConverter(context, attachLoader, commonConverter);
             var loader = new DataLoader(rcConverter, commonConverter, context);
             var sender = new DataSender(rcConverter, commonConverter, context);

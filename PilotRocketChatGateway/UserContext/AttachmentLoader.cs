@@ -5,18 +5,18 @@ using SixLabors.ImageSharp;
 
 namespace PilotRocketChatGateway.UserContext
 {
-    public interface IAttachmentLoader
+    public interface IMediaAttachmentLoader
     {
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
-        Attachment LoadAttachment(Guid objId);
+        Attachment LoadAttachment(Guid? objId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
-    public class AttachmentLoader : IAttachmentLoader
+    public class MediaAttachmentLoader : IMediaAttachmentLoader
     {
         private const string DOWNLOAD_URL = "/download";
         private readonly ICommonDataConverter _commonDataConverter;
         private readonly IContext _context;
-        public AttachmentLoader(ICommonDataConverter commonDataConverter, IContext context)
+        public MediaAttachmentLoader(ICommonDataConverter commonDataConverter, IContext context)
         {
             _commonDataConverter = commonDataConverter;
             _context = context;
@@ -26,14 +26,16 @@ namespace PilotRocketChatGateway.UserContext
             var id = _commonDataConverter.ConvertToChatId(roomId);
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             var attachs = GetAttachmentsIds(chat.Relations).Skip(offset);
-            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).ToList(), attachs.Count());
+            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), attachs.Count());
         }
-        public Attachment LoadAttachment(Guid objId)
+        public Attachment LoadAttachment(Guid? objId)
         {
-            if (objId == Guid.Empty)
+            if (objId == null || objId == Guid.Empty)
                 return null;
 
-            var attach = LoadFileInfo(objId);
+            var attach = LoadFileInfo(objId.Value);
+            if (attach == null)
+                return null;
 
             if (string.IsNullOrEmpty(attach.FileType) || string.IsNullOrEmpty(attach.Format))
                 return null;
@@ -71,7 +73,7 @@ namespace PilotRocketChatGateway.UserContext
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
             var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
-            var file = obj.ActualFileSnapshot.Files.First();
+            var file = obj.ActualFileSnapshot.Files.FirstOrDefault();
             return fileLoader.Download(file);
         }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)
@@ -80,6 +82,9 @@ namespace PilotRocketChatGateway.UserContext
                 return null;
 
             var attach = LoadFileInfo(objId);
+            if (attach == null)
+                return null;
+
             var creator = _commonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId));
             using (var ms = new MemoryStream(attach.Data))
             {
