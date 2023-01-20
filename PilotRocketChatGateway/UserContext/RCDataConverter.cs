@@ -116,7 +116,7 @@ namespace PilotRocketChatGateway.UserContext
             if (chat.UnreadMessagesNumber == 0)
                 return CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate);
 
-            var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, DateTime.MaxValue, chat.UnreadMessagesNumber);
+            var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, DateTime.MinValue, DateTime.MaxValue, chat.UnreadMessagesNumber);
             var earliestUnreadMessage = unread.LastOrDefault(x => ShowedMessageType.Contains(x.Type));
 
             if (earliestUnreadMessage == null)

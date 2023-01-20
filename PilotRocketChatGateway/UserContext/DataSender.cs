@@ -83,7 +83,7 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return;
-            var unreads = _context.RemoteService.ServerApi.GetMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
+            var unreads = _context.RemoteService.ServerApi.GetMessages(id, DateTime.MinValue, DateTime.MaxValue, chat.UnreadMessagesNumber);
             foreach (var unread in unreads)
             {
                 var msg = CreateMessage(id, MessageType.MessageRead, unread.Id);

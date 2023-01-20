@@ -23,10 +23,10 @@ namespace PilotRocketChatGateway.Controllers
 
         [Authorize]
         [HttpGet("api/v1/chat.syncMessages")]
-        public string SyncMessages(string roomId, string lastUpdate) //TODO to use lastUpdate
+        public string SyncMessages(string roomId, string lastUpdate) 
         {
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var msgs = context.ChatService.DataLoader.LoadUnreadMessages(roomId);
+            var msgs = context.ChatService.DataLoader.LoadMessages(roomId, lastUpdate);
             var res = new
             {
                 result = new

@@ -10,8 +10,8 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(string roomId);
         IList<Subscription> LoadRoomsSubscriptions();
         Room LoadPersonalRoom(string username);
-        IList<Message> LoadMessages(string roomId, int count, string latest);
-        IList<Message> LoadUnreadMessages(string roomId);
+        IList<Message> LoadMessages(string roomId, int count, string upperBound);
+        IList<Message> LoadMessages(string roomId, string lowerBound);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
@@ -58,19 +58,17 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
         }
-        public IList<Message> LoadMessages(string roomId, int count, string latest)
+        public IList<Message> LoadMessages(string roomId, int count, string upperBound)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
-            var dateTo = _commonConverter.ConvertFromJSDate(latest);
-            return LoadMessages(id, dateTo.AddMilliseconds(-1), count);
+            var dateTo = _commonConverter.ConvertFromJSDate(upperBound);
+            return LoadMessages(id, DateTime.MinValue, dateTo.AddMilliseconds(-1), count);
         }
-        public IList<Message> LoadUnreadMessages(string roomId)
+        public IList<Message> LoadMessages(string roomId, string lowerBound)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
-            var chat = _context.RemoteService.ServerApi.GetChat(id);
-            if (chat.UnreadMessagesNumber == 0)
-                return new List<Message>();
-            return LoadMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
+            var dateFrom = _commonConverter.ConvertFromJSDate(lowerBound);
+            return LoadMessages(id, dateFrom, DateTime.MaxValue, int.MaxValue);
         }
         public User LoadUser(int userId)
         {
@@ -93,9 +91,9 @@ namespace PilotRocketChatGateway.UserContext
             }).ToList();
         }
       
-        private IList<Message> LoadMessages(Guid roomId, DateTime dateTo, int count)
+        private IList<Message> LoadMessages(Guid roomId, DateTime dateFrom, DateTime dateTo, int count)
         {
-            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateTo, count);
+            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateFrom, dateTo, count);
 
             if (msgs == null)
                 return new List<Message>();
