@@ -120,7 +120,7 @@ namespace PilotRocketChatGateway.WebSockets
                     await LoginAsync(request);
                     break;
                 case Streams.STREAM_NOTIFY_ROOM:
-                    await SendTypingMessageToServer(request);
+                    SendTypingMessageToServer(request);
                     break;
             }
         }

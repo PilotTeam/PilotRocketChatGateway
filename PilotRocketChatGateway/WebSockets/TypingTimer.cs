@@ -11,7 +11,7 @@ namespace PilotRocketChatGateway.WebSockets
 
         public TypingTimer(Action<string, int> startedTyping, Action<string, int> stoppedTyping)
         {
-            _timer = new System.Timers.Timer(2500)
+            _timer = new System.Timers.Timer(10000)
             {
                 AutoReset = false,
                 Enabled = false 
