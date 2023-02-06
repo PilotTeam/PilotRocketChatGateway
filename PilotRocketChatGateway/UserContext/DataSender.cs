@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.WebSockets;
+using System.Threading;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -83,12 +84,9 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             if (chat.UnreadMessagesNumber == 0)
                 return;
-            var unreads = _context.RemoteService.ServerApi.GetMessages(id, DateTime.MinValue, DateTime.MaxValue, chat.UnreadMessagesNumber);
-            foreach (var unread in unreads)
-            {
-                var msg = CreateMessage(id, MessageType.MessageRead, unread.Id);
-                _context.RemoteService.ServerApi.SendMessage(msg);
-            }
+
+            var msg = CreateMessage(id, MessageType.MessageDropUnreadCounter, chat.LastMessage?.Id);
+            _context.RemoteService.ServerApi.SendMessage(msg);
         }
         public void SendTypingMessageToServer(string roomId)
         {
