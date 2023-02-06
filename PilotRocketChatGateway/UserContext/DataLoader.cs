@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using System;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -12,6 +13,7 @@ namespace PilotRocketChatGateway.UserContext
         Room LoadPersonalRoom(string username);
         IList<Message> LoadMessages(string roomId, int count, string upperBound);
         IList<Message> LoadMessages(string roomId, string lowerBound);
+        Message LoadMessage(string msgId);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
@@ -69,6 +71,15 @@ namespace PilotRocketChatGateway.UserContext
             var id = _commonConverter.ConvertToChatId(roomId);
             var dateFrom = _commonConverter.ConvertFromJSDate(lowerBound);
             return LoadMessages(id, dateFrom, DateTime.MaxValue, int.MaxValue);
+        }
+
+        public Message LoadMessage(string msgId)
+        {
+            DMessage? msg = _commonConverter.IsRocketChatId(msgId) ?
+                _context.RemoteService.ServerApi.GetMessage(msgId) :
+                _context.RemoteService.ServerApi.GetMessage(Guid.Parse(msgId));
+
+            return RCDataConverter.ConvertToMessage(msg);
         }
         public User LoadUser(int userId)
         {
