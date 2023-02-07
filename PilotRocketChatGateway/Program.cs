@@ -8,6 +8,7 @@ using PilotRocketChatGateway.WebSockets;
 using Serilog;
 using System.Text;
 using Serilog.Events;
+using PilotRocketChatGateway.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 var authHelper = new AuthHelper();
@@ -22,6 +23,7 @@ builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactor
 builder.Services.AddSingleton<IWebSocketsWatcher, WebSocketsWatcher>();
 builder.Services.AddSingleton<IWebSocketBank, WebSocketBank>();
 builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>();
+builder.Services.AddSingleton<IBatchMessageLoaderFactory, BatchMessageLoaderFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 

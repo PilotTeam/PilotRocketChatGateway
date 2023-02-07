@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using PilotRocketChatGateway.Utils;
 using System;
 
 namespace PilotRocketChatGateway.UserContext
@@ -14,6 +15,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<Message> LoadMessages(string roomId, int count, string upperBound);
         IList<Message> LoadMessages(string roomId, string lowerBound);
         Message LoadMessage(string msgId);
+        IList<Message> LoadSurroundingMessages(string rcMsgId, string roomId, int count);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
@@ -22,12 +24,14 @@ namespace PilotRocketChatGateway.UserContext
     {
         private readonly ICommonDataConverter _commonConverter;
         private readonly IContext _context;
-       
-        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context)
+        private readonly IBatchMessageLoader _loader;
+
+        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoaderFactory batchMessageLoaderFactory)
         {
             RCDataConverter = rcConverter;
             _commonConverter = commonConverter;
             _context = context;
+            _loader = batchMessageLoaderFactory.Create(context);
         }
         public IRCDataConverter RCDataConverter { get; }
         public Room LoadRoom(Guid id)
@@ -81,6 +85,15 @@ namespace PilotRocketChatGateway.UserContext
 
             return RCDataConverter.ConvertToMessage(msg);
         }
+
+        public IList<Message> LoadSurroundingMessages(string rcMsgId, string roomId, int count)
+        {
+            Guid msgId = _commonConverter.ConvertToMsgId(rcMsgId);
+            Guid chatId = _commonConverter.ConvertToChatId(roomId);
+            var messages = _loader.FindMessage(msgId, chatId, count);
+            return messages.Where(x => RCDataConverter.ShowedMessageType.Contains(x.Type)).Select(x => RCDataConverter.ConvertToMessage(x)).ToList();
+        }
+
         public User LoadUser(int userId)
         {
             var person = _context.RemoteService.ServerApi.GetPerson(userId);
