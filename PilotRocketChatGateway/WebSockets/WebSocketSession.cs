@@ -1,9 +1,9 @@
 ﻿using Ascon.Pilot.DataClasses;
-using Microsoft.IdentityModel.Tokens;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
-using System.IdentityModel.Tokens.Jwt;
+using PilotRocketChatGateway.WebSockets.EventStreams;
+using PilotRocketChatGateway.WebSockets.Subscriptions;
 using System.Net.WebSockets;
 
 namespace PilotRocketChatGateway.WebSockets
@@ -47,12 +47,16 @@ namespace PilotRocketChatGateway.WebSockets
 
     public class WebSocketSession : IWebSocketSession
     {
-        private readonly string _sessionId;
         private readonly IChatService _chatService;
         private readonly IServerApiService _serverApi;
         private readonly WebSocket _webSocket;
         private readonly TypingTimer _typingTimer;
-        private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
+
+        private List<IEventStream> _streams = new List<IEventStream>();
+        private StreamNotifyUser _streamNotifyUser;
+        private StreamNotifyRoom _streamNotifyRoom;
+        private StreamRoomMessages _streamRoomMessages;
+        private StreamUserPresence _streamUserPresence;
 
         public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IServerApiService serverApi, IAuthHelper authHelper, WebSocket webSocket)
         {
@@ -60,20 +64,44 @@ namespace PilotRocketChatGateway.WebSockets
             if (authHelper.ValidateToken(authToken, authSettings) == false)
                 throw new UnauthorizedAccessException();
 
-            _sessionId = request.id;
             _chatService = chatService;
             _serverApi = serverApi;
             _webSocket = webSocket;
+
+            _streamNotifyUser = new StreamNotifyUser(_webSocket, _chatService);
+            _streamUserPresence = new StreamUserPresence(_webSocket, _serverApi);
+            _streamNotifyRoom = new StreamNotifyRoom(_webSocket, _serverApi);
+            _streamRoomMessages = new StreamRoomMessages(_webSocket, _chatService);
+            _streams.Add(_streamNotifyUser);
+            _streams.Add(_streamUserPresence);
+            _streams.Add(_streamNotifyRoom);
+            _streams.Add(_streamRoomMessages);
+
             _typingTimer = new TypingTimer
             (
-                (chat, personId) => SendTypingMessageToClientAsync(chat, personId, true),
-                (chat, personId) => SendTypingMessageToClientAsync(chat, personId, false)
+                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClientAsync(chat, personId, true),
+                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClientAsync(chat, personId, false)
             );
         }
 
         public void Subscribe(dynamic request)
         {
-            _subscriptions[GetSubsName(request)] = request.id;
+            switch (request.name as string)
+            {
+                case Streams.STREAM_NOTIFY_USER:
+                    _streamNotifyUser.RegisterEvent(request);
+                    break;
+                case Streams.STREAM_USER_PRESENCE:
+                    _streamUserPresence.RegisterEvent(request);
+                    break;
+                case Streams.STREAM_NOTIFY_ROOM:
+                    _streamNotifyRoom.RegisterEvent(request);
+                    break;
+                case Streams.STREAM_ROOM_MESSAGES:
+                    _streamRoomMessages.RegisterEvent(request);
+                    break;
+            }
+
             var result = new
             {
                 msg = "ready",
@@ -82,15 +110,13 @@ namespace PilotRocketChatGateway.WebSockets
             _webSocket.SendResultAsync(result);
         }
 
-        private string GetSubsName(dynamic request)
-        {
-            return string.IsNullOrEmpty(request.@params[0]) ? request.name : request.@params[0];
-        }
-
         public void Unsubscribe(dynamic request)
         {
-            var sub = _subscriptions.FirstOrDefault(x => x.Value == request.id).Key;
-            _subscriptions.Remove(sub);
+            foreach(var stream in _streams)
+            {
+                if (stream.DeleteEvent(request))
+                    return;
+            }
         }
 
         public async Task SendMessageToClientAsync(DMessage dMessage)
@@ -115,162 +141,34 @@ namespace PilotRocketChatGateway.WebSockets
 
         public async Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify)
         {
+
             if (notify.HasFlag(NotifyClientKind.Subscription))
-                await UpdateRoomsSubscription(dMessage.ChatId);
+                await _streamNotifyUser.UpdateRoomsSubscriptionAsync(dMessage.ChatId);
 
             if (notify.HasFlag(NotifyClientKind.Room))
-                await UpdateRoom(dMessage.ChatId);
+                await _streamNotifyUser.UpdateRoomAsync(dMessage.ChatId);
 
             if (notify.HasFlag(NotifyClientKind.Message))
-                await SendMessageUpdate(dMessage);
+            {
+                var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage);
+                await _streamNotifyRoom.SendTypingMessageToClientAsync(rocketChatMessage.roomId, dMessage.CreatorId, false);
+
+                await _streamRoomMessages.SendMessageUpdate(dMessage);
+            }
         }
         public void SendTypingMessageToClient(DChat chat, int personId)
         {
             var roomId = _chatService.DataLoader.RCDataConverter.ConvertToRoomId(chat);
             _typingTimer.Start(roomId, personId);
         }
-        public Task SendUserStatusChangeAsync(int personId, UserStatuses status)
+        public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
         {
-            if (!_subscriptions.TryGetValue(Streams.STREAM_USER_PRESENCE, out var id))
-                return Task.CompletedTask;
-
-            var person = _serverApi.GetPerson(personId);
-            var result = new
-            {
-                msg = "updated",
-                collection = Streams.STREAM_USER_PRESENCE,
-                id,
-                fields = new
-                {
-                    args = new object[]
-                    {
-                        new object[]
-                        {
-                            person.Login,
-                            (int) status,
-                            ""
-                        }
-                    },
-                    uid = personId
-                }
-            };
-            return _webSocket.SendResultAsync(result);
+            await _streamUserPresence.SendUserStatusChangeAsync(personId, status);
         }
 
-        private Task SendChatCreated(DMessage dMessage)
-        {
-            var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.DataLoader.LoadRoom(dMessage.ChatId);
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return Task.CompletedTask;
-
-            var result = new
-            {
-                msg = "updated",
-                collection = Streams.STREAM_NOTIFY_USER,
-                id,
-                fields = new
-                {
-                    eventName,
-                    args = new object[] { "updated", room }
-                }
-            };
-            return _webSocket.SendResultAsync(result);
-        }
-
-        private Task SendTypingMessageToClientAsync(string roomId, int personId, bool isTyping)
-        {
-            var person = _serverApi.GetPerson(personId);
-            var eventName = $"{roomId}/typing";
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return Task.CompletedTask;
-
-            var result = new
-            {
-                msg = "",
-                collection = Streams.STREAM_NOTIFY_ROOM,
-                id = id,
-                fields = new
-                {
-                    eventName = eventName,
-                    args = new object[]
-                    {
-                        person.DisplayName,
-                        isTyping
-                    }
-                }
-            };
-            return _webSocket.SendResultAsync(result);
-        }
-
-        private async Task SendMessageUpdate(DMessage message)
-        {
-            var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(message);
-            var eventName = $"{rocketChatMessage.roomId}";
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return;
-
-            var result = new 
-            {
-                msg = "created",
-                collection = Streams.STREAM_ROOM_MESSAGES,
-                id = id,
-                fields = new
-                {
-                    eventName = eventName,
-                    args = new object[] { rocketChatMessage }
-                }
-            };
-
-            await SendTypingMessageToClientAsync(rocketChatMessage.roomId, message.CreatorId, false);
-            await _webSocket.SendResultAsync(result);
-        }
-
-        private Task UpdateRoomsSubscription(Guid chatId)
-        {
-            var eventName = $"{_sessionId}/{Events.EVENT_SUBSCRIPTIONS_CHANGED}";
-            var sub = _chatService.DataLoader.LoadRoomsSubscription(chatId.ToString());
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return Task.CompletedTask;
-
-            var result = new
-            {
-                msg = "updated",
-                collection = Streams.STREAM_NOTIFY_USER,
-                id,
-                fields = new
-                {
-                    eventName,
-                    args = new object[] { "updated", sub }
-                }
-            };
-            return _webSocket.SendResultAsync(result);
-        }
-
-        private Task UpdateRoom(Guid chatId)
-        {
-            var eventName = $"{_sessionId}/{Events.EVENT_ROOMS_CHANGED}";
-            var room = _chatService.DataLoader.LoadRoom(chatId);
-            if (!_subscriptions.TryGetValue(eventName, out var id))
-                return Task.CompletedTask;
-
-            var result = new
-            {
-                msg = "updated",
-                collection = Streams.STREAM_NOTIFY_USER,
-                id,
-                fields = new
-                {
-                    eventName,
-                    args = new object[] { "updated", room }
-                }
-            };
-            return _webSocket.SendResultAsync(result);
-        }
         public void Dispose()
         {
             _typingTimer.Dispose();
-            _subscriptions.Clear();
         }
     }
 }
