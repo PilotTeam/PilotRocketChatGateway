@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Ascon.Pilot.DataClasses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
@@ -43,6 +44,14 @@ namespace PilotRocketChatGateway.Controllers
             var user = context.ChatService.DataLoader.LoadUser(userId);
 
             var result = new { success = true, user = user };
+            return JsonConvert.SerializeObject(result);
+        }
+
+        [Authorize]
+        [HttpPost("api/v1/users.setStatus")]
+        public string SetStatus(object request)
+        {
+            var result = new { success = true };
             return JsonConvert.SerializeObject(result);
         }
     }

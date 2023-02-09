@@ -122,7 +122,20 @@ namespace PilotRocketChatGateway.WebSockets
                 case Streams.STREAM_NOTIFY_ROOM:
                     SendTypingMessageToServer(request);
                     break;
+                case "setUserStatus":
+                    SetStatus(request);
+                    break;
             }
+        }
+
+        private void SetStatus(dynamic request)
+        {
+            var result = new
+            {
+                request.id,
+                msg = "result"
+            };
+            _webSocket.SendResultAsync(result);
         }
         private void HandleSubRequest(dynamic request)
         {
