@@ -143,11 +143,12 @@ namespace PilotRocketChatGateway.UserContext
             var related = _context.RemoteService.ServerApi.GetMessage(msg.RelatedMessageId.Value);
             var edited = GetEditMessage(related);
             var replyAttachId = edited == null ? GetAttachmentId(related.Data) : GetAttachmentId(edited.Data);
+            var creator = _context.RemoteService.ServerApi.GetPerson(related.CreatorId);
 
             return new Attachment()
             {
                 text = GetMessageText(related),
-                author_name = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId)).username,
+                author_name = creator.Login,
                 creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
                 message_link = $"{roomId}?msg={GetMessageId(related)}",
                 attachments = LoadImageAttachments(replyAttachId)
