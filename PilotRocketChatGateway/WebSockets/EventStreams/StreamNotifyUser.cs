@@ -15,13 +15,11 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             _webSocket = webSocket;
             _chatService = chatService;
         }
-        public string StreamName => Streams.STREAM_NOTIFY_USER;
-
-        public Task UpdateRoomsSubscriptionAsync(Guid chatId)
+        public void UpdateRoomsSubscription(Guid chatId)
         {
             var(eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_SUBSCRIPTIONS_CHANGED)).FirstOrDefault();
             if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
-                return Task.CompletedTask;
+                return;
 
             var sub = _chatService.DataLoader.LoadRoomsSubscription(chatId.ToString());
             var result = new
@@ -35,13 +33,13 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                     args = new object[] { "updated", sub }
                 }
             };
-            return _webSocket.SendResultAsync(result);
+             _webSocket.SendResultAsync(result);
         }
-        public Task UpdateRoomAsync(Guid chatId)
+        public void UpdateRoom(Guid chatId)
         {
             var (eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_ROOMS_CHANGED)).FirstOrDefault();
             if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
-                return Task.CompletedTask;
+                return;
 
             var room = _chatService.DataLoader.LoadRoom(chatId);
             var result = new
@@ -55,7 +53,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                     args = new object[] { "updated", room }
                 }
             };
-            return _webSocket.SendResultAsync(result);
+            _webSocket.SendResultAsync(result);
         }
 
     }

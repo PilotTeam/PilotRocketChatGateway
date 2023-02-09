@@ -16,14 +16,12 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             _webSocket = webSocket;
             _serverApi = serverApi;
         }
-        public string StreamName => Streams.STREAM_USER_PRESENCE;
-
-        public Task SendUserStatusChangeAsync(int personId, UserStatuses status)
+        public void SendUserStatusChange(int personId, UserStatuses status)
         {
             var (_, id) = _events.FirstOrDefault();
 
             if (string.IsNullOrEmpty(id))
-                return Task.CompletedTask;
+                return;
 
             var person = _serverApi.GetPerson(personId);
             var result = new
@@ -45,7 +43,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                     uid = personId
                 }
             };
-            return _webSocket.SendResultAsync(result);
+            _webSocket.SendResultAsync(result);
         }
     }
 }

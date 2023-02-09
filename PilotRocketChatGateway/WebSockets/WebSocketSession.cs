@@ -37,10 +37,10 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public interface IWebSocketSession : IDisposable
     {
-        Task SendMessageToClientAsync(DMessage dMessage);
-        Task SendUserStatusChangeAsync(int person, UserStatuses status);
+        void SendMessageToClient(DMessage dMessage);
+        void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify);
+        void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessageToClient(DChat chat, int personId);
-        Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify);
         void Subscribe(dynamic request);
         void Unsubscribe(dynamic request);
     }
@@ -79,8 +79,8 @@ namespace PilotRocketChatGateway.WebSockets
 
             _typingTimer = new TypingTimer
             (
-                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClientAsync(chat, personId, true),
-                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClientAsync(chat, personId, false)
+                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClient(chat, personId, true),
+                (chat, personId) => _streamNotifyRoom.SendTypingMessageToClient(chat, personId, false)
             );
         }
 
@@ -119,41 +119,39 @@ namespace PilotRocketChatGateway.WebSockets
             }
         }
 
-        public async Task SendMessageToClientAsync(DMessage dMessage)
+        public void SendMessageToClient(DMessage dMessage)
         {
             switch (dMessage.Type)
             {
                 case MessageType.TextMessage:
                 case MessageType.EditTextMessage:
                 case MessageType.MessageAnswer:
-                    await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.FullChat);
+                    NotifyMessageCreated(dMessage, NotifyClientKind.FullChat);
                     return;
 
                 case MessageType.ChatCreation:
                 case MessageType.ChatMembers:
-                    await NotifyMessageCreatedAsync(dMessage, NotifyClientKind.Chat);
+                    NotifyMessageCreated(dMessage, NotifyClientKind.Chat);
                     return;
 
                 default:
                     return;
             }
         }
-
-        public async Task NotifyMessageCreatedAsync(DMessage dMessage, NotifyClientKind notify)
+        public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
 
             if (notify.HasFlag(NotifyClientKind.Subscription))
-                await _streamNotifyUser.UpdateRoomsSubscriptionAsync(dMessage.ChatId);
+                _streamNotifyUser.UpdateRoomsSubscription(dMessage.ChatId);
 
             if (notify.HasFlag(NotifyClientKind.Room))
-                await _streamNotifyUser.UpdateRoomAsync(dMessage.ChatId);
+                _streamNotifyUser.UpdateRoom(dMessage.ChatId);
 
             if (notify.HasFlag(NotifyClientKind.Message))
             {
                 var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage);
-                await _streamNotifyRoom.SendTypingMessageToClientAsync(rocketChatMessage.roomId, dMessage.CreatorId, false);
-
-                await _streamRoomMessages.SendMessageUpdate(dMessage);
+                _streamNotifyRoom.SendTypingMessageToClient(rocketChatMessage.roomId, dMessage.CreatorId, false);
+                _streamRoomMessages.SendMessageUpdate(dMessage);
             }
         }
         public void SendTypingMessageToClient(DChat chat, int personId)
@@ -161,11 +159,10 @@ namespace PilotRocketChatGateway.WebSockets
             var roomId = _chatService.DataLoader.RCDataConverter.ConvertToRoomId(chat);
             _typingTimer.Start(roomId, personId);
         }
-        public async Task SendUserStatusChangeAsync(int personId, UserStatuses status)
+        public void SendUserStatusChange(int personId, UserStatuses status)
         {
-            await _streamUserPresence.SendUserStatusChangeAsync(personId, status);
+            _streamUserPresence.SendUserStatusChange(personId, status);
         }
-
         public void Dispose()
         {
             _typingTimer.Dispose();

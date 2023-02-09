@@ -9,16 +9,14 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
     {
         private readonly IChatService _chatService;
         private readonly WebSocket _webSocket;
-        private readonly string _id;
 
         public StreamRoomMessages(WebSocket webSocket, IChatService chatService)
         {
             _webSocket = webSocket;
             _chatService = chatService;
         }
-        public string StreamName => Streams.STREAM_ROOM_MESSAGES;
 
-        public async Task SendMessageUpdate(DMessage message)
+        public void SendMessageUpdate(DMessage message)
         {
             var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(message);
 
@@ -39,7 +37,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                 }
             };
 
-            await _webSocket.SendResultAsync(result);
+            _webSocket.SendResultAsync(result);
         }
     }
 }

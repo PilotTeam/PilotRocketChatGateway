@@ -9,21 +9,18 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
     {
         private readonly IServerApiService _serverApi;
         private readonly WebSocket _webSocket;
-        private readonly string _id;
 
         public StreamNotifyRoom(WebSocket webSocket, IServerApiService serverApi)
         {
             _webSocket = webSocket;
             _serverApi = serverApi;
         }
-        public string StreamName => Streams.STREAM_NOTIFY_ROOM;
-
-        public Task SendTypingMessageToClientAsync(string roomId, int personId, bool isTyping)
+        public void SendTypingMessageToClient(string roomId, int personId, bool isTyping)
         {
             var eventName = $"{roomId}/typing";
             _events.TryGetValue(eventName, out var id);
-            if ( string.IsNullOrEmpty(id))
-                return Task.CompletedTask;
+            if (string.IsNullOrEmpty(id))
+                return;
 
             var person = _serverApi.GetPerson(personId);
             var result = new
@@ -41,7 +38,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                     }
                 }
             };
-            return _webSocket.SendResultAsync(result);
+            _webSocket.SendResultAsync(result);
         }
     }
 }
