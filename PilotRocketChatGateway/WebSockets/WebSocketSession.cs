@@ -126,11 +126,12 @@ namespace PilotRocketChatGateway.WebSockets
                 case MessageType.TextMessage:
                 case MessageType.EditTextMessage:
                 case MessageType.MessageAnswer:
+                case MessageType.ChatMembers:
+                case MessageType.ChatChanged:
                     NotifyMessageCreated(dMessage, NotifyClientKind.FullChat);
                     return;
 
                 case MessageType.ChatCreation:
-                case MessageType.ChatMembers:
                     NotifyMessageCreated(dMessage, NotifyClientKind.Chat);
                     return;
 

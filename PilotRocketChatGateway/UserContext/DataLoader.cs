@@ -91,7 +91,7 @@ namespace PilotRocketChatGateway.UserContext
             Guid msgId = _commonConverter.ConvertToMsgId(rcMsgId);
             Guid chatId = _commonConverter.ConvertToChatId(roomId);
             var messages = _loader.FindMessage(msgId, chatId, count);
-            return messages.Where(x => RCDataConverter.ShowedMessageType.Contains(x.Type)).Select(x => RCDataConverter.ConvertToMessage(x)).ToList();
+            return messages.Select(x => RCDataConverter.ConvertToMessage(x)).ToList();
         }
 
         public User LoadUser(int userId)
@@ -128,9 +128,6 @@ namespace PilotRocketChatGateway.UserContext
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
-                if (RCDataConverter.ShowedMessageType.Contains(msg.Type) == false)
-                    continue;
-
                 result.Add(RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs));
             }
 
