@@ -197,7 +197,7 @@ namespace PilotRocketChatGateway.UserContext
             return new Attachment()
             {
                 text = GetMessageText(related),
-                author_name = creator.Login,
+                author_name = CommonDataConverter.GetUserDisplayName(creator),
                 creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
                 message_link = $"{roomId}?msg={GetMessageId(related)}",
                 attachments = LoadImageAttachments(replyAttachId)
