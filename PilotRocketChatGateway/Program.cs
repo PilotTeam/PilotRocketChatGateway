@@ -10,6 +10,7 @@ using System.Text;
 using Serilog.Events;
 using PilotRocketChatGateway.Utils;
 
+AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 var builder = WebApplication.CreateBuilder(args);
 var authHelper = new AuthHelper();
 
