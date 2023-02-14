@@ -5,6 +5,7 @@ using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.UserContext;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
@@ -43,7 +44,7 @@ namespace PilotRocketChatGateway.Controllers
         public IActionResult Get(string username)
         {
             int size;
-            size = int.Parse(GetParam(nameof(size)));
+            size = Convert.ToInt32(double.Parse(GetParam(nameof(size)), CultureInfo.InvariantCulture));
 
             var generator = GetGenerator(size, username); 
 
