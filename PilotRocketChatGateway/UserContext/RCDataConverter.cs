@@ -44,7 +44,7 @@ namespace PilotRocketChatGateway.UserContext
             var attachs = AttachmentLoader.GetAttachmentsIds(chatRelations);
             return new Room()
             {
-                updatedAt = CommonDataConverter.ConvertToJSDate(lastMessage.LocalDate),
+                updatedAt = CommonDataConverter.ConvertToJSDate(lastMessage.ServerDate.Value),
                 name = chat.Type == ChatKind.Personal ? string.Empty : chat.Name,
                 id = roomId,
                 channelType = GetChannelType(chat),
@@ -57,7 +57,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             return new Subscription()
             {
-                updatedAt = CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate),
+                updatedAt = CommonDataConverter.ConvertToJSDate(chat.LastMessage.ServerDate.Value),
                 lastSeen = LoadLastSeenChatsDate(chat),
                 unread = chat.UnreadMessagesNumber,
                 open = true,
@@ -85,8 +85,8 @@ namespace PilotRocketChatGateway.UserContext
             {
                 id = GetMessageId(msg),
                 roomId = roomId,
-                updatedAt = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
-                creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
+                updatedAt = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
+                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
                 msg = GetMessageText(msg),
                 u = user,
                 attachments = LoadAttachments(roomId, msg),
@@ -163,15 +163,15 @@ namespace PilotRocketChatGateway.UserContext
         private string LoadLastSeenChatsDate(DChatInfo chat)
         {
             if (chat.UnreadMessagesNumber == 0)
-                return CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate);
+                return CommonDataConverter.ConvertToJSDate(chat.LastMessage.ServerDate.Value);
 
             var unread = _context.RemoteService.ServerApi.GetMessages(chat.Chat.Id, DateTime.MinValue, DateTime.MaxValue, chat.UnreadMessagesNumber);
             var earliestUnreadMessage = unread.LastOrDefault();
 
             if (earliestUnreadMessage == null)
-                return CommonDataConverter.ConvertToJSDate(chat.LastMessage.LocalDate);
+                return CommonDataConverter.ConvertToJSDate(chat.LastMessage.ServerDate.Value);
 
-            return CommonDataConverter.ConvertToJSDate(earliestUnreadMessage.LocalDate);
+            return CommonDataConverter.ConvertToJSDate(earliestUnreadMessage.ServerDate.Value);
         }
 
 
@@ -198,7 +198,7 @@ namespace PilotRocketChatGateway.UserContext
             {
                 text = GetMessageText(related),
                 author_name = CommonDataConverter.GetUserDisplayName(creator),
-                creationDate = CommonDataConverter.ConvertToJSDate(msg.LocalDate),
+                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
                 message_link = $"{roomId}?msg={GetMessageId(related)}",
                 attachments = LoadImageAttachments(replyAttachId)
             };
@@ -289,7 +289,7 @@ namespace PilotRocketChatGateway.UserContext
             if (edit == null)
                 return string.Empty;
 
-            return CommonDataConverter.ConvertToJSDate(edit.LocalDate);
+            return CommonDataConverter.ConvertToJSDate(edit.ServerDate.Value);
         }
         private User GetEditor(DMessage msg)
         {

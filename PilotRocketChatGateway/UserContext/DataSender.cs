@@ -46,7 +46,7 @@ namespace PilotRocketChatGateway.UserContext
             var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
 
             SetMessageData(dMessage, data);
-            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            dMessage.ServerDate = _context.RemoteService.ServerApi.SendMessage(dMessage);
             _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, NotifyClientKind.FullChat);
         }
         public void SendEditMessageToServer(string roomId, string strMsgId, string text)
@@ -64,7 +64,7 @@ namespace PilotRocketChatGateway.UserContext
             origin.RelatedMessages.Add(edit);
 
             SetMessageData(edit, data);
-            _context.RemoteService.ServerApi.SendMessage(edit);
+            edit.ServerDate = _context.RemoteService.ServerApi.SendMessage(edit);
             _context.WebSocketsNotifyer.NotifyMessageCreated(origin, NotifyClientKind.FullChat);
         }
         public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
@@ -75,7 +75,7 @@ namespace PilotRocketChatGateway.UserContext
             var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);
 
             SetMessageData(dMessage, msgData);
-            _context.RemoteService.ServerApi.SendMessage(dMessage);
+            dMessage.ServerDate = _context.RemoteService.ServerApi.SendMessage(dMessage);
             _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, NotifyClientKind.FullChat);
         }
         public void SendReadAllMessageToServer(string roomId)
@@ -108,7 +108,7 @@ namespace PilotRocketChatGateway.UserContext
             chat.LastMessageId = msg.Id;
 
             SetMessageData(msg, chat);
-            _context.RemoteService.ServerApi.SendMessage(msg);
+            msg.ServerDate = _context.RemoteService.ServerApi.SendMessage(msg);
             foreach (var member in members)
                 SendChatsMemberMessageToServer(chat.Id, member);
 

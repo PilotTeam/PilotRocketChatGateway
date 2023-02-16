@@ -18,7 +18,7 @@ namespace PilotRocketChatGateway.PilotServer
         DMessage GetMessage(string thirdPartyInfo);
         DMessage GetMessage(Guid id);
         List<DChatMember> GetChatMembers(Guid chatId);
-        void SendMessage(DMessage message);
+        DateTime SendMessage(DMessage message);
         void SendTypingMessage(Guid chatId);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
@@ -97,9 +97,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _people.Values.First(x => predicate(x));
         }
 
-        public void SendMessage(DMessage message)
+        public DateTime SendMessage(DMessage message)
         {
-            _messagesApi.SendMessage(message);
+            return _messagesApi.SendMessage(message);
         }
 
         private Dictionary<int, INPerson> LoadPeople()
