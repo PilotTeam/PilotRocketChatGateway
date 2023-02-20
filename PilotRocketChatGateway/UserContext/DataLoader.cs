@@ -1,4 +1,6 @@
 ﻿using Ascon.Pilot.DataClasses;
+using PilotRocketChatGateway.Utils;
+using System;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -10,8 +12,10 @@ namespace PilotRocketChatGateway.UserContext
         Subscription LoadRoomsSubscription(string roomId);
         IList<Subscription> LoadRoomsSubscriptions();
         Room LoadPersonalRoom(string username);
-        IList<Message> LoadMessages(string roomId, int count, string latest);
-        IList<Message> LoadUnreadMessages(string roomId);
+        IList<Message> LoadMessages(string roomId, int count, string upperBound);
+        IList<Message> LoadMessages(string roomId, string lowerBound);
+        Message LoadMessage(string msgId);
+        IList<Message> LoadSurroundingMessages(string rcMsgId, string roomId, int count);
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
@@ -20,12 +24,14 @@ namespace PilotRocketChatGateway.UserContext
     {
         private readonly ICommonDataConverter _commonConverter;
         private readonly IContext _context;
-       
-        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context)
+        private readonly IBatchMessageLoader _loader;
+
+        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoaderFactory batchMessageLoaderFactory)
         {
             RCDataConverter = rcConverter;
             _commonConverter = commonConverter;
             _context = context;
+            _loader = batchMessageLoaderFactory.Create(context);
         }
         public IRCDataConverter RCDataConverter { get; }
         public Room LoadRoom(Guid id)
@@ -58,29 +64,45 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
         }
-        public IList<Message> LoadMessages(string roomId, int count, string latest)
+        public IList<Message> LoadMessages(string roomId, int count, string upperBound)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
-            var dateTo = _commonConverter.ConvertFromJSDate(latest);
-            return LoadMessages(id, dateTo.AddMilliseconds(-1), count);
+            var dateTo = _commonConverter.ConvertFromJSDate(upperBound);
+            return LoadMessages(id, DateTime.MinValue, dateTo.AddMilliseconds(-1), count);
         }
-        public IList<Message> LoadUnreadMessages(string roomId)
+        public IList<Message> LoadMessages(string roomId, string lowerBound)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
-            var chat = _context.RemoteService.ServerApi.GetChat(id);
-            if (chat.UnreadMessagesNumber == 0)
-                return new List<Message>();
-            return LoadMessages(id, DateTime.MaxValue, chat.UnreadMessagesNumber);
+            var dateFrom = _commonConverter.ConvertFromJSDate(lowerBound);
+            return LoadMessages(id, dateFrom, DateTime.MaxValue, int.MaxValue);
         }
+
+        public Message LoadMessage(string msgId)
+        {
+            DMessage? msg = _commonConverter.IsRocketChatId(msgId) ?
+                _context.RemoteService.ServerApi.GetMessage(msgId) :
+                _context.RemoteService.ServerApi.GetMessage(Guid.Parse(msgId));
+
+            return RCDataConverter.ConvertToMessage(msg);
+        }
+
+        public IList<Message> LoadSurroundingMessages(string rcMsgId, string roomId, int count)
+        {
+            Guid msgId = _commonConverter.ConvertToMsgId(rcMsgId);
+            Guid chatId = _commonConverter.ConvertToChatId(roomId);
+            var messages = _loader.FindMessage(msgId, chatId, count);
+            return messages.Select(x => RCDataConverter.ConvertToMessage(x)).ToList();
+        }
+
         public User LoadUser(int userId)
         {
             var person = _context.RemoteService.ServerApi.GetPerson(userId);
-            return _commonConverter.ConvertToUser(person);
+            return _commonConverter.ConvertToUser(person, fullName: true);
         }
         public IList<User> LoadUsers(int count)
         {
             var users = _context.RemoteService.ServerApi.GetPeople().Values;
-            return users.Select(x => _commonConverter.ConvertToUser(x)).ToList();
+            return users.Select(x => _commonConverter.ConvertToUser(x, fullName: true)).ToList();
         }
         public IList<User> LoadMembers(string roomId)
         {
@@ -93,9 +115,9 @@ namespace PilotRocketChatGateway.UserContext
             }).ToList();
         }
       
-        private IList<Message> LoadMessages(Guid roomId, DateTime dateTo, int count)
+        private IList<Message> LoadMessages(Guid roomId, DateTime dateFrom, DateTime dateTo, int count)
         {
-            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateTo, count);
+            var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateFrom, dateTo, count);
 
             if (msgs == null)
                 return new List<Message>();
@@ -106,9 +128,6 @@ namespace PilotRocketChatGateway.UserContext
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
-                if (RCDataConverter.ShowedMessageType.Contains(msg.Type) == false)
-                    continue;
-
                 result.Add(RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs));
             }
 

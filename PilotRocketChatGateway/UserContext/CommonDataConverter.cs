@@ -5,11 +5,12 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface ICommonDataConverter
     {
-        User ConvertToUser(INPerson person);
+        User ConvertToUser(INPerson person, bool fullName = false);
         string ConvertToJSDate(DateTime date);
         Guid ConvertToChatId(string roomId);
         Guid ConvertToMsgId(string rcMsgId);
         DateTime ConvertFromJSDate(string date);
+        string GetUserDisplayName(INPerson person);
         bool IsRocketChatId(string msgId);
     }
     public class CommonDataConverter : ICommonDataConverter
@@ -20,13 +21,13 @@ namespace PilotRocketChatGateway.UserContext
         {
             _context = context;
         }
-        public User ConvertToUser(INPerson person)
+        public User ConvertToUser(INPerson person, bool fullName = false)
         {
             return new User()
             {
                 id = person.Id.ToString(),
                 username = person.Login,
-                name = person.DisplayName,
+                name = fullName ? person.DisplayName : GetUserDisplayName(person),
                 status = GetUserStatus(person.Id),
                 roles = new string[] { "user" }
             };
@@ -61,6 +62,10 @@ namespace PilotRocketChatGateway.UserContext
         public bool IsRocketChatId(string msgId)
         {
             return msgId.Length == 17;
+        }
+        public string GetUserDisplayName(INPerson person)
+        {
+            return person.DisplayName.Split(" ")[0];
         }
         private string GetUserStatus(int person)
         {

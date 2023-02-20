@@ -14,11 +14,11 @@ namespace PilotRocketChatGateway.PilotServer
         DObject GetObject(Guid id);
         DChatInfo GetPersonalChat(int personId);
         DMessage GetLastUnreadMessage(Guid chatId);
-        List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count);
+        List<DMessage> GetMessages(Guid chatId, DateTime dateFrom, DateTime dateTo, int count);
         DMessage GetMessage(string thirdPartyInfo);
         DMessage GetMessage(Guid id);
         List<DChatMember> GetChatMembers(Guid chatId);
-        void SendMessage(DMessage message);
+        DateTime SendMessage(DMessage message);
         void SendTypingMessage(Guid chatId);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
@@ -77,9 +77,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _dbInfo;
         }
 
-        public List<DMessage> GetMessages(Guid chatId, DateTime dateTo, int count)
+        public List<DMessage> GetMessages(Guid chatId, DateTime dateFrom, DateTime dateTo, int count)
         {
-            return _messagesApi.GetMessages(chatId, DateTime.MinValue, dateTo, count).Item1;
+            return _messagesApi.GetMessages(chatId, dateFrom, dateTo, count).Item1;
         }
 
         public IReadOnlyDictionary<int, INPerson> GetPeople()
@@ -97,9 +97,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _people.Values.First(x => predicate(x));
         }
 
-        public void SendMessage(DMessage message)
+        public DateTime SendMessage(DMessage message)
         {
-            _messagesApi.SendMessage(message);
+            return _messagesApi.SendMessage(message);
         }
 
         private Dictionary<int, INPerson> LoadPeople()

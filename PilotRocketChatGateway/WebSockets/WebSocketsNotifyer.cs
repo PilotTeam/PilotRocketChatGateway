@@ -40,13 +40,13 @@ namespace PilotRocketChatGateway.WebSockets
         public void SendMessage(DMessage dMessage)
         {
             foreach (var service in _servises)
-                service.Value.Session.SendMessageToClientAsync(dMessage);
+                service.Value.Session.SendMessageToClient(dMessage);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
         {
             foreach (var service in _servises)
-                service.Value.Session.SendUserStatusChangeAsync(person, status);
+                service.Value.Session.SendUserStatusChange(person, status);
         }
 
         public void SendTypingMessage(DChat chat, int personId)
@@ -58,7 +58,7 @@ namespace PilotRocketChatGateway.WebSockets
         public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
             foreach (var service in _servises)
-                service.Value.Session.NotifyMessageCreatedAsync(dMessage, notify);
+                service.Value.Session.NotifyMessageCreated(dMessage, notify);
         }
         public void Dispose()
         {
