@@ -5,11 +5,10 @@ using System.Text;
 
 namespace PilotRocketChatGateway.Pushes
 {
-    public class CloudWorkspace
+    public class CloudConnector
     {
         private const string CLOUD_URI = "https://cloud.rocket.chat";
-        const string WORKSPACE_FILE_NAME = "workspace.json";
-        public static async Task RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger)
+        public static async Task RegisterAsync(RocketChatCloudSettings settings, IWorkspace workspace, Serilog.ILogger logger)
         {
             logger.Information("tring to register in cloud.rocket.chat");
 
@@ -24,10 +23,8 @@ namespace PilotRocketChatGateway.Pushes
 
             if (code == HttpStatusCode.Created)
             {
-                var path = Path.Combine(Directory.GetCurrentDirectory(), WORKSPACE_FILE_NAME);
-                File.WriteAllText(path, result);
-
-                logger.Information($"successfully registered in cloud.rocket.chat: saved result in {path}");
+                workspace.SaveData(result);
+                logger.Information($"successfully registered in cloud.rocket.chat");
                 return;
             }
 

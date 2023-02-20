@@ -10,10 +10,18 @@ using System.Text;
 using Serilog.Events;
 using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.Pushes;
+using Microsoft.Extensions.DependencyInjection;
 
 AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 var builder = WebApplication.CreateBuilder(args);
-var authHelper = new AuthHelper();
+
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -28,6 +36,7 @@ builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>
 builder.Services.AddSingleton<IBatchMessageLoaderFactory, BatchMessageLoaderFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
+builder.Services.AddSingleton<IWorkspace, Workspace>();
 
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -51,20 +60,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(configuration)
-    .CreateLogger();
-
-var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
-if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
-    Task.Run(() =>
-    {
-        CloudWorkspace.RegisterAsync(cloudSettings, Log.Logger);
-    });
 
 builder.Logging.ClearProviders();
 builder.Services.AddLogging(loggingBuilder =>
@@ -86,5 +81,19 @@ app.UseWebSockets();
 app.UseMiddleware<RequestHandlerMiddleware>();
 
 app.MapControllers();
+
+
+var workspace = app.Services.GetService<IWorkspace>();
+if (workspace.Data == null)
+{
+    var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
+    if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
+    {
+        Task.Run(async () =>
+        {
+            await CloudConnector.RegisterAsync(cloudSettings, workspace, Log.Logger);
+        });
+    }
+}
 
 app.Run();

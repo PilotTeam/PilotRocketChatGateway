@@ -279,7 +279,7 @@ namespace PilotRocketChatGateway
         public string appName { get; init; }
     }
 
-    public record Workspace
+    public record WorkspaceData
     {
         public string workspaceId { get; init; }
         public string client_name { get; init; }
@@ -288,6 +288,13 @@ namespace PilotRocketChatGateway
         public long client_secret_expires_at { get; init; }
         public string publicKey { get; init; }
         public string registration_client_uri { get; init; }
+    }
+    public class RocketChatCloudSettings
+    {
+        public string RegistrationToken { get; set; }
+        public string WorkspaceName { get; set; }
+        public string WorkspaceEmail { get; set; }
+        public string WorkspaceUri { get; set; }
     }
     #endregion
 }
