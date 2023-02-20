@@ -208,6 +208,9 @@ namespace PilotRocketChatGateway
         public IList<Attachment> attachments { get; init; }
         public string editedAt { get; init; }
         public User editedBy { get; init; }
+        [JsonProperty("t")]
+        public string type { get; init; }
+        public string role { get; init; }
     }
     public record Attachment
     {

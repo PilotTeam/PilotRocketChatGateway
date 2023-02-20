@@ -120,9 +120,22 @@ namespace PilotRocketChatGateway.WebSockets
                     await LoginAsync(request);
                     break;
                 case Streams.STREAM_NOTIFY_ROOM:
-                    await SendTypingMessageToServer(request);
+                    SendTypingMessageToServer(request);
+                    break;
+                case "setUserStatus":
+                    SetStatus(request);
                     break;
             }
+        }
+
+        private void SetStatus(dynamic request)
+        {
+            var result = new
+            {
+                request.id,
+                msg = "result"
+            };
+            _webSocket.SendResultAsync(result);
         }
         private void HandleSubRequest(dynamic request)
         {
