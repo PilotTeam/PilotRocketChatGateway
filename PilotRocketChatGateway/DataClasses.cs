@@ -268,4 +268,12 @@ namespace PilotRocketChatGateway
         public string sort { get; init; }
     }
     #endregion
+    #region pushes
+    public record PushTokenRequest
+    {
+        public string value { get; init; }
+        public string type { get; init; }
+        public string appName { get; init; }
+    }
+    #endregion
 }

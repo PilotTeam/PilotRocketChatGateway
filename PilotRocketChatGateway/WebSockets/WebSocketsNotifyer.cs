@@ -19,7 +19,7 @@ namespace PilotRocketChatGateway.WebSockets
     {
         private IWebSocketBank _bank;
         private IContext _context;
-        private ConcurrentDictionary<int, IWebSocksetsService> _servises => _bank.GetServises(_context.Credentials.Username);
+        private ConcurrentDictionary<int, IWebSocksetsService> _servises => _bank.GetServises(_context.UserData.Username);
 
         public bool IsEmpty => _servises.Any() == false;
 
@@ -30,11 +30,11 @@ namespace PilotRocketChatGateway.WebSockets
         }
         public void RegisterWebSocketService(IWebSocksetsService service)
         {
-            _bank.RegisterWebSocketService(_context.Credentials.Username, service);
+            _bank.RegisterWebSocketService(_context.UserData.Username, service);
         }
         public void RemoveWebSocketService(IWebSocksetsService service)
         {
-            _bank.RemoveWebSocketService(_context.Credentials.Username, service);
+            _bank.RemoveWebSocketService(_context.UserData.Username, service);
         }
 
         public void SendMessage(DMessage dMessage)
@@ -64,7 +64,7 @@ namespace PilotRocketChatGateway.WebSockets
         {
             foreach (var service in _servises)
             {
-                _bank.RemoveWebSocketService(_context.Credentials.Username, service.Value);
+                _bank.RemoveWebSocketService(_context.UserData.Username, service.Value);
                 service.Value.Dispose();
             }
         }

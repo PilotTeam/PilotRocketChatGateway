@@ -95,7 +95,7 @@ namespace PilotRocketChatGateway.Controllers
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, user.token);
         }
 
-        private IContext CreateContext(Credentials credentials)
+        private IContext CreateContext(UserData credentials)
         {
             _contextService.CreateContext(credentials);
             return  _contextService.GetContext(credentials.Username);
@@ -103,7 +103,7 @@ namespace PilotRocketChatGateway.Controllers
 
         private HttpLoginResponse CreateNewSession(LoginRequest? user)
         {
-            var credentials = Credentials.GetConnectionCredentials(user.user, user.password);
+            var credentials = UserData.GetConnectionCredentials(user.user, user.password);
             var context = CreateContext(credentials);
             var tokenString = CreateToken(user);
 

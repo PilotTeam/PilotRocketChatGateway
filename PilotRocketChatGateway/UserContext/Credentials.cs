@@ -1,15 +1,17 @@
 ﻿using Ascon.Pilot.Common;
 
-namespace PilotRocketChatGateway.PilotServer
+namespace PilotRocketChatGateway.UserContext
 {
-    public class Credentials
+    public class UserData
     {
         public string Username { get; private set; }
         public string ProtectedPassword { get; private set; }
+        public PushToken PushToken { get; set; }
 
-        public static Credentials GetConnectionCredentials(string username, string password)
+
+        public static UserData GetConnectionCredentials(string username, string password)
         {
-            var credentials = new Credentials
+            var credentials = new UserData
             {
                 Username = username,
                 ProtectedPassword = password.EncryptAes(),
@@ -17,5 +19,9 @@ namespace PilotRocketChatGateway.PilotServer
 
             return credentials;
         }
+    }
+    public class PushToken
+    {
+        public string apn { get; init; }
     }
 }

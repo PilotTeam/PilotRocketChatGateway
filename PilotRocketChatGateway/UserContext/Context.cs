@@ -10,7 +10,7 @@ namespace PilotRocketChatGateway.UserContext
         IChatService ChatService { get; }
         IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
-        Credentials Credentials { get; }
+        UserData UserData { get; }
     }
     public class Context : IContext
     {
@@ -19,11 +19,11 @@ namespace PilotRocketChatGateway.UserContext
         private IChatService _chatService;
         private IWebSocketsNotifyer _webSocketsNotifyer;
 
-        public Context(Credentials credentials)
+        public Context(UserData credentials)
         {
-            Credentials = credentials;
+            UserData = credentials;
         }
-        public Credentials Credentials { get; }
+        public UserData UserData { get; }
         
         public IRemoteService RemoteService
         {

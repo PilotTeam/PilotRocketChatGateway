@@ -68,7 +68,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         private void Connect()
         {
-            _client = _connector.Connect(_context.Credentials);
+            _client = _connector.Connect(_context.UserData);
 
             var fileLoader = new FileLoader(_client.GetFileArchiveApi());
             _client.SetConnectionLostListener(this);

@@ -8,7 +8,7 @@ namespace PilotRocketChatGateway.UserContext
     public interface IContextService
     {
         IContext GetContext(string actor);
-        void CreateContext(Credentials credentials);
+        void CreateContext(UserData credentials);
         void RemoveContext(string actor);
     }
 
@@ -28,7 +28,7 @@ namespace PilotRocketChatGateway.UserContext
             _logger = logger;
         }
 
-        public void CreateContext(Credentials credentials)
+        public void CreateContext(UserData credentials)
         {
             lock (_contexts)
             {
