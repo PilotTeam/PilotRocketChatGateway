@@ -8,6 +8,7 @@ using PilotRocketChatGateway.WebSockets;
 using Serilog;
 using System.Text;
 using Serilog.Events;
+using PilotRocketChatGateway.Pushes;
 
 var builder = WebApplication.CreateBuilder(args);
 var authHelper = new AuthHelper();
@@ -54,6 +55,13 @@ var configuration = new ConfigurationBuilder()
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .CreateLogger();
+
+var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
+if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
+    Task.Run(() =>
+    {
+        CloudWorkspace.RegisterAsync(cloudSettings, Log.Logger);
+    });
 
 builder.Logging.ClearProviders();
 builder.Services.AddLogging(loggingBuilder =>

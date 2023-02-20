@@ -275,5 +275,16 @@ namespace PilotRocketChatGateway
         public string type { get; init; }
         public string appName { get; init; }
     }
+
+    public record Workspace
+    {
+        public string workspaceId { get; init; }
+        public string client_name { get; init; }
+        public string client_id { get; init; }
+        public string client_secret { get; init; }
+        public long client_secret_expires_at { get; init; }
+        public string publicKey { get; init; }
+        public string registration_client_uri { get; init; }
+    }
     #endregion
 }
