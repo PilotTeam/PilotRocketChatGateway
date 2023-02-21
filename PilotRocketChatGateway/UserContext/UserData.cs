@@ -18,8 +18,4 @@ namespace PilotRocketChatGateway.UserContext
             return credentials;
         }
     }
-    public class PushToken
-    {
-        public string apn { get; init; }
-    }
 }
