@@ -33,7 +33,6 @@ builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactor
 builder.Services.AddSingleton<IWebSocketsWatcher, WebSocketsWatcher>();
 builder.Services.AddSingleton<IWebSocketBank, WebSocketBank>();
 builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>();
-builder.Services.AddSingleton<IBatchMessageLoaderFactory, BatchMessageLoaderFactory>();
 builder.Services.AddSingleton<IContextService, ContextService>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();

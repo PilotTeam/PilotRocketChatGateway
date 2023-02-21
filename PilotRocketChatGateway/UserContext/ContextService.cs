@@ -20,12 +20,10 @@ namespace PilotRocketChatGateway.UserContext
         private readonly IContextFactory _contextFactory;
         private readonly IWebSocketBank _bank;
         private readonly ILogger<ContextService> _logger;
-        private readonly IBatchMessageLoaderFactory _batchMessageLoaderFactory;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, IWebSocketBank bank, ILogger<ContextService> logger, IBatchMessageLoaderFactory batchMessageLoaderFactory)
+        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, IWebSocketBank bank, ILogger<ContextService> logger)
         {
             _connectionService = connectionService;
-            _batchMessageLoaderFactory = batchMessageLoaderFactory;
             _contextFactory = contextFactory;
             _bank = bank;
             _logger = logger;
@@ -38,7 +36,7 @@ namespace PilotRocketChatGateway.UserContext
                 if (_contexts.TryGetValue(credentials.Username, out var old))
                     old?.Dispose();                
 
-                var context = _contextFactory.CreateContext(credentials, _connectionService, _bank, _logger, _batchMessageLoaderFactory);
+                var context = _contextFactory.CreateContext(credentials, _connectionService, _bank, _logger);
                 _contexts[credentials.Username] = context;
             }
         }

@@ -26,12 +26,12 @@ namespace PilotRocketChatGateway.UserContext
         private readonly IContext _context;
         private readonly IBatchMessageLoader _loader;
 
-        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoaderFactory batchMessageLoaderFactory)
+        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoader msgLoader)
         {
             RCDataConverter = rcConverter;
             _commonConverter = commonConverter;
             _context = context;
-            _loader = batchMessageLoaderFactory.Create(context);
+            _loader = msgLoader;
         }
         public IRCDataConverter RCDataConverter { get; }
         public Room LoadRoom(Guid id)
