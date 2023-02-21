@@ -6,8 +6,6 @@ namespace PilotRocketChatGateway.UserContext
     {
         public string Username { get; private set; }
         public string ProtectedPassword { get; private set; }
-        public PushToken PushToken { get; set; }
-
 
         public static UserData GetConnectionCredentials(string username, string password)
         {

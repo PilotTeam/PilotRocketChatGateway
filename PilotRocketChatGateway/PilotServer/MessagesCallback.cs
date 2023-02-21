@@ -25,6 +25,7 @@ namespace PilotRocketChatGateway.PilotServer
             try
             {
                 _context.WebSocketsNotifyer.SendMessage(message.Message);
+                _context.PushService.SendPushAsync(message.Message);
             }
             catch (Exception e)
             {

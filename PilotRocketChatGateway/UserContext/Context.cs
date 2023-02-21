@@ -1,4 +1,5 @@
 ﻿using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.Pushes;
 using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
@@ -8,6 +9,7 @@ namespace PilotRocketChatGateway.UserContext
         IRemoteService RemoteService { get; }
 
         IChatService ChatService { get; }
+        IPushService PushService { get; }
         IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
         UserData UserData { get; }
@@ -17,6 +19,7 @@ namespace PilotRocketChatGateway.UserContext
         private IList<IDisposable> _disposables = new List<IDisposable>();
         private IRemoteService _remoteService;
         private IChatService _chatService;
+        private IPushService _pushService;
         private IWebSocketsNotifyer _webSocketsNotifyer;
 
         public Context(UserData credentials)
@@ -47,7 +50,7 @@ namespace PilotRocketChatGateway.UserContext
                 return _chatService;
             }
         }
-
+        public IPushService PushService => _pushService;
         public IWebSocketsNotifyer WebSocketsNotifyer => _webSocketsNotifyer;
 
         public void SetService(IService service)
@@ -62,6 +65,9 @@ namespace PilotRocketChatGateway.UserContext
                     break;
                 case IWebSocketsNotifyer webSocksetsService:
                     _webSocketsNotifyer = webSocksetsService;
+                    break;
+                case IPushService pushService:
+                    _pushService = pushService;
                     break;
                 default: 
                     throw new Exception($"unknown service: {service.GetType()}");
