@@ -79,7 +79,7 @@ namespace PilotRocketChatGateway.Pushes
         {
             var payload = new
             {
-                token = userToken.apn,
+                token = userToken.Value,
                 options = new
                 {
                     createdAt = options.createdAt,
@@ -95,7 +95,7 @@ namespace PilotRocketChatGateway.Pushes
                 }
             };
 
-            return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/apn/send", JsonConvert.SerializeObject(payload), $"Bearer {_accessToken}");
+            return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(payload), $"Bearer {_accessToken}");
         }
 
         private async Task<bool> AuthorizeAsync()

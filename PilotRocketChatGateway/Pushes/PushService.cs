@@ -10,6 +10,16 @@ namespace PilotRocketChatGateway.Pushes
         void SetPushToken(PushToken token);
         Task SendPushAsync(DMessage message);
     }
+    public enum PushTokenTypes
+    {
+        apn,
+        gcm
+    }
+    public class PushToken
+    {
+        public PushTokenTypes Type { get; init; }
+        public string Value { get; init; }
+    }
     public class PushService : IPushService
     {
         private PushToken _pushToken;
