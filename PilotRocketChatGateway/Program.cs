@@ -36,6 +36,7 @@ builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>
 builder.Services.AddSingleton<IContextService, ContextService>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
+builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
 
 var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>

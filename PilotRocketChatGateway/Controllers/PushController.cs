@@ -27,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers
         {
             var token = JsonConvert.DeserializeObject<PushTokenRequest>(request.ToString());
             var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
-            context.UserData.PushToken = new PushToken { apn = token.value };
+            context.PushService.SetPushToken(new PushToken { apn = token.value });
             return JsonConvert.SerializeObject(new { success = true });
         }
     }
