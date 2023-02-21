@@ -1,28 +1,27 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.Controllers
 {
     [ApiController]
     public class PushController : ControllerBase
     {
+        private readonly ILogger<PushController> _logger;
 
-        [HttpPost("push/apn/send")]
-        public string Send(object request)
+        public PushController(ILogger<PushController> logger)
         {
-            var a = this.HttpContext;
-            var req = request.ToString();
-            return "Hi";
+            _logger = logger;
         }
-
-
         [Authorize]
         [HttpPost("api/v1/push.token")]
         public string Token(object request)
         {
-            var a = request.ToString();
+            _logger.Log(LogLevel.Information, $"push token: {request.ToString()}");
             return string.Empty;
         }
     }
