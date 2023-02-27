@@ -3,22 +3,12 @@ using Newtonsoft.Json;
 using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.Utils;
 using System.Net;
-using System.ServiceModel.Channels;
 
 namespace PilotRocketChatGateway.Pushes
 {
     public interface IPushGatewayConnector
     {
         Task SendPushAsync(PushToken userToken, PushOptions options);
-    }
-
-    public record PushOptions
-    {
-        public string createdAt { get; init; }
-        public string createdBy { get; init; }
-        public string title { get; init; }
-        public string text { get; init; }
-        public string userId { get; init; }
     }
     public class PushGatewayConnector : IPushGatewayConnector
     {
@@ -49,7 +39,7 @@ namespace PilotRocketChatGateway.Pushes
 
             if (code == System.Net.HttpStatusCode.OK)
             {
-                _logger.Log(LogLevel.Information, $"successfully pushed to {options.createdBy}");
+                _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
                 return;
             }
 
@@ -64,7 +54,7 @@ namespace PilotRocketChatGateway.Pushes
                 (result, code) = await PushAsync(userToken, options);
                 if (code == System.Net.HttpStatusCode.OK)
                 {
-                    _logger.Log(LogLevel.Information, $"successfully pushed to {options.createdBy}");
+                    _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
                     return;
                 }
 
@@ -72,18 +62,18 @@ namespace PilotRocketChatGateway.Pushes
 
 
 
-            _logger.Log(LogLevel.Error, $"failed to push to {options.createdBy}: {result}, code: {code}");
+            _logger.Log(LogLevel.Error, $"failed to push to {options.userId}: {result}, code: {code}");
         }
 
         private Task<(string, HttpStatusCode)> PushAsync(PushToken userToken, PushOptions options)
         {
-            var payload = new
+            var data = new
             {
                 token = userToken.Value,
                 options = new
                 {
                     createdAt = options.createdAt,
-                    createdBy = options.createdBy,
+                    createdBy = "<SERVER>",
                     sent = false,
                     sending = 0,
                     from = "push",
@@ -92,10 +82,23 @@ namespace PilotRocketChatGateway.Pushes
                     userId = options.userId,
                     sound = "default",
                     topic = "chat.rocket.ios",
+                    badge = options.badge,
+                    payload = new
+                    {
+                        messageId = options.msgId,
+                        notificationType = "message",
+                        msg = options.msg,
+                        rid = options.roomId,
+                        sender = options.sender,
+                        senderName = options.sender.username,
+                        type = options.type,
+                        name = options.name
+                    },
+
                 }
             };
 
-            return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(payload), $"Bearer {_accessToken}");
+            return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {_accessToken}");
         }
 
         private async Task<bool> AuthorizeAsync()
