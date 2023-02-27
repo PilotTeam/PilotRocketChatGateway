@@ -27,7 +27,7 @@ namespace PilotRocketChatGateway.UserContext
             var notifyer = new WebSocketsNotifyer(bank, context); 
 
             var chatService = new ChatService(sender, loader);
-            var pushService = new PushService(pushConnector, chatService);
+            var pushService = new PushService(pushConnector, chatService, remoteSerive.ServerApi);
 
             context.SetService(remoteSerive);
             context.SetService(chatService);

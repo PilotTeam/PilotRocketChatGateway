@@ -305,7 +305,7 @@ namespace PilotRocketChatGateway.UserContext
         }
         private string GetChannelType(DChat chat)
         {
-            return chat.Type == ChatKind.Personal ? "d" : "p";
+            return chat.Type == ChatKind.Personal ? ChatType.PERSONAL_CHAT_TYPE : ChatType.GROUP_CHAT_TYPE;
         }
     }
 }

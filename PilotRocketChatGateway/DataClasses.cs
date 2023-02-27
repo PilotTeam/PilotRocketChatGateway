@@ -117,7 +117,11 @@ namespace PilotRocketChatGateway
 
     #endregion
     #region rooms
-
+    public class ChatType
+    {
+        public const string PERSONAL_CHAT_TYPE = "d";
+        public const string GROUP_CHAT_TYPE = "p";
+    }
     public record Rooms : HttpResult
     {
         public IList<Room> update { get; init; }
@@ -304,5 +308,20 @@ namespace PilotRocketChatGateway
         public string scope { get; set; }
         public string token_type { get; set; }
     }
+    public record PushOptions
+    {
+        public string createdAt { get; init; }
+        public string userId { get; init; }
+        public string msgId { get; init; }
+        public string title { get; init; }
+        public int badge { get; init; }
+        public string name { get; init; }
+        public Message msg { get; init; }
+        public string text { get; init; }
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+        public User sender { get; init; }
+        public string type { get; init; }
+}
     #endregion
 }
