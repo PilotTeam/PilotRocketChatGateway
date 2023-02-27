@@ -7,7 +7,6 @@ namespace PilotRocketChatGateway.UserContext
     public interface IContext : IDisposable
     {
         IRemoteService RemoteService { get; }
-
         IChatService ChatService { get; }
         IPushService PushService { get; }
         IWebSocketsNotifyer WebSocketsNotifyer { get; }

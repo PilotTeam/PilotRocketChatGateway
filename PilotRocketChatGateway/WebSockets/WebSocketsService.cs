@@ -1,6 +1,4 @@
 ﻿using Ascon.Pilot.DataClasses;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PilotRocketChatGateway.Authentication;
@@ -20,6 +18,7 @@ namespace PilotRocketChatGateway.WebSockets
         IWebSocketSession Session { get; }
         bool IsActive { get; }
         WebSocketState State { get; }
+        UserStatuses RCPresenceStatus { get; }
     }
     public class WebSocketsService : IWebSocksetsService
     {
@@ -43,9 +42,11 @@ namespace PilotRocketChatGateway.WebSockets
 
         public IWebSocketSession Session { get; private set; }
 
+        public UserStatuses RCPresenceStatus { get; private set; }
         public bool IsActive { get; private set; }
 
         public WebSocketState State => _webSocket.State;
+
 
         public async Task ProcessAsync()
         {
@@ -61,6 +62,8 @@ namespace PilotRocketChatGateway.WebSockets
                 {
                     _context?.WebSocketsNotifyer.RemoveWebSocketService(this);
                     Session?.Dispose();
+                    if (_context != null)
+                        _logger.Log(LogLevel.Information, $"Closed websocket. Username: {_context.RemoteService.ServerApi.CurrentPerson.Login}.");
                     return;
                 }
                 if (result.CloseStatus.HasValue)
@@ -135,6 +138,12 @@ namespace PilotRocketChatGateway.WebSockets
                 case "setUserStatus":
                     SetStatus(request);
                     break;
+                case $"UserPresence:{nameof(UserStatuses.away)}":
+                    RCPresenceStatus = UserStatuses.away;
+                    break;
+                case $"UserPresence:{nameof(UserStatuses.online)}":
+                    RCPresenceStatus = UserStatuses.online;
+                    break;
             }
         }
 
@@ -170,6 +179,7 @@ namespace PilotRocketChatGateway.WebSockets
 
             _context = GetContext(request.@params[0].resume);
             _context.WebSocketsNotifyer.RegisterWebSocketService(this);
+            RCPresenceStatus = UserStatuses.online;
             Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
             var result = new
             {
