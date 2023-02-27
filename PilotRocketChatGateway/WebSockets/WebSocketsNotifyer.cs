@@ -2,12 +2,12 @@
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.Collections.Concurrent;
+using System.Net.WebSockets;
 
 namespace PilotRocketChatGateway.WebSockets
 {
     public interface IWebSocketsNotifyer : IService
     {
-        bool IsEmpty { get; }
         void RegisterWebSocketService(IWebSocksetsService service);
         void RemoveWebSocketService(IWebSocksetsService service);
         void SendMessage(DMessage dMessage);
@@ -17,54 +17,49 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public class WebSocketsNotifyer : IWebSocketsNotifyer
     {
-        private IWebSocketBank _bank;
         private IContext _context;
-        private ConcurrentDictionary<int, IWebSocksetsService> _servises => _bank.GetServises(_context.UserData.Username);
+        private Dictionary<int, IWebSocksetsService> _services = new Dictionary<int, IWebSocksetsService>();
 
-        public bool IsEmpty => _servises.Any() == false;
-
-        public WebSocketsNotifyer(IWebSocketBank bank, IContext context)
+        public WebSocketsNotifyer(IContext context)
         {
             _context = context;
-            _bank = bank;
         }
         public void RegisterWebSocketService(IWebSocksetsService service)
         {
-            _bank.RegisterWebSocketService(_context.UserData.Username, service);
+            _services[service.GetHashCode()] = service;
         }
         public void RemoveWebSocketService(IWebSocksetsService service)
         {
-            _bank.RemoveWebSocketService(_context.UserData.Username, service);
+            _services.Remove(service.GetHashCode(), out _);
         }
 
         public void SendMessage(DMessage dMessage)
         {
-            foreach (var service in _servises)
+            foreach (var service in _services)
                 service.Value.Session.SendMessageToClient(dMessage);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
         {
-            foreach (var service in _servises)
+            foreach (var service in _services)
                 service.Value.Session.SendUserStatusChange(person, status);
         }
 
         public void SendTypingMessage(DChat chat, int personId)
         {
-            foreach (var service in _servises)
+            foreach (var service in _services)
                 service.Value.Session.SendTypingMessageToClient(chat, personId);
         }
 
         public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
-            foreach (var service in _servises)
+            foreach (var service in _services)
                 service.Value.Session.NotifyMessageCreated(dMessage, notify);
         }
         public void Dispose()
         {
-            foreach (var service in _servises)
+            foreach (var service in _services)
             {
-                _bank.RemoveWebSocketService(_context.UserData.Username, service.Value);
                 service.Value.Dispose();
             }
         }

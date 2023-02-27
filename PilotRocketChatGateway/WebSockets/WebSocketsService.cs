@@ -52,11 +52,20 @@ namespace PilotRocketChatGateway.WebSockets
             var buffer = new byte[1024 * 4];
             while (true)
             {
-                var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                WebSocketReceiveResult result = null;
+                try
+                {
+                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                }
+                catch(WebSocketException) 
+                {
+                    _context?.WebSocketsNotifyer.RemoveWebSocketService(this);
+                    Session?.Dispose();
+                    return;
+                }
                 if (result.CloseStatus.HasValue)
                 {
-                    await CloseAsync(result);
-                    Dispose();
+                    await SignOutAsync(result);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -74,18 +83,19 @@ namespace PilotRocketChatGateway.WebSockets
             }
         }
 
-        private async Task CloseAsync(WebSocketReceiveResult result)
+        private async Task SignOutAsync(WebSocketReceiveResult result)
         {
-            await CloseAsync(result.CloseStatus.Value);
+            await CloseWebSocketAsync(result.CloseStatus.Value);
             if (_context == null)
                 return;
 
-            _context.WebSocketsNotifyer.RemoveWebSocketService(this);
-            if (_context.WebSocketsNotifyer.IsEmpty == false)
-                return;
-            
-            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {_context.RemoteService.ServerApi.CurrentPerson.Login}.");
+
+            string login = _context.RemoteService.ServerApi.CurrentPerson.Login;
+
+            Session?.Dispose();
             _context.Dispose();
+
+            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {login}.");
         }
 
         private async Task HandleRequestAsync(dynamic request)
@@ -189,7 +199,7 @@ namespace PilotRocketChatGateway.WebSockets
             var context = _contextService.GetContext(jwtToken.Actor);
             return context;
         }
-        private Task CloseAsync(WebSocketCloseStatus status)
+        private Task CloseWebSocketAsync(WebSocketCloseStatus status)
         {
             if (IsActive == false)
                 return Task.CompletedTask;
@@ -199,19 +209,7 @@ namespace PilotRocketChatGateway.WebSockets
             return _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
         }
 
-        public async void Dispose()
-        {
-            try
-            {
-                await CloseAsync(WebSocketCloseStatus.NormalClosure);
-            }
-            catch(Exception e)
-            {
-                _logger.Log(LogLevel.Information, "Failed to close websocket");
-                _logger.LogError(0, e, e.Message);
-            }
-            Session?.Dispose();
-            _webSocket.Dispose();
-        }
+        public void Dispose()
+        { }
     }
 }
