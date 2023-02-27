@@ -24,10 +24,10 @@ namespace PilotRocketChatGateway.UserContext
             var msgLoader = new BatchMessageLoader(context);
             var loader = new DataLoader(rcConverter, commonConverter, context, msgLoader);
             var sender = new DataSender(rcConverter, commonConverter, context);
-            var notifyer = new WebSocketsNotifyer(context); 
+            var notifyer = new WebSocketsNotifyer(); 
 
             var chatService = new ChatService(sender, loader);
-            var pushService = new PushService(pushConnector, chatService, remoteSerive.ServerApi);
+            var pushService = new PushService(pushConnector, context);
 
             context.SetService(remoteSerive);
             context.SetService(chatService);
