@@ -19,15 +19,13 @@ namespace PilotRocketChatGateway.UserContext
         private readonly ConcurrentDictionary<string, IContext> _contexts = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
-        private readonly IWebSocketBank _bank;
         private readonly ILogger<ContextService> _logger;
         private readonly IPushGatewayConnector _pushConnector;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, IWebSocketBank bank, ILogger<ContextService> logger, IPushGatewayConnector pushConnector)
+        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextService> logger, IPushGatewayConnector pushConnector)
         {
             _connectionService = connectionService;
             _contextFactory = contextFactory;
-            _bank = bank;
             _logger = logger;
             _pushConnector = pushConnector;
         }
@@ -39,7 +37,7 @@ namespace PilotRocketChatGateway.UserContext
                 if (_contexts.TryGetValue(credentials.Username, out var old))
                     old?.Dispose();                
 
-                var context = _contextFactory.CreateContext(credentials, _connectionService, _bank, _logger, _pushConnector);
+                var context = _contextFactory.CreateContext(credentials, _connectionService, _logger, _pushConnector);
                 _contexts[credentials.Username] = context;
             }
         }
