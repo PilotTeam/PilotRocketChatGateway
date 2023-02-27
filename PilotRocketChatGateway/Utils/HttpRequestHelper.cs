@@ -31,6 +31,7 @@ namespace PilotRocketChatGateway.Utils
 
         private static HttpClient CreateHttpClient(string accessToken = null)
         {
+
             HttpClient httpClient = new HttpClient();
 
             if (accessToken != null)
