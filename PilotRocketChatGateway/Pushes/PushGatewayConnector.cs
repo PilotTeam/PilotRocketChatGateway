@@ -98,10 +98,11 @@ namespace PilotRocketChatGateway.Pushes
                     text = options.text,
                     userId = options.userId,
                     sound = "default",
-                    topic = "chat.rocket.ios",
+                    topic = options.appName,
                     badge = options.badge,
                     payload = new
                     {
+                        host = "",
                         messageId = options.msgId,
                         notificationType = "message",
                         msg = options.msg,
