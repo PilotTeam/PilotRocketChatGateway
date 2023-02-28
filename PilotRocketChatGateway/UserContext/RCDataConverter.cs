@@ -4,6 +4,7 @@ using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.ServiceModel.Channels;
 using static System.Net.WebRequestMethods;
 
 namespace PilotRocketChatGateway.UserContext
@@ -66,9 +67,11 @@ namespace PilotRocketChatGateway.UserContext
                 alert = chat.UnreadMessagesNumber > 0,
                 id = ConvertToRoomId(chat.Chat),
                 roomId = ConvertToRoomId(chat.Chat),
-                channelType = GetChannelType(chat.Chat)
+                channelType = GetChannelType(chat.Chat),
+                disableNotifications = !AreNotificationsOn(chat)
             };
         }
+
         public Message ConvertToMessage(DMessage msg)
         {
             var origin = GetOriginMessage(msg);
@@ -100,6 +103,13 @@ namespace PilotRocketChatGateway.UserContext
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
         }
+
+        private bool AreNotificationsOn(DChatInfo chat)
+        {
+            var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
+            var member = _context.RemoteService.ServerApi.GetChatMembers(chat.Chat.Id).First(x => x.PersonId == currentPersonId);
+            return member.IsNotifiable;
+        }
         private string GetRole(DMessage msg)
         {
             if (msg.Type != MessageType.ChatMembers)
@@ -112,7 +122,6 @@ namespace PilotRocketChatGateway.UserContext
             
             return null;
         }
-
         private string GetMsgType(DMessage msg)
         {
             switch (msg.Type)

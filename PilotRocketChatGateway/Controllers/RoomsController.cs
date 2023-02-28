@@ -48,5 +48,20 @@ namespace PilotRocketChatGateway.Controllers
                 return JsonConvert.SerializeObject(result);
             }
         }
+        [Authorize]
+        [HttpPost("api/v1/rooms.saveNotification")]
+        public string SaveNotification(object request)
+        {
+            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+
+            var setting = JsonConvert.DeserializeObject<SaveNotification>(request.ToString());
+            bool isOn = setting.notifications.disableNotifications == "0";
+
+            context.ChatService.DataSender.SendChageNotificationMessageToServer(setting.roomId, isOn);
+
+            var result = new { success = true };
+            return JsonConvert.SerializeObject(result);
+
+        }
     }
 }

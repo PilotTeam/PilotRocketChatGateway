@@ -142,6 +142,15 @@ namespace PilotRocketChatGateway
         public string msgId { get; init; }
         public string text { get; init; }
     }
+    public record SaveNotification
+    {
+        public string roomId { get; init; }
+        public Notifications notifications { get; init; }
+    }
+    public record Notifications
+    {
+        public string disableNotifications { get; init; }
+    }
     public record MessagesUpdated 
     {
         public IList<Message> updated { get; init; }
@@ -176,6 +185,7 @@ namespace PilotRocketChatGateway
         public bool open { get; init; }
         [JsonProperty("t")]
         public string channelType { get; init; }
+        public bool disableNotifications { get; init; }
     }
     public record Room
     {

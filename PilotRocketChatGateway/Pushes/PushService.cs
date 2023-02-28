@@ -53,6 +53,10 @@ namespace PilotRocketChatGateway.Pushes
             if (_pushToken == null)
                 return false;
 
+            var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
+            if (message.CreatorId == currentPersonId)
+                return false;
+
             if (message.Type != MessageType.TextMessage && message.Type != MessageType.MessageAnswer)
                 return false;
 
@@ -60,6 +64,10 @@ namespace PilotRocketChatGateway.Pushes
             {
                 return false;
             }
+
+            var member = _context.RemoteService.ServerApi.GetChatMembers(message.ChatId).First(x => x.PersonId == currentPersonId);
+            if (member.IsNotifiable == false)
+                return false;
 
             return true;
         }
