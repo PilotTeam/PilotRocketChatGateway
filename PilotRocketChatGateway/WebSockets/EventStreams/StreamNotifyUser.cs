@@ -1,4 +1,5 @@
-﻿using PilotRocketChatGateway.UserContext;
+﻿using Ascon.Pilot.DataClasses;
+using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.WebSockets;
 using PilotRocketChatGateway.WebSockets.EventStreams;
 using System.Net.WebSockets;
@@ -17,7 +18,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
         }
         public void UpdateRoomsSubscription(Guid chatId)
         {
-            var(eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_SUBSCRIPTIONS_CHANGED)).FirstOrDefault();
+            var (eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_SUBSCRIPTIONS_CHANGED)).FirstOrDefault();
             if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
                 return;
 
@@ -33,7 +34,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
                     args = new object[] { "updated", sub }
                 }
             };
-             _webSocket.SendResultAsync(result);
+            _webSocket.SendResultAsync(result);
         }
         public void UpdateRoom(Guid chatId)
         {
@@ -55,6 +56,35 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             };
             _webSocket.SendResultAsync(result);
         }
+        public void NotifyUser(Message rocketChatMessage, ChatKind chatKind)
+        {
+            var (eventName, id) = _events.Where(x => x.Key.Contains("notification")).FirstOrDefault();
+            if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
+                return;
 
+            var result = new
+            {
+                msg = "updated",
+                collection = Streams.STREAM_NOTIFY_USER,
+                id,
+                fields = new
+                {
+                    eventName,
+                    args = new object[] 
+                    {
+                        new
+                        {
+                            payload = new
+                            {
+                                rid = rocketChatMessage.roomId,
+                                sender = rocketChatMessage,
+                            },
+                            text = chatKind == ChatKind.Personal ? rocketChatMessage.msg : $"{rocketChatMessage.u.name}: {rocketChatMessage.msg}",
+                        }
+                    }
+                }
+            };
+            _webSocket.SendResultAsync(result);
+        }
     }
 }
