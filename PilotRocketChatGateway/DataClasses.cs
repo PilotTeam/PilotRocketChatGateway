@@ -332,6 +332,7 @@ namespace PilotRocketChatGateway
         public string roomId { get; init; }
         public User sender { get; init; }
         public string type { get; init; }
+        public string appName { get; init; }
 }
     #endregion
 }

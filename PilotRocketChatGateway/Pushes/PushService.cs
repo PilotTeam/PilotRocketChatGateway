@@ -86,7 +86,8 @@ namespace PilotRocketChatGateway.Pushes
                 msg = rcMesssage,
                 sender = rcMesssage.u,
                 userId = _context.RemoteService.ServerApi.CurrentPerson.Id.ToString(),
-                type = ChatType.GROUP_CHAT_TYPE
+                type = ChatType.GROUP_CHAT_TYPE,
+                appName = GetAppName()
             };
         }
 
@@ -103,8 +104,14 @@ namespace PilotRocketChatGateway.Pushes
                 msg = rcMesssage,
                 sender = rcMesssage.u,
                 userId = _context.RemoteService.ServerApi.CurrentPerson.Id.ToString(),
-                type = ChatType.PERSONAL_CHAT_TYPE
+                type = ChatType.PERSONAL_CHAT_TYPE,
+                appName = GetAppName()
             };
+        }
+        
+        private string GetAppName()
+        {
+            return _pushToken.Type == PushTokenTypes.apn ? "chat.rocket.ios" : "chat.rocket.android";
         }
 
         public void Dispose()
