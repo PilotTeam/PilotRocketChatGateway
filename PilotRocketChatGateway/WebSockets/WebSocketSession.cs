@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
@@ -152,7 +153,12 @@ namespace PilotRocketChatGateway.WebSockets
             {
                 var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage);
                 _streamNotifyRoom.SendTypingMessageToClient(rocketChatMessage.roomId, dMessage.CreatorId, false);
-                _streamRoomMessages.SendMessageUpdate(dMessage);
+                _streamRoomMessages.SendMessageUpdate(rocketChatMessage);
+
+                var chat = _serverApi.GetChat(dMessage.ChatId);
+                var member = _serverApi.GetChatMembers(dMessage.ChatId).First(x => x.PersonId == _serverApi.CurrentPerson.Id);
+                if (member.IsNotifiable == true)
+                    _streamNotifyUser.NotifyUser(rocketChatMessage, chat.Chat.Type);
             }
         }
         public void SendTypingMessageToClient(DChat chat, int personId)
