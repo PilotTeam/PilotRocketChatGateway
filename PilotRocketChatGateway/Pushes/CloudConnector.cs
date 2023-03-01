@@ -9,7 +9,7 @@ namespace PilotRocketChatGateway.Pushes
     public class CloudConnector
     {
         private const string CLOUD_URI = "https://cloud.rocket.chat";
-        public static async Task RegisterAsync(RocketChatCloudSettings settings, IWorkspace workspace, Serilog.ILogger logger)
+        public static async Task<string> RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger)
         {
             logger.Information("trying to register in cloud.rocket.chat");
 
@@ -24,12 +24,12 @@ namespace PilotRocketChatGateway.Pushes
 
             if (code == HttpStatusCode.Created)
             {
-                workspace.SaveData(result);
                 logger.Information($"successfully registered in cloud.rocket.chat");
-                return;
+                return result;
             }
 
             logger.Information($"Result: {result}, code: {code}");
+            return null;
         }
 
         public static async Task<string> AutorizeAsync(IWorkspace workspace, ILogger logger)

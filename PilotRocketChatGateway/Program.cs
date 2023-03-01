@@ -89,7 +89,9 @@ if (workspace.Data == null)
     {
         Task.Run(async () =>
         {
-            await CloudConnector.RegisterAsync(cloudSettings, workspace, Log.Logger);
+            var result = await CloudConnector.RegisterAsync(cloudSettings, Log.Logger);
+            if (result != null)
+                workspace.SaveData(result);
         });
     }
 }
