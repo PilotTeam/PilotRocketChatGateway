@@ -1,6 +1,8 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.Utils;
 using System;
+using System.ServiceModel.Channels;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -19,6 +21,9 @@ namespace PilotRocketChatGateway.UserContext
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
+        bool IsChatNotifiable(Guid chatId);
+        DChatInfo LoadChat(Guid chatId);
+        INPerson LoadPerson(int userId);
     }
     public class DataLoader : IDataLoader
     {
@@ -40,6 +45,10 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
             var lastMsg = _context.RemoteService.ServerApi.GetMessage(chat.LastMessage.Id);
             return RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, lastMsg);
+        }
+        public DChatInfo LoadChat(Guid chatId)
+        {
+            return _context.RemoteService.ServerApi.GetChat(chatId);
         }
 
         public IList<Room> LoadRooms()
@@ -99,6 +108,10 @@ namespace PilotRocketChatGateway.UserContext
             var person = _context.RemoteService.ServerApi.GetPerson(userId);
             return _commonConverter.ConvertToUser(person, fullName: true);
         }
+        public INPerson LoadPerson(int userId)
+        {
+            return _context.RemoteService.ServerApi.GetPerson(userId);
+        }
         public IList<User> LoadUsers(int count)
         {
             var users = _context.RemoteService.ServerApi.GetPeople().Values;
@@ -114,7 +127,13 @@ namespace PilotRocketChatGateway.UserContext
                 return _commonConverter.ConvertToUser(person);
             }).ToList();
         }
-      
+
+        public bool IsChatNotifiable(Guid chatId)
+        {
+            var member = _context.RemoteService.ServerApi.GetChatMembers(chatId).First(x => x.PersonId == _context.RemoteService.ServerApi.CurrentPerson.Id);
+            return member.IsNotifiable;
+        }
+
         private IList<Message> LoadMessages(Guid roomId, DateTime dateFrom, DateTime dateTo, int count)
         {
             var msgs = _context.RemoteService.ServerApi.GetMessages(roomId, dateFrom, dateTo, count);

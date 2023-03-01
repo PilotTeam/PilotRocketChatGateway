@@ -68,7 +68,7 @@ namespace PilotRocketChatGateway.UserContext
                 id = ConvertToRoomId(chat.Chat),
                 roomId = ConvertToRoomId(chat.Chat),
                 channelType = GetChannelType(chat.Chat),
-                disableNotifications = !AreNotificationsOn(chat)
+                disableNotifications = !_context.ChatService.DataLoader.IsChatNotifiable(chat.Chat.Id)
             };
         }
 
@@ -102,13 +102,6 @@ namespace PilotRocketChatGateway.UserContext
         public string ConvertToRoomId(DChat chat)
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
-        }
-
-        private bool AreNotificationsOn(DChatInfo chat)
-        {
-            var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
-            var member = _context.RemoteService.ServerApi.GetChatMembers(chat.Chat.Id).First(x => x.PersonId == currentPersonId);
-            return member.IsNotifiable;
         }
         private string GetRole(DMessage msg)
         {
