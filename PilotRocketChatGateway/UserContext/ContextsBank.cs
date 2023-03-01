@@ -7,22 +7,22 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace PilotRocketChatGateway.UserContext
 {
-    public interface IContextService
+    public interface IContextsBank
     {
         IContext GetContext(string actor);
         void CreateContext(UserData credentials);
         void RemoveContext(string actor);
     }
 
-    public class ContextService : IContextService
+    public class ContextsBank : IContextsBank
     {
         private readonly ConcurrentDictionary<string, IContext> _contexts = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
-        private readonly ILogger<ContextService> _logger;
+        private readonly ILogger<ContextsBank> _logger;
         private readonly IPushGatewayConnector _pushConnector;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextService> logger, IPushGatewayConnector pushConnector)
+        public ContextsBank(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextsBank> logger, IPushGatewayConnector pushConnector)
         {
             _connectionService = connectionService;
             _contextFactory = contextFactory;

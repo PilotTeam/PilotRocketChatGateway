@@ -14,12 +14,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class MethodCallController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private IAuthHelper _authHelper;
 
-        public MethodCallController(IContextService contextService, IAuthHelper authHelper)
+        public MethodCallController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
     }
 
@@ -27,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpPost("api/v1/method.call/loadSurroundingMessages")]
         public string LoadSurroundingMessages(object request)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
 
 
             dynamic dRequest = JsonConvert.DeserializeObject<ExpandoObject>(request.ToString(), new ExpandoObjectConverter());

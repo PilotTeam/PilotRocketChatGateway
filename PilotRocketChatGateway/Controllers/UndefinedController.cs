@@ -10,12 +10,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class UndefinedController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private IAuthHelper _authHelper;
 
-        public UndefinedController(IContextService contextService, IAuthHelper authHelper)
+        public UndefinedController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -23,7 +23,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/undefined.members")]
         public string Members(string roomId)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var users = context.ChatService.DataLoader.LoadMembers(roomId);
             var result = new { success = true, members = users };
             return JsonConvert.SerializeObject(result);

@@ -10,11 +10,11 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class LogoutController : ControllerBase
     {
-        private IContextService _context;
+        private IContextsBank _context;
         private ILogger<LogoutController> _logger;
         private IAuthHelper _authHelper;
 
-        public LogoutController(IContextService context, ILogger<LogoutController> logger, IAuthHelper authHelper)
+        public LogoutController(IContextsBank context, ILogger<LogoutController> logger, IAuthHelper authHelper)
         {
             _context = context;
             _logger = logger;

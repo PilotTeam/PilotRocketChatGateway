@@ -13,13 +13,13 @@ namespace PilotRocketChatGateway.Controllers
     public class PushController : ControllerBase
     {
 
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
         private readonly ILogger<PushController> _logger;
 
-        public PushController(IContextService contextService, IAuthHelper authHelper, ILogger<PushController> logger)
+        public PushController(IContextsBank contextsBank, IAuthHelper authHelper, ILogger<PushController> logger)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
             _logger = logger;
         }
@@ -29,7 +29,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Token(object request)
         {
             var token = JsonConvert.DeserializeObject<PushTokenRequest>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
 
             PushToken pushToken = null;
             switch (token.type)

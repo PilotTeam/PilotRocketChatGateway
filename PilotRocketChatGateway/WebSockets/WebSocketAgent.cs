@@ -6,10 +6,10 @@ namespace PilotRocketChatGateway.WebSockets
 {
     public class WebSocketAgentFactory : IWebSocketAgentFactory
     {
-        IContextService _contextService;
-        public WebSocketAgentFactory(IContextService contextService) 
+        IContextsBank _contextsBank;
+        public WebSocketAgentFactory(IContextsBank contextsBank) 
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
         }
         public IWebSocketAgent Create(string authToken)
         {
@@ -19,7 +19,7 @@ namespace PilotRocketChatGateway.WebSockets
         private IContext GetContext(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken);
-            var context = _contextService.GetContext(jwtToken.Actor);
+            var context = _contextsBank.GetContext(jwtToken.Actor);
             return context;
         }
     }
