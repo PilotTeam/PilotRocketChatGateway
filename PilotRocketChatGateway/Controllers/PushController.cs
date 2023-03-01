@@ -46,7 +46,7 @@ namespace PilotRocketChatGateway.Controllers
             }
 
             if (pushToken != null)
-                context.PushService.SetPushToken(pushToken);
+                context.PushService.PushToken = pushToken;
 
             return JsonConvert.SerializeObject(new { success = true });
         }

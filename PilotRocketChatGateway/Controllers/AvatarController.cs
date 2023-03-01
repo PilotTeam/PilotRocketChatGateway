@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NIdenticon;
 using NIdenticon.BrushGenerators;
 using PilotRocketChatGateway.Authentication;
+using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -27,30 +29,47 @@ namespace PilotRocketChatGateway.Controllers
         [Route("/[controller]/Room/{roomId}")]
         public IActionResult Room(string roomId)
         {
+            string rc_token;
+            rc_token = GetParam(nameof(rc_token));
+
+            var user = _authHelper.GetTokenActor(rc_token);
+            if (string.IsNullOrEmpty(user))
+                throw new UnauthorizedAccessException();
+
+            var context = _contextService.GetContext(user);
+            var chatId = context.ChatService.DataLoader.RCDataConverter.CommonDataConverter.ConvertToChatId(roomId);
+            var room = context.RemoteService.ServerApi.GetChat(chatId);
+
             int size;
             size = int.Parse(GetParam(nameof(size)));
 
-            var generator = GetGenerator(size, roomId).WithBackgroundColor(Color.Black);
+            var generator = GetGenerator(size, room.Chat.Name);
 
             using (var stream = new MemoryStream())
             {
-                generator.Create(roomId).Save(stream, ImageFormat.Png);
+                generator.Create(room.Chat.Name).Save(stream, ImageFormat.Png);
                 return File(stream.ToArray(), "image/png");
             }
         }
 
-
-        [Route("/[controller]/{username}")]
-        public IActionResult Get(string username)
+        [Route("/[controller]/{name}")]
+        public IActionResult Get(string name)
         {
+            string rc_token;
+            rc_token = GetParam(nameof(rc_token));
+
+            var user = _authHelper.GetTokenActor(rc_token);
+            if (string.IsNullOrEmpty(user))
+                throw new UnauthorizedAccessException();
+
             int size;
             size = Convert.ToInt32(double.Parse(GetParam(nameof(size)), CultureInfo.InvariantCulture));
 
-            var generator = GetGenerator(size, username); 
+            var generator = GetGenerator(size, name); 
 
             using (var stream = new MemoryStream())
             {
-                generator.Create(username).Save(stream, ImageFormat.Png);
+                generator.Create(name).Save(stream, ImageFormat.Png);
                 return File(stream.ToArray(), "image/png");
             }
         }

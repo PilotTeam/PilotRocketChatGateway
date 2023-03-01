@@ -86,7 +86,8 @@
       "enterprise": false
     },
     {
-      "_id": "Accounts_AllowUserAvatarChange",
+      "_id": "Accounts_AllowUser
+        rChange",
       "value": true,
       "enterprise": false
     },
@@ -107,7 +108,7 @@
     },
     {
       "_id": "Accounts_AvatarBlockUnauthenticatedAccess",
-      "value": false,
+      "value": true,
       "enterprise": false
     },
     {
