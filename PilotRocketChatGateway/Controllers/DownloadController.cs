@@ -11,13 +11,13 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class DownloadController : ControllerBase
     {
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
         private readonly AuthSettings _authSettings;
 
-        public DownloadController(IContextService contextService, IAuthHelper authHelper, IOptions<AuthSettings> authSettings)
+        public DownloadController(IContextsBank contextsBank, IAuthHelper authHelper, IOptions<AuthSettings> authSettings)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
             _authSettings = authSettings.Value;
         }
@@ -31,7 +31,7 @@ namespace PilotRocketChatGateway.Controllers
             if (_authHelper.ValidateToken(rc_token, _authSettings) == false)
                 throw new UnauthorizedAccessException();
 
-            var context = _contextService.GetContext(_authHelper.GetTokenActor(rc_token));
+            var context = _contextsBank.GetContext(_authHelper.GetTokenActor(rc_token));
             var attach = context.RemoteService.FileManager.LoadFileInfo(objId);
             return File(attach.Data, attach.FileType);
         }

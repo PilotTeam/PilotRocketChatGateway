@@ -13,12 +13,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class ChatController : ControllerBase
     {
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
 
-        public ChatController(IContextService contextService, IAuthHelper authHelper)
+        public ChatController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -26,7 +26,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/chat.syncMessages")]
         public string SyncMessages(string roomId, string lastUpdate) 
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.DataLoader.LoadMessages(roomId, lastUpdate);
             var res = new
             {
@@ -45,7 +45,7 @@ namespace PilotRocketChatGateway.Controllers
         public string SendMessage(object request)
         {
             var message = JsonConvert.DeserializeObject<MessageRequest>(request.ToString()).message;
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var (link, text) = MarkdownHelper.CutHyperLink(message.msg);
             context.ChatService.DataSender.SendTextMessageToServer(message.roomId, message.id, text, link);
             var result = new MessageRequest()
@@ -60,7 +60,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Update(object request)
         {
             var message = JsonConvert.DeserializeObject<MessageEdit>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             context.ChatService.DataSender.SendEditMessageToServer(message.roomId, message.msgId, message.text);
             var result = new MessageRequest()
             {
@@ -73,7 +73,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/chat.getMessage")]
         public string GetMessage(string msgId)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msg = context.ChatService.DataLoader.LoadMessage(msgId);
             var res = new
             {

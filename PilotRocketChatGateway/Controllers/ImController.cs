@@ -12,12 +12,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class ImController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private IAuthHelper _authHelper;
 
-        public ImController(IContextService contextService, IAuthHelper authHelper)
+        public ImController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -26,7 +26,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Create(object request)
         {
             var user = JsonConvert.DeserializeObject<User>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
 
 
             var room = context.ChatService.DataLoader.LoadPersonalRoom(user.username);
@@ -53,7 +53,7 @@ namespace PilotRocketChatGateway.Controllers
             count = int.Parse(GetParam(nameof(count)));
             latest = GetParam(nameof(latest));
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.DataLoader.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
@@ -71,7 +71,7 @@ namespace PilotRocketChatGateway.Controllers
             offset = int.Parse(GetParam(nameof(offset)));
 
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var (files, total) = context.ChatService.DataLoader.RCDataConverter.AttachmentLoader.LoadFiles(roomId, offset);
             var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
             return JsonConvert.SerializeObject(result);

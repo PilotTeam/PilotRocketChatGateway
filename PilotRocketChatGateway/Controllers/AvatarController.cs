@@ -17,12 +17,12 @@ namespace PilotRocketChatGateway.Controllers
     {
         private const int BLOCK_SIZE = 5; 
 
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
 
-        public AvatarController(IContextService contextService, IAuthHelper authHelper)
+        public AvatarController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -36,7 +36,7 @@ namespace PilotRocketChatGateway.Controllers
             if (string.IsNullOrEmpty(user))
                 throw new UnauthorizedAccessException();
 
-            var context = _contextService.GetContext(user);
+            var context = _contextsBank.GetContext(user);
             var chatId = context.ChatService.DataLoader.RCDataConverter.CommonDataConverter.ConvertToChatId(roomId);
             var room = context.RemoteService.ServerApi.GetChat(chatId);
 

@@ -21,14 +21,14 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class LoginController : ControllerBase
     {
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly ILogger<LoginController> _logger;
         private readonly AuthSettings _authSettings;
         private readonly IAuthHelper _authHelper;
 
-        public LoginController(IContextService contextService, IOptions<AuthSettings> authSettings, ILogger<LoginController> logger, IAuthHelper authHelper)
+        public LoginController(IContextsBank contextsBank, IOptions<AuthSettings> authSettings, ILogger<LoginController> logger, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _logger = logger;
             _authSettings = authSettings.Value;
             _authHelper = authHelper;
@@ -90,15 +90,15 @@ namespace PilotRocketChatGateway.Controllers
 
         private HttpLoginResponse ContinueSession(LoginRequest? user)
         {
-            var context = _contextService.GetContext(_authHelper.GetTokenActor(user.token));
+            var context = _contextsBank.GetContext(_authHelper.GetTokenActor(user.token));
             _logger.Log(LogLevel.Information, $"Resume signed in successfully. Username: {context.RemoteService.ServerApi.CurrentPerson.Login}.");
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, user.token);
         }
 
         private IContext CreateContext(UserData credentials)
         {
-            _contextService.CreateContext(credentials);
-            return  _contextService.GetContext(credentials.Username);
+            _contextsBank.CreateContext(credentials);
+            return  _contextsBank.GetContext(credentials.Username);
         }
 
         private HttpLoginResponse CreateNewSession(LoginRequest? user)

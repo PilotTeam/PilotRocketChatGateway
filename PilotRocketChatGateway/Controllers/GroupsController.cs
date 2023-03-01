@@ -13,12 +13,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class GroupsController : ControllerBase
     {
-        private readonly IContextService _contextService;
+        private readonly IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
 
-        public GroupsController(IContextService contextService, IAuthHelper authHelper)
+        public GroupsController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -34,7 +34,7 @@ namespace PilotRocketChatGateway.Controllers
             count = int.Parse(GetParam(nameof(count)));
             latest = GetParam(nameof(latest));
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var msgs = context.ChatService.DataLoader.LoadMessages(roomId, count, latest);
             var result = new Messages() { success = true, messages = msgs };
             return JsonConvert.SerializeObject(result);
@@ -44,7 +44,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/groups.members")]
         public string Members(string roomId)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var users = context.ChatService.DataLoader.LoadMembers(roomId);
             var result = new { success = true, members = users };
             return JsonConvert.SerializeObject(result);
@@ -55,7 +55,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Create(object request)
         {
             var group = JsonConvert.DeserializeObject<GroupRequest>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
 
             var created = context.ChatService.DataSender.SendChatCreationMessageToServer(group.name, group.members, ChatKind.Group);
             var result = new { group = created, success = true };
@@ -73,7 +73,7 @@ namespace PilotRocketChatGateway.Controllers
             offset = int.Parse(GetParam(nameof(offset)));
 
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var (files, total) = context.ChatService.DataLoader.RCDataConverter.AttachmentLoader.LoadFiles(roomId, offset);
             var result = new { files = files, success = true, count = files.Count, offset = offset, total = total };
             return JsonConvert.SerializeObject(result);

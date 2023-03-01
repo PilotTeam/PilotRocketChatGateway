@@ -31,7 +31,7 @@ builder.Services.AddSingleton<IConnectionService, ConnectionService>();
 builder.Services.AddSingleton<IContextFactory, ContextFactory>();
 builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactory>();
 builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>();
-builder.Services.AddSingleton<IContextService, ContextService>();
+builder.Services.AddSingleton<IContextsBank, ContextsBank>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
 builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
