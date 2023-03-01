@@ -8,7 +8,7 @@ namespace PilotRocketChatGateway.Pushes
 {
     public interface IPushService : IService
     {
-        void SetPushToken(PushToken token);
+        PushToken PushToken { get; set; }
         Task SendPushAsync(DMessage message);
     }
     public enum PushTokenTypes
@@ -23,19 +23,32 @@ namespace PilotRocketChatGateway.Pushes
     }
     public class PushService : IPushService
     {
-        private PushToken _pushToken;
         private readonly IPushGatewayConnector _connector;
         private readonly IContext _context;
+        private object _locker = new object();
+        private PushToken _pushToken;
 
         public PushService(IPushGatewayConnector connector, IContext context)
         {
             _connector = connector;
             _context = context;
         }
-
-        public void SetPushToken(PushToken token)
+        public PushToken PushToken
         {
-            _pushToken = token;
+            get
+            {
+                lock (_locker)
+                {
+                    return _pushToken;
+                }
+            }
+            set
+            {
+                lock (_locker)
+                {
+                    _pushToken = value;
+                }
+            }
         }
 
         public async Task SendPushAsync(DMessage message)
@@ -45,7 +58,7 @@ namespace PilotRocketChatGateway.Pushes
 
             var chat = _context.RemoteService.ServerApi.GetChat(message.ChatId);
             var options = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatOption(message) : GetGroupChatOption(message, chat.Chat);
-            await _connector.SendPushAsync(_pushToken, options);
+            await _connector.SendPushAsync(PushToken, options);
         }
 
         private bool CanPushToUser(DMessage message)
@@ -111,12 +124,12 @@ namespace PilotRocketChatGateway.Pushes
         
         private string GetAppName()
         {
-            return _pushToken.Type == PushTokenTypes.apn ? "chat.rocket.ios" : "chat.rocket.android";
+            return PushToken.Type == PushTokenTypes.apn ? "chat.rocket.ios" : "chat.rocket.android";
         }
 
         public void Dispose()
         {
-            _pushToken = null;
+            PushToken = null;
         }
     }
 }
