@@ -38,7 +38,8 @@ namespace PilotRocketChatGateway.Controllers
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                 _logger.Log(LogLevel.Information, "WebSocket connection established");
 
-                var webSocketService = _webSocketsServiceFactory.CreateWebSocketsService(webSocket, _logger, _authSettings, _contextService, _webSocketSessionFactory, _authHelper);
+                var agentFactory = new WebSocketAgentFactory(_contextService);
+                var webSocketService = _webSocketsServiceFactory.CreateWebSocketsService(webSocket, _logger, _authSettings, _webSocketSessionFactory, _authHelper, agentFactory);
                 await webSocketService.ProcessAsync();
             }
             else

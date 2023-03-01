@@ -78,8 +78,7 @@ namespace PilotRocketChatGateway.Pushes
                 return false;
             }
 
-            var member = _context.RemoteService.ServerApi.GetChatMembers(message.ChatId).First(x => x.PersonId == currentPersonId);
-            if (member.IsNotifiable == false)
+            if (_context.ChatService.DataLoader.IsChatNotifiable(message.ChatId) == false)
                 return false;
 
             return true;
