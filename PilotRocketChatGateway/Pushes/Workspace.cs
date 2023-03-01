@@ -10,6 +10,8 @@ namespace PilotRocketChatGateway.Pushes
     public class Workspace : IWorkspace
     {
         const string WORKSPACE_FILE_NAME = "workspace.json";
+        private static string _settingsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), System.Reflection.Assembly.GetExecutingAssembly().GetName().Name);
+
         private ILogger<Workspace> _logger;
 
         public Workspace(ILogger<Workspace> logger)
@@ -20,11 +22,16 @@ namespace PilotRocketChatGateway.Pushes
         public WorkspaceData Data { get; private set; }
         public void SaveData(string json)
         {
-            var path = GetFilePath();
-            File.WriteAllText(path, json);
+            var fullName = GetFilePath();
+
+            var dir = Path.GetDirectoryName(fullName);
+            if (Directory.Exists(dir) == false)
+                Directory.CreateDirectory(dir);
+
+            File.WriteAllText(fullName, json);
             Data = JsonConvert.DeserializeObject<WorkspaceData>(json);
 
-            _logger.Log(LogLevel.Information, $"Workspace was initiated, saved data in {path}");
+            _logger.Log(LogLevel.Information, $"Workspace was initiated, saved data in {fullName}");
         }
         private void LoadData()
         {
@@ -44,7 +51,7 @@ namespace PilotRocketChatGateway.Pushes
 
         private string GetFilePath()
         {
-            return Path.Combine(Directory.GetCurrentDirectory(), WORKSPACE_FILE_NAME); 
+            return Path.Combine(_settingsFolder, WORKSPACE_FILE_NAME); 
         }
     }
 }
