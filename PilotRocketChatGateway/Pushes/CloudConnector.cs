@@ -15,6 +15,12 @@ namespace PilotRocketChatGateway.Pushes
     public class CloudConnector : ICloudConnector
     {
         private const string CLOUD_URI = "https://cloud.rocket.chat";
+        private IHttpRequestHelper _requestHelper;
+
+        public CloudConnector(IHttpRequestHelper requestHelper)
+        {
+            _requestHelper = requestHelper;
+        }
         public async Task<string> RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger)
         {
             logger.Information("trying to register in cloud.rocket.chat");
@@ -26,7 +32,7 @@ namespace PilotRocketChatGateway.Pushes
                 redirect_uris = new[] { settings.WorkspaceUri }
             };
 
-            var (result, code) = await HttpRequestHelper.PostJsonAsync($"{CLOUD_URI}/api/oauth/clients", JsonConvert.SerializeObject(payload), $"Bearer {settings.RegistrationToken}");
+            var (result, code) = await _requestHelper.PostJsonAsync($"{CLOUD_URI}/api/oauth/clients", JsonConvert.SerializeObject(payload), $"Bearer {settings.RegistrationToken}");
 
             if (code == HttpStatusCode.Created)
             {
@@ -51,7 +57,7 @@ namespace PilotRocketChatGateway.Pushes
                 new KeyValuePair<string, string> ("redirect_uri" , "")
             };
 
-            var (result, code) = await HttpRequestHelper.PostEncodedContentAsync($"{CLOUD_URI}/api/oauth/token", payload);
+            var (result, code) = await _requestHelper.PostEncodedContentAsync($"{CLOUD_URI}/api/oauth/token", payload);
             if (code == HttpStatusCode.Created) 
             {
                 var data = JsonConvert.DeserializeObject<PushGatewayAccessData>(result);

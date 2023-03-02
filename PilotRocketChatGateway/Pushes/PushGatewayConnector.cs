@@ -16,14 +16,16 @@ namespace PilotRocketChatGateway.Pushes
         private readonly IWorkspace _workspace;
         private readonly ILogger<PushGatewayConnector> _logger;
         private readonly ICloudsAuthorizeQueue _authorizeQueue;
+        private readonly IHttpRequestHelper _requestHelper;
         private object _locker = new object();
         private string _accessToken;
 
-        public PushGatewayConnector(IWorkspace workspace, ICloudsAuthorizeQueue authorizeQueue, ILogger<PushGatewayConnector> logger)
+        public PushGatewayConnector(IWorkspace workspace, ICloudsAuthorizeQueue authorizeQueue, IHttpRequestHelper requestHelper, ILogger<PushGatewayConnector> logger)
         {
             _workspace = workspace;
             _logger = logger;
             _authorizeQueue = authorizeQueue;
+            _requestHelper = requestHelper;
         }
         string AccessToken
         {
@@ -117,7 +119,7 @@ namespace PilotRocketChatGateway.Pushes
                 }
             };
 
-            return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {AccessToken}");
+            return _requestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {AccessToken}");
         }
 
     }
