@@ -3,20 +3,25 @@ using System.Text.RegularExpressions;
 
 namespace PilotRocketChatGateway.Pushes
 {
-    public class CloudsAthorizeQueue
+    public interface ICloudsAuthorizeQueue
+    {
+        void Authorize(Action<string> push);
+    }
+    public class CloudsAuthorizeQueue : ICloudsAuthorizeQueue
     {
         private readonly IWorkspace _workspace;
         private readonly ILogger _logger;
-
+        private readonly ICloudConnector _connector;
         private bool _authorizing;
         private object _locker = new object();
 
         ConcurrentQueue<Action<string>> _queue = new ConcurrentQueue<Action<string>>();
 
-        public CloudsAthorizeQueue(IWorkspace workspace, ILogger logger)
+        public CloudsAuthorizeQueue(IWorkspace workspace, ICloudConnector connector, ILogger<CloudsAuthorizeQueue> logger)
         {
             _workspace = workspace;
             _logger = logger;
+            _connector = connector;
         }
         private bool Authorizing
         {
@@ -44,7 +49,7 @@ namespace PilotRocketChatGateway.Pushes
 
             Authorizing = true;
 
-            var cloudToken = await CloudConnector.AutorizeAsync(_workspace, _logger);
+            var cloudToken = await _connector.AutorizeAsync(_workspace, _logger);
             if (cloudToken != null) 
             {
                 while (_queue.TryDequeue(out var item))
