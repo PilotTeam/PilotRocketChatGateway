@@ -15,19 +15,21 @@ namespace PilotRocketChatGateway.Pushes
         private const string PUSH_GATEWAY_URL = "https://gateway.rocket.chat";
         private readonly IWorkspace _workspace;
         private readonly ILogger<PushGatewayConnector> _logger;
-        private string _accessToken;
+        private readonly CloudsAthorizeQueue _authorizeQueue;
         private object _locker = new object();
+        private string _accessToken;
+
         public PushGatewayConnector(IWorkspace workspace, ILogger<PushGatewayConnector> logger)
         {
             _workspace = workspace;
             _logger = logger;
+            _authorizeQueue = new CloudsAthorizeQueue(workspace, logger);
         }
-
         string AccessToken
         {
             get
             {
-                lock(_locker)
+                lock (_locker)
                 {
                     return _accessToken;
                 }
@@ -38,7 +40,7 @@ namespace PilotRocketChatGateway.Pushes
                 {
                     _accessToken = value;
                 }
-            } 
+            }
         }
 
         public async Task SendPushAsync(PushToken userToken, PushOptions options)
@@ -46,16 +48,25 @@ namespace PilotRocketChatGateway.Pushes
             if (_workspace.Data == null)
                 return;
 
+
+            var thread = new Action<string>(async (t) =>
+            {
+                if (AccessToken == null)
+                    AccessToken = t;
+
+                var (result, code) = await PushAsync(userToken, options);
+                if (code == HttpStatusCode.OK)
+                    _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
+            });
+
+
             if (string.IsNullOrEmpty(AccessToken))
             {
-                var success = await AuthorizeAsync();
-                if (!success)
-                    return;
+                _authorizeQueue.Authorize(thread);
+                return;
             }
 
-
             var (result, code) = await PushAsync(userToken, options);
-
             if (code == HttpStatusCode.OK)
             {
                 _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
@@ -64,19 +75,9 @@ namespace PilotRocketChatGateway.Pushes
 
             if (code == HttpStatusCode.Unauthorized)
             {
+                AccessToken = null;
                 _logger.Log(LogLevel.Error, $"trying to refresh cloud's autorize token");
-                var success = await AuthorizeAsync();
-                if (!success)
-                    return;
-
-
-                (result, code) = await PushAsync(userToken, options);
-                if (code == HttpStatusCode.OK)
-                {
-                    _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
-                    return;
-                }
-
+               _authorizeQueue.Authorize(thread); 
             }
 
             _logger.Log(LogLevel.Error, $"failed to push to {options.userId}: {result}, code: {code}");
@@ -119,14 +120,5 @@ namespace PilotRocketChatGateway.Pushes
             return HttpRequestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {AccessToken}");
         }
 
-        private async Task<bool> AuthorizeAsync()
-        {
-            var cloudToken = await CloudConnector.AutorizeAsync(_workspace, _logger);
-            if (string.IsNullOrEmpty(cloudToken))
-                return false;
-
-            AccessToken = cloudToken;
-            return true;
-        }
     }
 }
