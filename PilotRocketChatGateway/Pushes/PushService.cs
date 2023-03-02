@@ -73,7 +73,7 @@ namespace PilotRocketChatGateway.Pushes
             if (message.Type != MessageType.TextMessage && message.Type != MessageType.MessageAnswer)
                 return false;
 
-            if (_context.WebSocketsNotifyer.Services.FirstOrDefault(x => x.Value.RCPresenceStatus == WebSockets.UserStatuses.online).Value != null)
+            if (_context.WebSocketsNotifyer.Services.Any(x => x.Value.RCPresenceStatus == WebSockets.UserStatuses.online))
             {
                 return false;
             }
