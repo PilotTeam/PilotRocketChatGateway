@@ -6,10 +6,16 @@ using System.Text;
 
 namespace PilotRocketChatGateway.Pushes
 {
-    public class CloudConnector
+    public interface ICloudConnector
+    {
+        Task<string> RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger);
+        Task<string> AutorizeAsync(IWorkspace workspace, ILogger logger);
+    }
+
+    public class CloudConnector : ICloudConnector
     {
         private const string CLOUD_URI = "https://cloud.rocket.chat";
-        public static async Task<string> RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger)
+        public async Task<string> RegisterAsync(RocketChatCloudSettings settings, Serilog.ILogger logger)
         {
             logger.Information("trying to register in cloud.rocket.chat");
 
@@ -32,7 +38,7 @@ namespace PilotRocketChatGateway.Pushes
             return null;
         }
 
-        public static async Task<string> AutorizeAsync(IWorkspace workspace, ILogger logger)
+        public async Task<string> AutorizeAsync(IWorkspace workspace, ILogger logger)
         {
             logger.Log(LogLevel.Information, "trying to authorize in cloud.rocket.chat");
 

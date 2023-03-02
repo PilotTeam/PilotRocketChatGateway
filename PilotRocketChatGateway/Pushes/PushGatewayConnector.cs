@@ -15,15 +15,15 @@ namespace PilotRocketChatGateway.Pushes
         private const string PUSH_GATEWAY_URL = "https://gateway.rocket.chat";
         private readonly IWorkspace _workspace;
         private readonly ILogger<PushGatewayConnector> _logger;
-        private readonly CloudsAthorizeQueue _authorizeQueue;
+        private readonly ICloudsAuthorizeQueue _authorizeQueue;
         private object _locker = new object();
         private string _accessToken;
 
-        public PushGatewayConnector(IWorkspace workspace, ILogger<PushGatewayConnector> logger)
+        public PushGatewayConnector(IWorkspace workspace, ICloudsAuthorizeQueue authorizeQueue, ILogger<PushGatewayConnector> logger)
         {
             _workspace = workspace;
             _logger = logger;
-            _authorizeQueue = new CloudsAthorizeQueue(workspace, logger);
+            _authorizeQueue = authorizeQueue;
         }
         string AccessToken
         {
@@ -49,7 +49,7 @@ namespace PilotRocketChatGateway.Pushes
                 return;
 
 
-            var thread = new Action<string>(async (t) =>
+            var action = new Action<string>(async (t) =>
             {
                 if (AccessToken == null)
                     AccessToken = t;
@@ -62,7 +62,7 @@ namespace PilotRocketChatGateway.Pushes
 
             if (string.IsNullOrEmpty(AccessToken))
             {
-                _authorizeQueue.Authorize(thread);
+                _authorizeQueue.Authorize(action);
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace PilotRocketChatGateway.Pushes
             {
                 AccessToken = null;
                 _logger.Log(LogLevel.Error, $"trying to refresh cloud's autorize token");
-               _authorizeQueue.Authorize(thread); 
+               _authorizeQueue.Authorize(action); 
             }
 
             _logger.Log(LogLevel.Error, $"failed to push to {options.userId}: {result}, code: {code}");

@@ -32,6 +32,8 @@ builder.Services.AddSingleton<IContextFactory, ContextFactory>();
 builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactory>();
 builder.Services.AddSingleton<IWebSocketSessionFactory, WebSocketSessionFactory>();
 builder.Services.AddSingleton<IContextsBank, ContextsBank>();
+builder.Services.AddSingleton<ICloudConnector, CloudConnector>();
+builder.Services.AddSingleton<ICloudsAuthorizeQueue, CloudsAuthorizeQueue>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
 builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
@@ -89,7 +91,8 @@ if (workspace.Data == null)
     {
         Task.Run(async () =>
         {
-            var result = await CloudConnector.RegisterAsync(cloudSettings, Log.Logger);
+            var cloudConnector = new CloudConnector();
+            var result = await cloudConnector.RegisterAsync(cloudSettings, Log.Logger);
             if (result != null)
                 workspace.SaveData(result);
         });
