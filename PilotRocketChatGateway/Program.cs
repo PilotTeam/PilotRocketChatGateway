@@ -39,29 +39,8 @@ builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
 builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
 
-var authSettings = builder.Configuration.GetSection("AuthSettings").Get<AuthSettings>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    var authHelper = new AuthHelper();
-    options.TokenValidationParameters = authHelper.GetTokenValidationParameters(authSettings);
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            context.Request.Headers.TryGetValue(AuthHelper.AUTH_HEADER_NAME, out var token);
-            if (string.IsNullOrEmpty(token))
-            {
-                context.NoResult();
-                return Task.CompletedTask;
-            }
 
-            context.Token = token;
-            return Task.CompletedTask;
-        }
-    };
-});
-
-
+builder.AddAuthentication();
 builder.Logging.ClearProviders();
 builder.Services.AddLogging(loggingBuilder =>
     loggingBuilder.AddSerilog(dispose: true));
@@ -83,21 +62,7 @@ app.UseMiddleware<RequestHandlerMiddleware>();
 
 app.MapControllers();
 
+builder.RegisterInCloudAsync(app.Services.GetService<IWorkspace>());
 
-var workspace = app.Services.GetService<IWorkspace>();
-if (workspace.Data == null)
-{
-    var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
-    if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
-    {
-        Task.Run(async () =>
-        {
-            var cloudConnector = new CloudConnector(new HttpRequestHelper());
-            var result = await cloudConnector.RegisterAsync(cloudSettings, Log.Logger);
-            if (result != null)
-                workspace.SaveData(result);
-        });
-    }
-}
 
 app.Run();
