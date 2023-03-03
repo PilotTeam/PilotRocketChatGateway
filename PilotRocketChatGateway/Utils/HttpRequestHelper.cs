@@ -3,9 +3,15 @@ using System.Text;
 
 namespace PilotRocketChatGateway.Utils
 {
-    public class HttpRequestHelper
+    public interface IHttpRequestHelper
     {
-        public static async Task<(string, HttpStatusCode)> PostJsonAsync(string requestUri, string json, string accessToken)
+        Task<(string, HttpStatusCode)> PostJsonAsync(string requestUri, string json, string accessToken);
+        Task<(string, HttpStatusCode)> PostEncodedContentAsync(string requestUri, IEnumerable<KeyValuePair<string, string>> payload);
+    }
+
+    public class HttpRequestHelper : IHttpRequestHelper
+    {
+        public async Task<(string, HttpStatusCode)> PostJsonAsync(string requestUri, string json, string accessToken)
         {
             var client = CreateHttpClient(accessToken);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
@@ -15,7 +21,7 @@ namespace PilotRocketChatGateway.Utils
             }
         }
 
-        public static async Task<(string, HttpStatusCode)> PostEncodedContentAsync(string requestUri, IEnumerable<KeyValuePair<string, string>> payload)
+        public async Task<(string, HttpStatusCode)> PostEncodedContentAsync(string requestUri, IEnumerable<KeyValuePair<string, string>> payload)
         {
             var client = CreateHttpClient();
 

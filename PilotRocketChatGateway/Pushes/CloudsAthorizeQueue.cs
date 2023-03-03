@@ -41,19 +41,29 @@ namespace PilotRocketChatGateway.Pushes
             }
         }
 
+
         public async void Authorize(Action<string> push)
         {
             _queue.Enqueue(push);
-            if (Authorizing)
-                return;
 
-            Authorizing = true;
+            lock (_locker)
+            {
+                if (Authorizing)
+                    return;
+
+                Authorizing = true;
+            }
+               
 
             var cloudToken = await _connector.AutorizeAsync(_workspace, _logger);
             if (cloudToken != null) 
             {
                 while (_queue.TryDequeue(out var item))
                     item(cloudToken);
+            }
+            else
+            {
+                _queue.Clear();
             }
             Authorizing = false; 
         }
