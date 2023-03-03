@@ -174,7 +174,7 @@ namespace PilotRocketChatGateway.UserContext
         private void SendChatsMemberMessageToServer(Guid roomId, string username)
         {
             var msg = CreateMessage(roomId, MessageType.ChatMembers);
-            var person = _context.RemoteService.ServerApi.GetPerson((x) => x.Login == username);
+            var person = _context.RemoteService.ServerApi.GetPerson(username);
 
             var change = new DMemberChange
             {

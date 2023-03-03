@@ -69,7 +69,7 @@ namespace PilotRocketChatGateway.UserContext
         }
         public Room LoadPersonalRoom(string username)
         {
-            var person = _context.RemoteService.ServerApi.GetPerson((x) => x.Login == username);
+            var person = _context.RemoteService.ServerApi.GetPerson(username);
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
             return chat.Chat.Id == Guid.Empty ? null : RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
         }

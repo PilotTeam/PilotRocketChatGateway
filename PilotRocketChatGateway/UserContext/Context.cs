@@ -32,9 +32,6 @@ namespace PilotRocketChatGateway.UserContext
 
             get
             {
-                if (_remoteService.IsConnected == false)
-                    return null;
-
                 return _remoteService;
             }
         }
@@ -43,9 +40,6 @@ namespace PilotRocketChatGateway.UserContext
 
             get
             {
-                if (_remoteService.IsConnected == false)
-                    return null;
-
                 return _chatService;
             }
         }

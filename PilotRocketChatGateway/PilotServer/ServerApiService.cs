@@ -1,5 +1,6 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api.Contracts;
+using Serilog;
 
 namespace PilotRocketChatGateway.PilotServer
 {
@@ -7,7 +8,7 @@ namespace PilotRocketChatGateway.PilotServer
     {
         INPerson CurrentPerson { get; }
         INPerson GetPerson(int id);
-        INPerson GetPerson(Predicate<INPerson> predicate);
+        INPerson GetPerson(string login);
         bool IsOnline(int person);
         List<DChatInfo> GetChats();
         DChatInfo GetChat(Guid id);
@@ -31,7 +32,6 @@ namespace PilotRocketChatGateway.PilotServer
         private readonly IAttachmentHelper _attachmentHelper;
         private readonly DDatabaseInfo _dbInfo;
         private readonly DPerson _currentPerson;
-        private Dictionary<int, INPerson> _people;
 
         public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, IAttachmentHelper attachmentHelper, DDatabaseInfo dbInfo)
         {
@@ -40,9 +40,6 @@ namespace PilotRocketChatGateway.PilotServer
             _dbInfo = dbInfo;
             _currentPerson = dbInfo.Person;
             _attachmentHelper = attachmentHelper;
-
-            _people = LoadPeople();
-
         }
 
         public INPerson CurrentPerson => _currentPerson;
@@ -84,27 +81,21 @@ namespace PilotRocketChatGateway.PilotServer
 
         public IReadOnlyDictionary<int, INPerson> GetPeople()
         {
-            return _people;
+            return _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
         }
 
         public INPerson GetPerson(int id)
         {
-            _people.TryGetValue(id, out var person);
-            return person;
+            return _serverApi.LoadPeople().FirstOrDefault(x => x.Id == id);
         }
-        public INPerson GetPerson(Predicate<INPerson> predicate)
+        public INPerson GetPerson(string login)
         {
-            return _people.Values.First(x => predicate(x));
+            return _serverApi.LoadPeople().FirstOrDefault(x => x.Login == login);
         }
 
         public DateTime SendMessage(DMessage message)
         {
             return _messagesApi.SendMessage(message);
-        }
-
-        private Dictionary<int, INPerson> LoadPeople()
-        {
-            return _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
         }
 
         public List<DChatMember> GetChatMembers(Guid chatId)
