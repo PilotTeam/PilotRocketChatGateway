@@ -19,13 +19,13 @@ namespace PilotRocketChatGateway.PilotServer
         {
         }
 
-        public void NotifyMessageCreated(NotifiableDMessage message)
+        public async void NotifyMessageCreated(NotifiableDMessage message)
         {
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
                 _context.WebSocketsNotifyer.SendMessage(message.Message);
-                _context.PushService.SendPushAsync(message.Message);
+                await _context.PushService.SendPushAsync(message.Message);
             }
             catch (Exception e)
             {
