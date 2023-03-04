@@ -14,6 +14,7 @@ namespace PilotRocketChatGateway.Pushes
         private readonly ICloudConnector _connector;
         private bool _authorizing;
         private object _locker = new object();
+        private object _locker2 = new object();
 
         ConcurrentQueue<Action<string>> _queue = new ConcurrentQueue<Action<string>>();
 
@@ -22,7 +23,39 @@ namespace PilotRocketChatGateway.Pushes
             _workspace = workspace;
             _logger = logger;
             _connector = connector;
+            Task.Run(Processing);
         }
+        private async void Processing()
+        {
+            while (true)
+            {
+                lock (_locker2)
+                {
+                    Monitor.Wait(_locker2);
+                }
+
+                try
+                {
+                    var cloudToken = await _connector.AutorizeAsync(_workspace, _logger);
+                    if (cloudToken != null)
+                    {
+                        while (_queue.TryDequeue(out var action))
+                            action(cloudToken);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _logger.Log(LogLevel.Information, ex.Message);
+                }
+                finally
+                {
+                    _queue.Clear();
+                    Authorizing = false;
+                }
+            }
+        }
+
+
         private bool Authorizing
         {
             get
@@ -53,19 +86,11 @@ namespace PilotRocketChatGateway.Pushes
 
                 Authorizing = true;
             }
-               
 
-            var cloudToken = await _connector.AutorizeAsync(_workspace, _logger);
-            if (cloudToken != null) 
+            lock (_locker2)
             {
-                while (_queue.TryDequeue(out var item))
-                    item(cloudToken);
+                Monitor.Pulse(_locker2);
             }
-            else
-            {
-                _queue.Clear();
-            }
-            Authorizing = false; 
         }
     }
 }

@@ -51,14 +51,12 @@ namespace PilotRocketChatGateway.Pushes
                 return;
 
 
-            var action = new Action<string>(async (t) =>
+            var action = new Action<string>((t) =>
             {
                 if (AccessToken == null)
                     AccessToken = t;
 
-                var (result, code) = await PushAsync(userToken, options);
-                if (code == HttpStatusCode.OK)
-                    _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
+                PushAsync(userToken, options);
             });
 
 
@@ -70,10 +68,7 @@ namespace PilotRocketChatGateway.Pushes
 
             var (result, code) = await PushAsync(userToken, options);
             if (code == HttpStatusCode.OK)
-            {
-                _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
                 return;
-            }
 
             if (code == HttpStatusCode.Unauthorized)
             {
@@ -81,11 +76,9 @@ namespace PilotRocketChatGateway.Pushes
                 _logger.Log(LogLevel.Error, $"trying to refresh cloud's autorize token");
                _authorizeQueue.Authorize(action); 
             }
-
-            _logger.Log(LogLevel.Error, $"failed to push to {options.userId}: {result}, code: {code}");
         }
 
-        private Task<(string, HttpStatusCode)> PushAsync(PushToken userToken, PushOptions options)
+        private async Task<(string, HttpStatusCode)> PushAsync(PushToken userToken, PushOptions options)
         {
             var data = new
             {
@@ -119,8 +112,17 @@ namespace PilotRocketChatGateway.Pushes
                 }
             };
 
-            return _requestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {AccessToken}");
-        }
+            var (result, code) = await _requestHelper.PostJsonAsync($"{PUSH_GATEWAY_URL}/push/{userToken.Type}/send", JsonConvert.SerializeObject(data), $"Bearer {AccessToken}");
 
+            if (code == HttpStatusCode.OK)
+            {
+                _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
+                return (result, code);
+            }
+
+            _logger.Log(LogLevel.Error, $"failed to push to {options.userId}: {result}, code: {code}");
+            return (result, code);
+        } 
     }
 }
+  
