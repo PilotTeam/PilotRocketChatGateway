@@ -40,6 +40,8 @@ namespace PilotRocketChatTests
             });
             _queue.Authorize(push);
 
+            Thread.Sleep(200);
+
             Assert.AreEqual(1, pushCalled);
             _cloudConnector.Verify(x => x.AutorizeAsync(_workSpace.Object, It.IsAny<ILogger>()), Times.Once);
         }
