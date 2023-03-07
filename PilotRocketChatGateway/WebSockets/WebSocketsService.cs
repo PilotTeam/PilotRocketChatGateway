@@ -1,6 +1,4 @@
 ﻿using Ascon.Pilot.DataClasses;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PilotRocketChatGateway.Authentication;
@@ -20,43 +18,72 @@ namespace PilotRocketChatGateway.WebSockets
         IWebSocketSession Session { get; }
         bool IsActive { get; }
         WebSocketState State { get; }
+        UserStatuses RCPresenceStatus { get; }
     }
+
+    public interface IWebSocketAgent
+    {
+        INPerson CurrentPerson { get; }
+        IChatService ChatService { get; }
+        void AddWebSocketService(WebSocketsService service);
+        void RemoveWebSocketService(WebSocketsService service);
+        void SignOut();
+    }
+
+    public interface IWebSocketAgentFactory
+    {
+        IWebSocketAgent Create(string authToken);
+    }
+
     public class WebSocketsService : IWebSocksetsService
     {
         private readonly ILogger<WebSocketController> _logger;
         private readonly WebSocket _webSocket;
         private readonly AuthSettings _authSettings;
-        private readonly IContextService _contextService;
         private readonly IWebSocketSessionFactory _webSocketSessionFactory;
         private readonly IAuthHelper _authHelper;
-        private IContext _context;
+        private readonly IWebSocketAgentFactory _agentFactory;
+        private IWebSocketAgent _agent;
 
-        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IContextService contextService, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper)
+        public WebSocketsService(WebSocket webSocket, ILogger<WebSocketController> logger, AuthSettings authSettings, IWebSocketSessionFactory webSocketSessionFactory, IAuthHelper authHelper, IWebSocketAgentFactory agentFactory)
         {
             _logger = logger;
             _webSocket = webSocket;
             _authSettings = authSettings;
-            _contextService = contextService;
             _webSocketSessionFactory = webSocketSessionFactory;
             _authHelper = authHelper;
+            _agentFactory = agentFactory;
         }
 
         public IWebSocketSession Session { get; private set; }
 
+        public UserStatuses RCPresenceStatus { get; private set; }
         public bool IsActive { get; private set; }
 
         public WebSocketState State => _webSocket.State;
+
 
         public async Task ProcessAsync()
         {
             var buffer = new byte[1024 * 4];
             while (true)
             {
-                var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                WebSocketReceiveResult result = null;
+                try
+                {
+                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                }
+                catch(WebSocketException) 
+                {
+                    _agent?.RemoveWebSocketService(this);
+                    Session?.Dispose();
+                    if (_agent != null)
+                        _logger.Log(LogLevel.Information, $"Closed websocket. Username: {_agent.CurrentPerson.Login}.");
+                    return;
+                }
                 if (result.CloseStatus.HasValue)
                 {
-                    await CloseAsync(result);
-                    Dispose();
+                    await SignOutAsync(result);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -74,18 +101,19 @@ namespace PilotRocketChatGateway.WebSockets
             }
         }
 
-        private async Task CloseAsync(WebSocketReceiveResult result)
+        private async Task SignOutAsync(WebSocketReceiveResult result)
         {
-            await CloseAsync(result.CloseStatus.Value);
-            if (_context == null)
+            await CloseWebSocketAsync(result.CloseStatus.Value);
+            if (_agent == null)
                 return;
 
-            _context.WebSocketsNotifyer.RemoveWebSocketService(this);
-            if (_context.WebSocketsNotifyer.IsEmpty == false)
-                return;
-            
-            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {_context.RemoteService.ServerApi.CurrentPerson.Login}.");
-            _context.Dispose();
+
+            string login = _agent.CurrentPerson.Login;
+
+            Session?.Dispose();
+            _agent.SignOut();
+
+            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {login}.");
         }
 
         private async Task HandleRequestAsync(dynamic request)
@@ -125,6 +153,12 @@ namespace PilotRocketChatGateway.WebSockets
                 case "setUserStatus":
                     SetStatus(request);
                     break;
+                case $"UserPresence:{nameof(UserStatuses.away)}":
+                    RCPresenceStatus = UserStatuses.away;
+                    break;
+                case $"UserPresence:{nameof(UserStatuses.online)}":
+                    RCPresenceStatus = UserStatuses.online;
+                    break;
             }
         }
 
@@ -158,9 +192,10 @@ namespace PilotRocketChatGateway.WebSockets
             if (Session != null)
                 return Task.CompletedTask;
 
-            _context = GetContext(request.@params[0].resume);
-            _context.WebSocketsNotifyer.RegisterWebSocketService(this);
-            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _context.ChatService, _context.RemoteService.ServerApi, _authHelper, _webSocket);
+            _agent = _agentFactory.Create(request.@params[0].resume);
+            _agent.AddWebSocketService(this);
+            RCPresenceStatus = UserStatuses.online;
+            Session = _webSocketSessionFactory.CreateWebSocketSession(request, _authSettings, _agent.ChatService, _agent.CurrentPerson, _authHelper, _webSocket);
             var result = new
             {
                 request.id,
@@ -180,16 +215,9 @@ namespace PilotRocketChatGateway.WebSockets
             if (isTyping == false)
                 return;
 
-            _context.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
+            _agent.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
         }
-
-        private IContext GetContext(string authToken)
-        {
-            var jwtToken = new JwtSecurityToken(authToken);
-            var context = _contextService.GetContext(jwtToken.Actor);
-            return context;
-        }
-        private Task CloseAsync(WebSocketCloseStatus status)
+        private Task CloseWebSocketAsync(WebSocketCloseStatus status)
         {
             if (IsActive == false)
                 return Task.CompletedTask;
@@ -199,19 +227,7 @@ namespace PilotRocketChatGateway.WebSockets
             return _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
         }
 
-        public async void Dispose()
-        {
-            try
-            {
-                await CloseAsync(WebSocketCloseStatus.NormalClosure);
-            }
-            catch(Exception e)
-            {
-                _logger.Log(LogLevel.Information, "Failed to close websocket");
-                _logger.LogError(0, e, e.Message);
-            }
-            Session?.Dispose();
-            _webSocket.Dispose();
-        }
+        public void Dispose()
+        { }
     }
 }

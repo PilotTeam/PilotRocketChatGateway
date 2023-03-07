@@ -1,11 +1,12 @@
 ﻿using Ascon.Pilot.Server.Api;
 using Microsoft.Extensions.Options;
+using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.PilotServer
 {
     public interface IConnectionService
     {
-        HttpPilotClient Connect(Credentials credentials);
+        HttpPilotClient Connect(UserData credentials);
     }
     public class ConnectionService : IConnectionService
     {
@@ -15,7 +16,7 @@ namespace PilotRocketChatGateway.PilotServer
             _config = config.Value;
         }
 
-        public HttpPilotClient Connect(Credentials credentials)
+        public HttpPilotClient Connect(UserData credentials)
         {
             var client = new HttpPilotClient(_config.Url);
             // Do not check versions of the Server and Client

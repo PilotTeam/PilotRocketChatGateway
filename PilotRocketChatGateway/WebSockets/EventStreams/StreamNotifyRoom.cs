@@ -1,5 +1,7 @@
-﻿using Ascon.Pilot.Server.Api.Contracts;
+﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.WebSockets.EventStreams;
 using System.Net.WebSockets;
 
@@ -7,13 +9,13 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
 {
     public class StreamNotifyRoom : EventStream
     {
-        private readonly IServerApiService _serverApi;
         private readonly WebSocket _webSocket;
+        private readonly IChatService _chatService;
 
-        public StreamNotifyRoom(WebSocket webSocket, IServerApiService serverApi)
+        public StreamNotifyRoom(WebSocket webSocket, IChatService chatService)
         {
             _webSocket = webSocket;
-            _serverApi = serverApi;
+            _chatService = chatService;
         }
         public void SendTypingMessageToClient(string roomId, int personId, bool isTyping)
         {
@@ -22,7 +24,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             if (string.IsNullOrEmpty(id))
                 return;
 
-            var person = _serverApi.GetPerson(personId);
+            var person = _chatService.DataLoader.LoadPerson(personId);
             var result = new
             {
                 msg = "",

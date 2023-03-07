@@ -167,6 +167,9 @@ System.Management.Automation.dll
 Thumbs.db
 ehthumbs.db
 
+# cloud.rocket.chat data
+workspace.json
+
 # Folder config file
 Desktop.ini
 

@@ -16,10 +16,8 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             _chatService = chatService;
         }
 
-        public void SendMessageUpdate(DMessage message)
+        public void SendMessageUpdate(Message rocketChatMessage)
         {
-            var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(message);
-
             var eventName = rocketChatMessage.roomId;
             _events.TryGetValue(eventName, out var id);
             if (string.IsNullOrEmpty(id))

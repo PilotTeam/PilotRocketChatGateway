@@ -117,7 +117,11 @@ namespace PilotRocketChatGateway
 
     #endregion
     #region rooms
-
+    public class ChatType
+    {
+        public const string PERSONAL_CHAT_TYPE = "d";
+        public const string GROUP_CHAT_TYPE = "p";
+    }
     public record Rooms : HttpResult
     {
         public IList<Room> update { get; init; }
@@ -137,6 +141,15 @@ namespace PilotRocketChatGateway
         public string roomId { get; init; }
         public string msgId { get; init; }
         public string text { get; init; }
+    }
+    public record SaveNotification
+    {
+        public string roomId { get; init; }
+        public Notifications notifications { get; init; }
+    }
+    public record Notifications
+    {
+        public string disableNotifications { get; init; }
     }
     public record MessagesUpdated 
     {
@@ -172,6 +185,7 @@ namespace PilotRocketChatGateway
         public bool open { get; init; }
         [JsonProperty("t")]
         public string channelType { get; init; }
+        public bool disableNotifications { get; init; }
     }
     public record Room
     {
@@ -270,5 +284,55 @@ namespace PilotRocketChatGateway
         public int offset { get; init; }
         public string sort { get; init; }
     }
+    #endregion
+    #region pushes
+    public record PushTokenRequest
+    {
+        public string value { get; init; }
+        public string type { get; init; }
+        public string appName { get; init; }
+    }
+
+    public record WorkspaceData
+    {
+        public string workspaceId { get; init; }
+        public string client_name { get; init; }
+        public string client_id { get; init; }
+        public string client_secret { get; init; }
+        public long client_secret_expires_at { get; init; }
+        public string publicKey { get; init; }
+        public string registration_client_uri { get; init; }
+    }
+    public class RocketChatCloudSettings
+    {
+        public string RegistrationToken { get; set; }
+        public string WorkspaceName { get; set; }
+        public string WorkspaceEmail { get; set; }
+        public string WorkspaceUri { get; set; }
+    }
+
+    public class PushGatewayAccessData
+    {
+        public string access_token { get; set; }
+        public long expires_in { get; set; }
+        public string scope { get; set; }
+        public string token_type { get; set; }
+    }
+    public record PushOptions
+    {
+        public string createdAt { get; init; }
+        public string userId { get; init; }
+        public string msgId { get; init; }
+        public string title { get; init; }
+        public int badge { get; init; }
+        public string name { get; init; }
+        public Message msg { get; init; }
+        public string text { get; init; }
+        [JsonProperty("rid")]
+        public string roomId { get; init; }
+        public User sender { get; init; }
+        public string type { get; init; }
+        public string appName { get; init; }
+}
     #endregion
 }
