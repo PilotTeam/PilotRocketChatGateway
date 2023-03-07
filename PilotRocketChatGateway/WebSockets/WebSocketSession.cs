@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
@@ -48,7 +49,7 @@ namespace PilotRocketChatGateway.WebSockets
     public class WebSocketSession : IWebSocketSession
     {
         private readonly IChatService _chatService;
-        private readonly IServerApiService _serverApi;
+        private readonly INPerson _currentPerson;
         private readonly WebSocket _webSocket;
         private readonly TypingTimer _typingTimer;
 
@@ -58,19 +59,19 @@ namespace PilotRocketChatGateway.WebSockets
         private StreamRoomMessages _streamRoomMessages;
         private StreamUserPresence _streamUserPresence;
 
-        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, IServerApiService serverApi, IAuthHelper authHelper, WebSocket webSocket)
+        public WebSocketSession(dynamic request, AuthSettings authSettings, IChatService chatService, INPerson currentPerson, IAuthHelper authHelper, WebSocket webSocket)
         {
             var authToken = request.@params[0].resume;
             if (authHelper.ValidateToken(authToken, authSettings) == false)
                 throw new UnauthorizedAccessException();
 
             _chatService = chatService;
-            _serverApi = serverApi;
+            _currentPerson = currentPerson;
             _webSocket = webSocket;
 
             _streamNotifyUser = new StreamNotifyUser(_webSocket, _chatService);
-            _streamUserPresence = new StreamUserPresence(_webSocket, _serverApi);
-            _streamNotifyRoom = new StreamNotifyRoom(_webSocket, _serverApi);
+            _streamUserPresence = new StreamUserPresence(_webSocket, _chatService);
+            _streamNotifyRoom = new StreamNotifyRoom(_webSocket, chatService);
             _streamRoomMessages = new StreamRoomMessages(_webSocket, _chatService);
             _streams.Add(_streamNotifyUser);
             _streams.Add(_streamUserPresence);
@@ -152,7 +153,13 @@ namespace PilotRocketChatGateway.WebSockets
             {
                 var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage);
                 _streamNotifyRoom.SendTypingMessageToClient(rocketChatMessage.roomId, dMessage.CreatorId, false);
-                _streamRoomMessages.SendMessageUpdate(dMessage);
+                _streamRoomMessages.SendMessageUpdate(rocketChatMessage);
+
+                if (_chatService.DataLoader.IsChatNotifiable(dMessage.ChatId))
+                {
+                    var chat = _chatService.DataLoader.LoadChat(dMessage.ChatId);
+                    _streamNotifyUser.NotifyUser(rocketChatMessage, chat.Chat.Type);
+                }
             }
         }
         public void SendTypingMessageToClient(DChat chat, int personId)

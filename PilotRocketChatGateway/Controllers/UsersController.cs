@@ -11,19 +11,19 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private IAuthHelper _authHelper;
 
-        public UsersController(IContextService contextService, IAuthHelper authHelper)
+        public UsersController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper; 
         }
         [Authorize]
         [HttpGet("api/v1/users.presence")]
         public string Presence(string ids)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
 
             var users = new List<User>();
             foreach (var id in ids.Split(',').Select(x => int.Parse(x)))
@@ -40,7 +40,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/users.info")]
         public string Info(int userId)
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var user = context.ChatService.DataLoader.LoadUser(userId);
 
             var result = new { success = true, user = user };

@@ -1,4 +1,5 @@
 ﻿using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.Pushes;
 using PilotRocketChatGateway.WebSockets;
 
 namespace PilotRocketChatGateway.UserContext
@@ -6,33 +7,31 @@ namespace PilotRocketChatGateway.UserContext
     public interface IContext : IDisposable
     {
         IRemoteService RemoteService { get; }
-
         IChatService ChatService { get; }
+        IPushService PushService { get; }
         IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
-        Credentials Credentials { get; }
+        UserData UserData { get; }
     }
     public class Context : IContext
     {
         private IList<IDisposable> _disposables = new List<IDisposable>();
         private IRemoteService _remoteService;
         private IChatService _chatService;
+        private IPushService _pushService;
         private IWebSocketsNotifyer _webSocketsNotifyer;
 
-        public Context(Credentials credentials)
+        public Context(UserData credentials)
         {
-            Credentials = credentials;
+            UserData = credentials;
         }
-        public Credentials Credentials { get; }
+        public UserData UserData { get; }
         
         public IRemoteService RemoteService
         {
 
             get
             {
-                if (_remoteService.IsConnected == false)
-                    return null;
-
                 return _remoteService;
             }
         }
@@ -41,13 +40,10 @@ namespace PilotRocketChatGateway.UserContext
 
             get
             {
-                if (_remoteService.IsConnected == false)
-                    return null;
-
                 return _chatService;
             }
         }
-
+        public IPushService PushService => _pushService;
         public IWebSocketsNotifyer WebSocketsNotifyer => _webSocketsNotifyer;
 
         public void SetService(IService service)
@@ -62,6 +58,9 @@ namespace PilotRocketChatGateway.UserContext
                     break;
                 case IWebSocketsNotifyer webSocksetsService:
                     _webSocketsNotifyer = webSocksetsService;
+                    break;
+                case IPushService pushService:
+                    _pushService = pushService;
                     break;
                 default: 
                     throw new Exception($"unknown service: {service.GetType()}");

@@ -1,4 +1,5 @@
 ﻿using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.Pushes;
 using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Concurrent;
@@ -6,39 +7,37 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace PilotRocketChatGateway.UserContext
 {
-    public interface IContextService
+    public interface IContextsBank
     {
         IContext GetContext(string actor);
-        void CreateContext(Credentials credentials);
+        void CreateContext(UserData credentials);
         void RemoveContext(string actor);
     }
 
-    public class ContextService : IContextService
+    public class ContextsBank : IContextsBank
     {
         private readonly ConcurrentDictionary<string, IContext> _contexts = new ConcurrentDictionary<string, IContext>();
         private readonly IConnectionService _connectionService;
         private readonly IContextFactory _contextFactory;
-        private readonly IWebSocketBank _bank;
-        private readonly ILogger<ContextService> _logger;
-        private readonly IBatchMessageLoaderFactory _batchMessageLoaderFactory;
+        private readonly ILogger<ContextsBank> _logger;
+        private readonly IPushGatewayConnector _pushConnector;
 
-        public ContextService(IConnectionService connectionService, IContextFactory contextFactory, IWebSocketBank bank, ILogger<ContextService> logger, IBatchMessageLoaderFactory batchMessageLoaderFactory)
+        public ContextsBank(IConnectionService connectionService, IContextFactory contextFactory, ILogger<ContextsBank> logger, IPushGatewayConnector pushConnector)
         {
             _connectionService = connectionService;
-            _batchMessageLoaderFactory = batchMessageLoaderFactory;
             _contextFactory = contextFactory;
-            _bank = bank;
             _logger = logger;
+            _pushConnector = pushConnector;
         }
 
-        public void CreateContext(Credentials credentials)
+        public void CreateContext(UserData credentials)
         {
             lock (_contexts)
             {
                 if (_contexts.TryGetValue(credentials.Username, out var old))
                     old?.Dispose();                
 
-                var context = _contextFactory.CreateContext(credentials, _connectionService, _bank, _logger, _batchMessageLoaderFactory);
+                var context = _contextFactory.CreateContext(credentials, _connectionService, _logger, _pushConnector);
                 _contexts[credentials.Username] = context;
             }
         }

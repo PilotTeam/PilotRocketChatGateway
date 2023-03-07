@@ -11,12 +11,12 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class SubscriptionsController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private IAuthHelper _authHelper;
 
-        public SubscriptionsController(IContextService contextService, IAuthHelper authHelper)
+        public SubscriptionsController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -24,7 +24,7 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/subscriptions.get")]
         public string Get()
         {
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var subs = context.ChatService.DataLoader.LoadRoomsSubscriptions();
 
             var result = new Subscriptions() { success = true, update = subs, remove = new List<Subscription>() };
@@ -36,7 +36,7 @@ namespace PilotRocketChatGateway.Controllers
         public string Read(object request)
         {
             var room = JsonConvert.DeserializeObject<RoomRequest>(request.ToString());
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             context.ChatService.DataSender.SendReadAllMessageToServer(room.roomId);
 
             var result = new HttpResult()

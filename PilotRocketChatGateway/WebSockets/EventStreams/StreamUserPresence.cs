@@ -1,4 +1,5 @@
-﻿using Ascon.Pilot.Server.Api.Contracts;
+﻿using Ascon.Pilot.DataClasses;
+using Ascon.Pilot.Server.Api.Contracts;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.WebSockets.EventStreams;
@@ -8,13 +9,13 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
 {
     public class StreamUserPresence : EventStream
     {
-        private readonly IServerApiService _serverApi;
+        private readonly IChatService _chatService;
         private readonly WebSocket _webSocket;
 
-        public StreamUserPresence(WebSocket webSocket, IServerApiService serverApi)
+        public StreamUserPresence(WebSocket webSocket, IChatService chatService)
         {
+            _chatService = chatService;
             _webSocket = webSocket;
-            _serverApi = serverApi;
         }
         public void SendUserStatusChange(int personId, UserStatuses status)
         {
@@ -23,7 +24,7 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             if (string.IsNullOrEmpty(id))
                 return;
 
-            var person = _serverApi.GetPerson(personId);
+            var person = _chatService.DataLoader.LoadPerson(personId);
             var result = new
             {
                 msg = "updated",

@@ -11,12 +11,12 @@ namespace PilotRocketChatGateway.Controllers
     [Route("api/v1/[controller]")]
     public class DirectoryController : ControllerBase
     {
-        private IContextService _contextService;
+        private IContextsBank _contextsBank;
         private readonly IAuthHelper _authHelper;
 
-        public DirectoryController(IContextService contextService, IAuthHelper authHelper)
+        public DirectoryController(IContextsBank contextsBank, IAuthHelper authHelper)
         {
-            _contextService = contextService;
+            _contextsBank = contextsBank;
             _authHelper = authHelper;
         }
 
@@ -27,7 +27,7 @@ namespace PilotRocketChatGateway.Controllers
             if (requset.type != "users")
                 return string.Empty;
 
-            var context = _contextService.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var users = context.ChatService.DataLoader.LoadUsers(requset.count);
 
             var result = new { success = true, result = users, total = context.RemoteService.ServerApi.GetPeople().Count };

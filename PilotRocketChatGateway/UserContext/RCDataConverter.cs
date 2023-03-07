@@ -4,6 +4,7 @@ using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.ServiceModel.Channels;
 using static System.Net.WebRequestMethods;
 
 namespace PilotRocketChatGateway.UserContext
@@ -66,9 +67,11 @@ namespace PilotRocketChatGateway.UserContext
                 alert = chat.UnreadMessagesNumber > 0,
                 id = ConvertToRoomId(chat.Chat),
                 roomId = ConvertToRoomId(chat.Chat),
-                channelType = GetChannelType(chat.Chat)
+                channelType = GetChannelType(chat.Chat),
+                disableNotifications = !_context.ChatService.DataLoader.IsChatNotifiable(chat.Chat.Id)
             };
         }
+
         public Message ConvertToMessage(DMessage msg)
         {
             var origin = GetOriginMessage(msg);
@@ -112,7 +115,6 @@ namespace PilotRocketChatGateway.UserContext
             
             return null;
         }
-
         private string GetMsgType(DMessage msg)
         {
             switch (msg.Type)
@@ -305,7 +307,7 @@ namespace PilotRocketChatGateway.UserContext
         }
         private string GetChannelType(DChat chat)
         {
-            return chat.Type == ChatKind.Personal ? "d" : "p";
+            return chat.Type == ChatKind.Personal ? ChatType.PERSONAL_CHAT_TYPE : ChatType.GROUP_CHAT_TYPE;
         }
     }
 }
