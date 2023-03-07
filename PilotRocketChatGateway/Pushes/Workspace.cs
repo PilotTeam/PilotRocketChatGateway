@@ -23,12 +23,12 @@ namespace PilotRocketChatGateway.Pushes
         public void SaveData(string json)
         {
             var fullName = GetFilePath();
-
-            var dir = Path.GetDirectoryName(fullName);
-            if (Directory.Exists(dir) == false)
-                Directory.CreateDirectory(dir);
             try
             {
+
+                var dir = Path.GetDirectoryName(fullName);
+                if (Directory.Exists(dir) == false)
+                    Directory.CreateDirectory(dir);
                 File.WriteAllText(fullName, json);
                 Data = JsonConvert.DeserializeObject<WorkspaceData>(json);
 
