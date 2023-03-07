@@ -27,11 +27,17 @@ namespace PilotRocketChatGateway.Pushes
             var dir = Path.GetDirectoryName(fullName);
             if (Directory.Exists(dir) == false)
                 Directory.CreateDirectory(dir);
+            try
+            {
+                File.WriteAllText(fullName, json);
+                Data = JsonConvert.DeserializeObject<WorkspaceData>(json);
 
-            File.WriteAllText(fullName, json);
-            Data = JsonConvert.DeserializeObject<WorkspaceData>(json);
-
-            _logger.Log(LogLevel.Information, $"Workspace was initiated, saved data in {fullName}");
+                _logger.Log(LogLevel.Information, $"Workspace was initiated, saved data in {fullName}");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
         }
         private void LoadData()
         {
