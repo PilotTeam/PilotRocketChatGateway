@@ -5,7 +5,7 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface ICommonDataConverter
     {
-        User ConvertToUser(INPerson person, bool fullName = false);
+        User ConvertToUser(INPerson person);
         string ConvertToJSDate(DateTime date);
         Guid ConvertToChatId(string roomId);
         Guid ConvertToMsgId(string rcMsgId);
@@ -21,13 +21,13 @@ namespace PilotRocketChatGateway.UserContext
         {
             _context = context;
         }
-        public User ConvertToUser(INPerson person, bool fullName = false)
+        public User ConvertToUser(INPerson person)
         {
             return new User()
             {
                 id = person.Id.ToString(),
                 username = person.Login,
-                name = fullName ? person.DisplayName : GetUserDisplayName(person),
+                name = GetUserDisplayName(person),
                 status = GetUserStatus(person.Id),
                 roles = new string[] { "user" }
             };

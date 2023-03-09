@@ -106,7 +106,7 @@ namespace PilotRocketChatGateway.UserContext
         public User LoadUser(int userId)
         {
             var person = _context.RemoteService.ServerApi.GetPerson(userId);
-            return _commonConverter.ConvertToUser(person, fullName: true);
+            return _commonConverter.ConvertToUser(person);
         }
         public INPerson LoadPerson(int userId)
         {
@@ -115,7 +115,7 @@ namespace PilotRocketChatGateway.UserContext
         public IList<User> LoadUsers(int count)
         {
             var users = _context.RemoteService.ServerApi.GetPeople().Values;
-            return users.Select(x => _commonConverter.ConvertToUser(x, fullName: true)).ToList();
+            return users.Select(x => _commonConverter.ConvertToUser(x)).ToList();
         }
         public IList<User> LoadMembers(string roomId)
         {
