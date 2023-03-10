@@ -101,10 +101,9 @@ namespace PilotRocketChatGateway.Pushes
                         host = "",
                         messageId = options.msgId,
                         notificationType = "message",
-                        msg = options.msg,
                         rid = options.roomId,
                         sender = options.sender,
-                        senderName = options.sender.username,
+                        senderName = options.sender.name,
                         type = options.type,
                         name = options.name
                     },
