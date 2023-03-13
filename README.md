@@ -58,7 +58,7 @@
 ## Запуск на на linux
 
 Для работы PilotRocketChatGateway на linux необходимо установить компонент libgdiplus командами:
-```
+```bash
 sudo apt update
 sudo apt install libgdiplus
 ```
