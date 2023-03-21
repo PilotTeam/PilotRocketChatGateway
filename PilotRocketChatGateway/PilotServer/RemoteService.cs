@@ -56,6 +56,9 @@ namespace PilotRocketChatGateway.PilotServer
             {
                 try
                 {
+                    if (_disposed)
+                        return;
+
                     Connect();
                 }
                 catch (Exception)
