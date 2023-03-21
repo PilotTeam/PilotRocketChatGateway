@@ -8,7 +8,7 @@ namespace PilotRocketChatGateway.Pushes
 {
     public interface IPushGatewayConnector
     {
-        Task SendPushAsync(PushToken userToken, PushOptions options);
+        Task SendPushAsync(PushToken userToken, PushOptions options, string userName);
     }
     public class PushGatewayConnector : IPushGatewayConnector
     {
@@ -45,7 +45,7 @@ namespace PilotRocketChatGateway.Pushes
             }
         }
 
-        public async Task SendPushAsync(PushToken userToken, PushOptions options)
+        public async Task SendPushAsync(PushToken userToken, PushOptions options, string userName)
         {
             if (_workspace.Data == null)
                 return;
@@ -56,7 +56,7 @@ namespace PilotRocketChatGateway.Pushes
                 if (AccessToken == null)
                     AccessToken = t;
 
-                PushAsync(userToken, options);
+                PushAsync(userToken, options, userName);
             });
 
 
@@ -66,7 +66,7 @@ namespace PilotRocketChatGateway.Pushes
                 return;
             }
 
-            var (result, code) = await PushAsync(userToken, options);
+            var (result, code) = await PushAsync(userToken, options, userName);
             if (code == HttpStatusCode.OK)
                 return;
 
@@ -78,7 +78,7 @@ namespace PilotRocketChatGateway.Pushes
             }
         }
 
-        private async Task<(string, HttpStatusCode)> PushAsync(PushToken userToken, PushOptions options)
+        private async Task<(string, HttpStatusCode)> PushAsync(PushToken userToken, PushOptions options, string userName)
         {
             var data = new
             {
@@ -115,7 +115,7 @@ namespace PilotRocketChatGateway.Pushes
 
             if (code == HttpStatusCode.OK)
             {
-                _logger.Log(LogLevel.Information, $"successfully pushed to {options.userId}");
+                _logger.Log(LogLevel.Information, $"successfully pushed to {userName}. msg id: {options.msgId}. creation date: {options.createdAt}");
                 return (result, code);
             }
 

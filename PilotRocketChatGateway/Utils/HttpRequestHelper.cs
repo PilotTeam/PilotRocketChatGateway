@@ -37,7 +37,21 @@ namespace PilotRocketChatGateway.Utils
 
         private static HttpClient CreateHttpClient(string accessToken = null)
         {
-            HttpClient httpClient = new HttpClient();
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri("http://10.1.5.248:3128"),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential("olkhovskii_av", "JCe9LuRm")
+            };
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+            };
+
+            HttpClient httpClient = new HttpClient(httpClientHandler);
 
             if (accessToken != null)
                 httpClient.DefaultRequestHeaders.Add("Authorization", accessToken);

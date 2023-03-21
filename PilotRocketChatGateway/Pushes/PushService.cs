@@ -23,6 +23,7 @@ namespace PilotRocketChatGateway.Pushes
     }
     public class PushService : IPushService
     {
+        private const string ATTACHMENT_TEXT = "Attachments";
         private readonly IPushGatewayConnector _connector;
         private readonly IContext _context;
         private object _locker = new object();
@@ -58,7 +59,7 @@ namespace PilotRocketChatGateway.Pushes
 
             var chat = _context.RemoteService.ServerApi.GetChat(message.ChatId);
             var options = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatOption(message) : GetGroupChatOption(message, chat.Chat);
-            await _connector.SendPushAsync(PushToken, options);
+            await _connector.SendPushAsync(PushToken, options, _context.UserData.Username);
         }
 
         private bool CanPushToUser(DMessage message)
@@ -93,7 +94,7 @@ namespace PilotRocketChatGateway.Pushes
                 title = $"#{chat.Name}",
                 name = chat.Name,
                 msgId = rcMesssage.id,
-                text = $"{rcMesssage.u.name}: {rcMesssage.msg}",
+                text = $"{rcMesssage.u.name}: {GetMsgText(rcMesssage)}",
                 roomId = rcMesssage.roomId,
                 sender = rcMesssage.u,
                 userId = _context.RemoteService.ServerApi.CurrentPerson.Id.ToString(),
@@ -110,7 +111,7 @@ namespace PilotRocketChatGateway.Pushes
                 createdAt = rcMesssage.creationDate,
                 title = rcMesssage.u.name,
                 msgId = rcMesssage.id,
-                text = rcMesssage.msg,
+                text = GetMsgText(rcMesssage),
                 roomId = rcMesssage.roomId,
                 sender = rcMesssage.u,
                 userId = _context.RemoteService.ServerApi.CurrentPerson.Id.ToString(),
@@ -118,7 +119,10 @@ namespace PilotRocketChatGateway.Pushes
                 appName = GetAppName()
             };
         }
-        
+        private string GetMsgText(Message rcMessage)
+        {
+            return string.IsNullOrEmpty(rcMessage.msg) && rcMessage.attachments.Any() ? ATTACHMENT_TEXT : rcMessage.msg;
+        }
         private string GetAppName()
         {
             return PushToken.Type == PushTokenTypes.apn ? "chat.rocket.ios" : "chat.rocket.android";
