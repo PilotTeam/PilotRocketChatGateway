@@ -12,6 +12,8 @@ namespace PilotRocketChatGateway.UserContext
         IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
         UserData UserData { get; }
+
+        bool IsDisposed { get; }
     }
     public class Context : IContext
     {
@@ -46,6 +48,7 @@ namespace PilotRocketChatGateway.UserContext
         public IPushService PushService => _pushService;
         public IWebSocketsNotifyer WebSocketsNotifyer => _webSocketsNotifyer;
 
+        public bool IsDisposed { get; private set; }
         public void SetService(IService service)
         {
             switch (service)
@@ -70,8 +73,10 @@ namespace PilotRocketChatGateway.UserContext
         }
         public void Dispose()
         {
+            IsDisposed = true;
             foreach (var disposable in _disposables)
                 disposable.Dispose();
+
         }
     }
 }

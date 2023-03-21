@@ -27,7 +27,6 @@ namespace PilotRocketChatGateway.WebSockets
         IChatService ChatService { get; }
         void AddWebSocketService(WebSocketsService service);
         void RemoveWebSocketService(WebSocketsService service);
-        void SignOut();
     }
 
     public interface IWebSocketAgentFactory
@@ -75,15 +74,12 @@ namespace PilotRocketChatGateway.WebSockets
                 }
                 catch(WebSocketException) 
                 {
-                    _agent?.RemoveWebSocketService(this);
-                    Session?.Dispose();
-                    if (_agent != null)
-                        _logger.Log(LogLevel.Information, $"Closed websocket. Username: {_agent.CurrentPerson.Login}.");
+                    await CloseWebSocketAsync();
                     return;
                 }
                 if (result.CloseStatus.HasValue)
                 {
-                    await SignOutAsync(result);
+                    await CloseWebSocketAsync(result.CloseStatus.Value);
                     return;
                 }
                 var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -99,21 +95,6 @@ namespace PilotRocketChatGateway.WebSockets
                     _logger.LogError(0, e, e.Message);
                 }
             }
-        }
-
-        private async Task SignOutAsync(WebSocketReceiveResult result)
-        {
-            await CloseWebSocketAsync(result.CloseStatus.Value);
-            if (_agent == null)
-                return;
-
-
-            string login = _agent.CurrentPerson.Login;
-
-            Session?.Dispose();
-            _agent.SignOut();
-
-            _logger.Log(LogLevel.Information, $"Signed out successfully. Username: {login}.");
         }
 
         private async Task HandleRequestAsync(dynamic request)
@@ -217,14 +198,23 @@ namespace PilotRocketChatGateway.WebSockets
 
             _agent.ChatService.DataSender.SendTypingMessageToServer(eventParam[0]);
         }
-        private Task CloseWebSocketAsync(WebSocketCloseStatus status)
+        private Task CloseWebSocketAsync(WebSocketCloseStatus? status = null)
         {
             if (IsActive == false)
                 return Task.CompletedTask;
 
             IsActive = false;
-            _logger.Log(LogLevel.Information, "WebSocket connection closed");
-            return _webSocket.CloseAsync(status, string.Empty, CancellationToken.None);
+
+            _agent?.RemoveWebSocketService(this);
+            Session?.Dispose();
+            if (_agent != null)
+                _logger.Log(LogLevel.Information, $"Closed websocket. Username: {_agent.CurrentPerson.Login}.");
+
+            if (status != null)
+                return _webSocket.CloseAsync(status.Value, string.Empty, CancellationToken.None);
+
+            _webSocket.Dispose();
+            return Task.CompletedTask;
         }
 
         public void Dispose()
