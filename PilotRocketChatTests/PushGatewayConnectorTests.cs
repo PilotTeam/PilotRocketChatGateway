@@ -42,13 +42,13 @@ namespace PilotRocketChatTests
             var options = new PushOptions() { sender = new User() };
 
             //1 push
-            _connector.SendPushAsync(new PushToken(), options);
+            _connector.SendPushAsync(new PushToken(), options, string.Empty);
 
             _requestHelper.Verify(x => x.PostJsonAsync(It.IsAny<string>(), It.IsAny<string>(), $"Bearer {token}"), Times.Once());
             Assert.AreEqual(1, authorized);
 
             //2 push
-            _connector.SendPushAsync(new PushToken(), options);
+            _connector.SendPushAsync(new PushToken(), options, string.Empty);
             _requestHelper.Verify(x => x.PostJsonAsync(It.IsAny<string>(), It.IsAny<string>(), $"Bearer {token}"), Times.Exactly(2));
             Assert.AreEqual(1, authorized);
 
@@ -56,7 +56,7 @@ namespace PilotRocketChatTests
             //3 push 
             token = "token 2";
 
-            _connector.SendPushAsync(new PushToken(), options);
+            _connector.SendPushAsync(new PushToken(), options, string.Empty);
             _requestHelper.Verify(x => x.PostJsonAsync(It.IsAny<string>(), It.IsAny<string>(), $"Bearer {token}"), Times.Exactly(1)); //push with new token
             Assert.AreEqual(2, authorized);
 
