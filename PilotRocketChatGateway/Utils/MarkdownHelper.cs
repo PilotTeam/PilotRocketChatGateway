@@ -4,47 +4,32 @@ namespace PilotRocketChatGateway.Utils
 {
     public class MarkdownHelper
     {
+        public static readonly Regex MarkdownRegex = new Regex(@"(\[([^\]\(\)\r\n]+\])\(([^\[\]\)\n\r]+\)))", RegexOptions.Compiled);
+        public static readonly Regex UriRegex = new Regex(@"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)", RegexOptions.Compiled);
         public static (Uri, string) CutHyperLink(string str)
         {
-            var regexes = new[]
-            {
-                new UriMarkdown(new Regex(@"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)", RegexOptions.Compiled), (s) => s),
-                new UriMarkdown(new Regex(@"(\[([^\]\(\)\r\n]+\])\(([^\[\]\)\n\r]+\)))", RegexOptions.Compiled), (s => s)),
-            };
+            var (flags, text) = GetFlags(str, MarkdownRegex);
+            if (flags.Any() == false)
+                return (null, str);
 
-            var (flags, result) = GetFlags(str, regexes);
-            if (flags.Count < 2) // chek 3
-                return (null, result);
+            var (uriFlags, _) = GetFlags(flags[0], UriRegex);
+            if (uriFlags.Any() == false)
+                return (null, str);
 
-            return (new Uri(flags[0]), result.Replace(flags[1], string.Empty).TrimStart());
+            return (new Uri(uriFlags[0]), text.TrimStart());
         }
-        private static (IList<string>, string) GetFlags(string input, UriMarkdown[] regexes)
+        private static (IList<string>, string) GetFlags(string input, Regex regex)
         {
             var flags = new List<string>();
             var result = input;
-            for (var regexIndex = 0; regexIndex < regexes.Length; regexIndex++)
-            {
-                var regex = regexes[regexIndex];
 
-                foreach (Match match in regex.Regex.Matches(result))
-                {
-                    flags.Add(match.Value);
-                    result = result.Replace(match.Value, " ");
-                }
+            foreach (Match match in regex.Matches(result))
+            {
+                flags.Add(match.Value);
+                result = result.Replace(match.Value, " ");
             }
 
             return (flags, result);
-        }
-        private class UriMarkdown
-        {
-            public UriMarkdown(Regex regex, Func<string, string> wrapInMarkdownFunc)
-            {
-                WrapInMarkdown = wrapInMarkdownFunc;
-                Regex = regex;
-            }
-
-            public Func<string, string> WrapInMarkdown { get; }
-            public Regex Regex { get; }
         }
     }
 }
