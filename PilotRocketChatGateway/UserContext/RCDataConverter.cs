@@ -202,7 +202,7 @@ namespace PilotRocketChatGateway.UserContext
                 author_name = CommonDataConverter.GetUserDisplayName(creator),
                 creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
                 message_link = $"{roomId}?msg={GetMessageId(related)}",
-                attachments = LoadImageAttachments(replyAttachId)
+                attachments = LoadAttachments(replyAttachId)
             };
         }
 
@@ -220,9 +220,9 @@ namespace PilotRocketChatGateway.UserContext
 
             var edited = GetEditMessage(msg);
             var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
-            return attachments.Concat(LoadImageAttachments(attachId)).ToList();
+            return attachments.Concat(LoadAttachments(attachId)).ToList();
         }
-        private IList<Attachment> LoadImageAttachments(Guid? objId)
+        private IList<Attachment> LoadAttachments(Guid? objId)
         {
             var attach = AttachmentLoader.LoadAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using System.Net.Mime;
 using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
@@ -30,9 +32,11 @@ namespace PilotRocketChatGateway.Controllers
 
             if (_authHelper.ValidateToken(rc_token, _authSettings) == false)
                 throw new UnauthorizedAccessException();
-
             var context = _contextsBank.GetContext(_authHelper.GetTokenActor(rc_token));
             var attach = context.RemoteService.FileManager.LoadFileInfo(objId);
+            if (attach == null)
+                return null;
+
             return File(attach.Data, attach.FileType);
         }
 

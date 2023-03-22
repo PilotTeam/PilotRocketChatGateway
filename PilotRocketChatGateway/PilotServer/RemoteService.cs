@@ -1,5 +1,6 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api;
+using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.UserContext;
 
 namespace PilotRocketChatGateway.PilotServer
@@ -74,7 +75,7 @@ namespace PilotRocketChatGateway.PilotServer
         {
             _client = _connector.Connect(_context.UserData);
 
-            var fileLoader = new FileLoader(_client.GetFileArchiveApi());
+            var fileLoader = new FileLoader(_client.GetFileArchiveApi(), new FileExtensionContentTypeProvider());
             _client.SetConnectionLostListener(this);
             var serverApi = _client.GetServerApi(new NullableServerCallback());
             var messageApi = _client.GetMessagesApi(new MessagesCallback(_context, _logger));
