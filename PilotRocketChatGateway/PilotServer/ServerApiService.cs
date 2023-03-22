@@ -24,6 +24,7 @@ namespace PilotRocketChatGateway.PilotServer
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
         Guid CreateAttachmentObject(string fileName, byte[] attach);
+        INType GetNType(int typeId);
     }
     public class ServerApiService : IServerApiService
     {
@@ -129,6 +130,12 @@ namespace PilotRocketChatGateway.PilotServer
         public void SendTypingMessage(Guid chatId)
         {
             _messagesApi.TypingMessage(chatId);
+        }
+
+        public INType GetNType(int typeId)
+        {
+            var type = _serverApi.GetMetadata(0).Types.FirstOrDefault(x => x.Id == typeId);
+            return type;
         }
     }
 
