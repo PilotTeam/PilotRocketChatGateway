@@ -1,7 +1,10 @@
 ﻿using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
+using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.WebSockets;
 using SixLabors.ImageSharp;
+using System;
+using System.Security.Cryptography;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -33,26 +36,39 @@ namespace PilotRocketChatGateway.UserContext
             if (objId == null || objId == Guid.Empty)
                 return null;
 
-            var attach = LoadFileInfo(objId.Value);
-            if (attach == null)
-                return null;
-
-            if (string.IsNullOrEmpty(attach.FileType) || string.IsNullOrEmpty(attach.Format))
-                return null;
+            var obj = _context.RemoteService.ServerApi.GetObject(objId.Value);
+            var attach = LoadFileInfo(obj);
 
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-            var image = Image.Load(attach.Data);
+
+            if (attach != null && PilotServer.FileInfo.IsSupportedMediaFile(attach.File.Name))
+            {
+                var image = Image.Load(attach.Data);
+                return new Attachment()
+                {
+                    title = attach.File.Name,
+                    title_link = downloadUrl,
+                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
+                    image_type = attach.FileType,
+                    image_size = attach.File.Size,
+                    image_url = downloadUrl,
+                    type = "file",
+                };
+            }
+
             return new Attachment()
             {
-                title = attach.File.Name,
+                title = GetAttachmentTitle(obj, attach),
                 title_link = downloadUrl,
-                image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                image_type = attach.FileType,
-                image_size = attach.File.Size,
-                image_url = downloadUrl,
                 type = "file",
             };
         }
+
+        private string GetAttachmentTitle(DObject obj, IFileInfo? attach)
+        {
+            return attach == null ? obj.GetTiltle(_context.RemoteService.ServerApi.GetNType(obj.TypeId)) : attach.File.Name;
+        }
+
         public Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations)
         {
             var attachs = new Dictionary<Guid, Guid>();
@@ -68,9 +84,8 @@ namespace PilotRocketChatGateway.UserContext
 
             return $"{DOWNLOAD_URL}/{@params.First().Item2}";
         }
-        public IFileInfo LoadFileInfo(Guid objId)
+        public IFileInfo LoadFileInfo(DObject obj)
         {
-            var obj = _context.RemoteService.ServerApi.GetObject(objId);
             var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
             var file = obj.ActualFileSnapshot.Files.FirstOrDefault();
@@ -81,35 +96,60 @@ namespace PilotRocketChatGateway.UserContext
             if (objId == Guid.Empty)
                 return null;
 
-            var attach = LoadFileInfo(objId);
-            if (attach == null)
-                return null;
+            var obj = _context.RemoteService.ServerApi.GetObject(objId);
+            var attach = LoadFileInfo(obj);
 
-            var creator = _commonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId));
-            using (var ms = new MemoryStream(attach.Data))
+            var creator = _commonDataConverter.ConvertToUser(GetAttachCreator(obj, attach));
+            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
+
+            if (attach != null && PilotServer.FileInfo.IsSupportedMediaFile(attach.File.Name))
             {
-                var image = Image.Load(attach.Data);
-                var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-
-                return new FileAttachment
+                using (var ms = new MemoryStream(attach.Data))
                 {
-                    name = attach.File.Name,
-                    type = attach.FileType,
-                    id = attach.File.Id.ToString(),
-                    size = attach.File.Size,
-                    roomId = roomId,
-                    userId = creator.id,
-                    identify = new FileIdentity
+                    var image = Image.Load(attach.Data);
+
+                    return new FileAttachment
                     {
-                        format = attach.Format,
-                        size = new Dimension { width = image.Width, height = image.Height },
-                    },
-                    url = downloadUrl,
-                    typeGroup = "image",
-                    user = creator,
-                    uploadedAt = _commonDataConverter.ConvertToJSDate(attach.File.Created)
-                };
+                        name = attach.File.Name,
+                        type = attach.FileType,
+                        id = attach.File.Id.ToString(),
+                        size = attach.File.Size,
+                        roomId = roomId,
+                        userId = creator.id,
+                        identify = new FileIdentity
+                        {
+                            format = attach.Format,
+                            size = new Dimension { width = image.Width, height = image.Height },
+                        },
+                        url = downloadUrl,
+                        typeGroup = "image",
+                        user = creator,
+                        uploadedAt = _commonDataConverter.ConvertToJSDate(attach.File.Created)
+                    };
+                }
             }
+
+            return new FileAttachment
+            {
+                name = GetAttachmentTitle(obj, attach),
+                roomId = roomId,
+                userId = creator.id,
+                url = downloadUrl,
+                user = creator,
+                uploadedAt = attach == null ? _commonDataConverter.ConvertToJSDate(obj.Created) : _commonDataConverter.ConvertToJSDate(attach.File.Created)
+            };
+        }
+
+        private INPerson GetAttachCreator(DObject obj, IFileInfo attach)
+        {
+            if (attach == null)
+                return _context.RemoteService.ServerApi.GetPerson(obj.CreatorId);
+
+            var person = _context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId);
+            if (person != null)
+                return person;
+
+            return _context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId) ?? _context.RemoteService.ServerApi.GetPerson(obj.CreatorId);
         }
     }
 }

@@ -26,25 +26,31 @@ namespace PilotRocketChatGateway.PilotServer
             _currentPerson = currentPerson;
         }
 
+
         public DChange CreateChangeWithAttachmentObject(string fileName, byte[] data)
         {
-            var image = Image.Load(data);
             var type = _serverApi.GetMetadata(0).Types.First(x => x.Name == EXTERNAL_FILE_TYPE_NAME);
-            var dObj = CreateAttachmentObject(type, image);
-            
+            var dObj = CreateAttachmentObject(type);
+
             var change = new DChange { New = dObj };
             var timestamp = DateTime.Now;
-            
+
             var info = new DocumentInfo(fileName, () => new MemoryStream(data), timestamp, timestamp, timestamp);
             var file = _fileManager.CreateFile(info, _currentPerson.Id);
             change.New.ActualFileSnapshot.AddFile(file, _currentPerson.Id);
 
-            MakeThumbnail(image, fileName, timestamp, change);
-            
+            if (FileInfo.IsSupportedMediaFile(fileName))
+            {
+                var image = Image.Load(data);
+                dObj.Attributes[SystemAttributes.WIDTH] = image.Width;
+                dObj.Attributes[SystemAttributes.HEIGHT] = image.Height;
+                MakeThumbnail(image, fileName, timestamp, change);
+            }
+
             return change;
         }
 
-        private DObject CreateAttachmentObject(MType type, Image image)
+        private DObject CreateAttachmentObject(MType type)
         {
             var dObj = new DObject
             {
@@ -55,10 +61,8 @@ namespace PilotRocketChatGateway.PilotServer
                 Created = DateTime.UtcNow
             };
             dObj.Access.AddDistinct(new AccessRecord(_currentPerson.MainPosition(), _currentPerson.MainPosition(), dObj.Id, AccessCalculator.GetCreatorAccess()));
-            dObj.Access.AddDistinct(new AccessRecord(0, _currentPerson.MainPosition(), dObj.Id, new Access(AccessLevel.View, DateTime.MaxValue, AccessInheritance.None, AccessType.Allow)));
+            dObj.Access.AddDistinct(new AccessRecord(0, _currentPerson.MainPosition(), dObj.Id, new Access(AccessLevel.View, DateTime.MaxValue, AccessInheritance.None, AccessType.Allow)));  
 
-            dObj.Attributes[SystemAttributes.WIDTH] = image.Width;
-            dObj.Attributes[SystemAttributes.HEIGHT] = image.Height;
             return dObj;
         }
 
