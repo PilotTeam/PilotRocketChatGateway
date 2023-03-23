@@ -43,6 +43,7 @@ namespace PilotRocketChatGateway.PilotServer
             if (_disposed)
                 return;
 
+            _client?.Dispose();
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
             _logger.LogError(0, ex, ex.Message);
 
@@ -57,6 +58,9 @@ namespace PilotRocketChatGateway.PilotServer
             {
                 try
                 {
+                    if (_disposed)
+                        return;
+
                     Connect();
                 }
                 catch (Exception)

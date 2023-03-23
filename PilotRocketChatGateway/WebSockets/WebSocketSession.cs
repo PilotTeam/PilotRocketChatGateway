@@ -155,7 +155,7 @@ namespace PilotRocketChatGateway.WebSockets
                 _streamNotifyRoom.SendTypingMessageToClient(rocketChatMessage.roomId, dMessage.CreatorId, false);
                 _streamRoomMessages.SendMessageUpdate(rocketChatMessage);
 
-                if (_chatService.DataLoader.IsChatNotifiable(dMessage.ChatId))
+                if (dMessage.CreatorId != _currentPerson.Id && _chatService.DataLoader.IsChatNotifiable(dMessage.ChatId))
                 {
                     var chat = _chatService.DataLoader.LoadChat(dMessage.ChatId);
                     _streamNotifyUser.NotifyUser(rocketChatMessage, chat.Chat.Type);

@@ -10,13 +10,13 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class LogoutController : ControllerBase
     {
-        private IContextsBank _context;
+        private IContextsBank _contextBank;
         private ILogger<LogoutController> _logger;
         private IAuthHelper _authHelper;
 
-        public LogoutController(IContextsBank context, ILogger<LogoutController> logger, IAuthHelper authHelper)
+        public LogoutController(IContextsBank contextBank, ILogger<LogoutController> logger, IAuthHelper authHelper)
         {
-            _context = context;
+            _contextBank = contextBank;
             _logger = logger;
             _authHelper = authHelper;
         }
@@ -25,6 +25,12 @@ namespace PilotRocketChatGateway.Controllers
         [HttpPost]
         public object Post()
         {
+            var actor = HttpContext.GetTokenActor(_authHelper);
+            var success = _contextBank.RemoveContext(actor);
+
+            if (success)
+                _logger.Log(LogLevel.Information, $"Logged out. Username: {actor}.");
+
             return new { success = true };
         }
     }

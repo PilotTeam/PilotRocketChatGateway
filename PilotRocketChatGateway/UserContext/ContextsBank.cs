@@ -11,7 +11,7 @@ namespace PilotRocketChatGateway.UserContext
     {
         IContext GetContext(string actor);
         void CreateContext(UserData credentials);
-        void RemoveContext(string actor);
+        bool RemoveContext(string actor);
     }
 
     public class ContextsBank : IContextsBank
@@ -42,14 +42,16 @@ namespace PilotRocketChatGateway.UserContext
             }
         }
 
-        public void RemoveContext(string actor)
+        public bool RemoveContext(string actor)
         {
             lock (_contexts)
             {
                 if (_contexts.Remove(actor, out var context))
                 {
                     context.Dispose();
+                    return true;
                 }
+                return false;
             }
         }
 
