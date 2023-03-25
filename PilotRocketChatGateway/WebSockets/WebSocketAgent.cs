@@ -43,8 +43,7 @@ namespace PilotRocketChatGateway.WebSockets
 
         public void RemoveWebSocketService(WebSocketsService service)
         {
-            if (_context.IsDisposed == false)
-                _context.WebSocketsNotifyer.RemoveWebSocketService(service);
+            _context.WebSocketsNotifyer.RemoveWebSocketService(service);
         }
     }
 }
