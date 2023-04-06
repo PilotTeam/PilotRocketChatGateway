@@ -72,5 +72,9 @@ namespace PilotRocketChatGateway.PilotServer
                 _logger.LogError(e, e.Message);
             }
         }
+
+        public void UpdateLastMessageDate(DateTime maxDate)
+        {
+        }
     }
 }

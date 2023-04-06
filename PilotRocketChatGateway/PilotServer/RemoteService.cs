@@ -83,6 +83,7 @@ namespace PilotRocketChatGateway.PilotServer
             _client.SetConnectionLostListener(this);
             var serverApi = _client.GetServerApi(new NullableServerCallback());
             var messageApi = _client.GetMessagesApi(new MessagesCallback(_context, _logger));
+            messageApi.Open(30, DateTime.UtcNow);
             var dbInfo = serverApi.OpenDatabase();
 
             var archiveApi = _client.GetFileArchiveApi();
