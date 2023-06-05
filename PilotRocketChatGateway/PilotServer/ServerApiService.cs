@@ -112,7 +112,7 @@ namespace PilotRocketChatGateway.PilotServer
         public Guid CreateAttachmentObject(string fileName, byte[] data)
         {
             var change = _attachmentHelper.CreateChangeWithAttachmentObject(fileName, data);
-            var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, new List<Guid>() { });
+            var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, change.GetNewFiles());
             _serverApi.Change(changeset);
             return change.New.Id;
         }
