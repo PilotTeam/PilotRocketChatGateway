@@ -30,13 +30,15 @@ namespace PilotRocketChatGateway.UserContext
         private readonly ICommonDataConverter _commonConverter;
         private readonly IContext _context;
         private readonly IBatchMessageLoader _loader;
+        private readonly ILogger _logger;
 
-        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoader msgLoader)
+        public DataLoader(IRCDataConverter rcConverter, ICommonDataConverter commonConverter, IContext context, IBatchMessageLoader msgLoader, ILogger logger)
         {
             RCDataConverter = rcConverter;
             _commonConverter = commonConverter;
             _context = context;
             _loader = msgLoader;
+            _logger = logger;
         }
         public IRCDataConverter RCDataConverter { get; }
         public Room LoadRoom(Guid id)
@@ -147,7 +149,16 @@ namespace PilotRocketChatGateway.UserContext
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
-                result.Add(RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs));
+                try
+                {
+                    var rcMsg = RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs);
+                    result.Add(rcMsg);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+               
             }
 
             return result;

@@ -20,9 +20,9 @@ namespace PilotRocketChatGateway.UserContext
 
             var commonConverter = new CommonDataConverter(context);
             var attachLoader = new MediaAttachmentLoader(commonConverter, context);
-            var rcConverter = new RCDataConverter(context, attachLoader, commonConverter);
+            var rcConverter = new RCDataConverter(context, attachLoader, commonConverter, logger);
             var msgLoader = new BatchMessageLoader(context);
-            var loader = new DataLoader(rcConverter, commonConverter, context, msgLoader);
+            var loader = new DataLoader(rcConverter, commonConverter, context, msgLoader, logger);
             var sender = new DataSender(rcConverter, commonConverter, context);
             var notifyer = new WebSocketsNotifyer(); 
 

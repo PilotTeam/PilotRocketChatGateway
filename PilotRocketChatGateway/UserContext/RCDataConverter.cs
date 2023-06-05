@@ -21,9 +21,11 @@ namespace PilotRocketChatGateway.UserContext
     }
     public class RCDataConverter : IRCDataConverter
     {
+        private readonly ILogger _logger;
         private readonly IContext _context;
-        public RCDataConverter(IContext context, IMediaAttachmentLoader attachLoader, ICommonDataConverter commonDataConverter)
+        public RCDataConverter(IContext context, IMediaAttachmentLoader attachLoader, ICommonDataConverter commonDataConverter, ILogger logger)
         {
+            _logger = logger;
             _context = context;
             AttachmentLoader = attachLoader;
             CommonDataConverter = commonDataConverter;
@@ -209,18 +211,27 @@ namespace PilotRocketChatGateway.UserContext
         private IList<Attachment> LoadAttachments(string roomId, DMessage msg)
         {
             List<Attachment> attachments = new List<Attachment>();
-            if (msg.Type != MessageType.MessageAnswer && msg.Type != MessageType.TextMessage)
+            try
+            {
+                if (msg.Type != MessageType.MessageAnswer && msg.Type != MessageType.TextMessage)
                 return attachments;
 
-            if (msg.Type == MessageType.MessageAnswer)
-            {
-                var replyAttach = LoadReplyAttachments(roomId, msg);
-                attachments.Add(replyAttach);
-            }
+                if (msg.Type == MessageType.MessageAnswer)
+                {
+                    var replyAttach = LoadReplyAttachments(roomId, msg);
+                    attachments.Add(replyAttach);
+                }
 
-            var edited = GetEditMessage(msg);
-            var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
-            return attachments.Concat(LoadAttachments(attachId)).ToList();
+          
+                var edited = GetEditMessage(msg);
+                var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
+                return attachments.Concat(LoadAttachments(attachId)).ToList();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return attachments;
+            }
         }
         private IList<Attachment> LoadAttachments(Guid? objId)
         {
