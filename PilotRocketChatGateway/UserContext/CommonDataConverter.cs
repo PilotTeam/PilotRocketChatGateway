@@ -65,8 +65,12 @@ namespace PilotRocketChatGateway.UserContext
         }
         public string GetUserDisplayName(INPerson person)
         {
-            return person.DisplayName.Split(" ")[0];
-        }
+            var words = person.DisplayName.Split(" ");
+            if (words.Count() > 1)
+                return words[0] + " " + words[1][0] + ".";
+            
+            return words[0];
+        } 
         private string GetUserStatus(int person)
         {
             if (_context.RemoteService.ServerApi.IsOnline(person))
