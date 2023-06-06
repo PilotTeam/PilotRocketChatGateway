@@ -117,7 +117,7 @@ namespace PilotRocketChatGateway.UserContext
         public IList<User> LoadUsers(int count)
         {
             var users = _context.RemoteService.ServerApi.GetPeople().Values;
-            return users.Select(x => _commonConverter.ConvertToUser(x)).ToList();
+            return users.Where(x => !x.IsDeleted && x.Login != _context.UserData.Username).Select(x => _commonConverter.ConvertToUser(x)).ToList();
         }
         public IList<User> LoadMembers(string roomId)
         {
