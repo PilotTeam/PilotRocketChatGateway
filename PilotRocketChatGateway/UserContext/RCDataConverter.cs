@@ -105,6 +105,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
         }
+
         private string GetRole(DMessage msg)
         {
             if (msg.Type != MessageType.ChatMembers)
@@ -156,7 +157,20 @@ namespace PilotRocketChatGateway.UserContext
         private string[] GetUserNames(DChat chat)
         {
             var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
-            return members.Select(x => _context.RemoteService.ServerApi.GetPerson(x.PersonId).Login).ToArray();
+            var result = new List<string>();
+            foreach (var member in members)
+            {
+                try
+                {
+                    var login = _context.RemoteService.ServerApi.GetPerson(member.PersonId).Login;
+                    result.Add(login);
+                }
+                catch(Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result.ToArray();
         }
         private DMessage GetOriginMessage(DMessage msg)
         {

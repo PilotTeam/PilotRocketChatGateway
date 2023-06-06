@@ -30,7 +30,7 @@ namespace PilotRocketChatGateway.Controllers
             var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var users = context.ChatService.DataLoader.LoadUsers(requset.count);
 
-            var result = new { success = true, result = users, total = context.RemoteService.ServerApi.GetPeople().Count };
+            var result = new { success = true, result = users, total = context.RemoteService.ServerApi.GetPeople().Where(x => !x.Value.IsDeleted && x.Value.Login != context.UserData.Username).Count() };
             return JsonConvert.SerializeObject(result);
         }
     }

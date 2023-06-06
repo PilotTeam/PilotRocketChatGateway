@@ -56,7 +56,21 @@ namespace PilotRocketChatGateway.UserContext
         public IList<Room> LoadRooms()
         {
             var chats = _context.RemoteService.ServerApi.GetChats();
-            return chats.Select(x => RCDataConverter.ConvertToRoom(x.Chat, x.Relations, x.LastMessage)).ToList();
+            var result = new List<Room>();
+
+            foreach(var chat in chats)
+            {
+                try
+                {
+                    var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+                    result.Add(rcChat);
+                }      
+                catch(Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result;
         }
         public Subscription LoadRoomsSubscription(string roomId)
         {
@@ -67,7 +81,20 @@ namespace PilotRocketChatGateway.UserContext
         public IList<Subscription> LoadRoomsSubscriptions()
         {
             var chats = _context.RemoteService.ServerApi.GetChats();
-            return chats.Select(x => RCDataConverter.ConvertToSubscription(x)).ToList();
+            var result = new List<Subscription>();
+            foreach (var chat in chats)
+            {
+                try
+                {
+                    var rcChat = RCDataConverter.ConvertToSubscription(chat);
+                    result.Add(rcChat);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result;
         }
         public Room LoadPersonalRoom(string username)
         {
@@ -117,17 +144,39 @@ namespace PilotRocketChatGateway.UserContext
         public IList<User> LoadUsers(int count)
         {
             var users = _context.RemoteService.ServerApi.GetPeople().Values;
-            return users.Where(x => !x.IsDeleted && x.Login != _context.UserData.Username).Select(x => _commonConverter.ConvertToUser(x)).ToList();
+            var result = new List<User>();
+            foreach(var user in users.Where(x => !x.IsDeleted && x.Login != _context.UserData.Username))
+            {
+                try
+                {
+                    var rcUser = _commonConverter.ConvertToUser(user);
+                    result.Add(rcUser);
+                } catch (Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result;
         }
         public IList<User> LoadMembers(string roomId)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
             var members = _context.RemoteService.ServerApi.GetChatMembers(id);
-            return members.Select(x =>
+            var result = new List<User>();
+            foreach (var member in members)
             {
-                var person = _context.RemoteService.ServerApi.GetPerson(x.PersonId);
-                return _commonConverter.ConvertToUser(person);
-            }).ToList();
+                try
+                {
+                    var person = _context.RemoteService.ServerApi.GetPerson(member.PersonId);
+                    var rcUser = _commonConverter.ConvertToUser(person);
+                    result.Add(rcUser);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result;
         }
 
         public bool IsChatNotifiable(Guid chatId)
