@@ -12,7 +12,7 @@ namespace PilotRocketChatGateway.Utils
             if (flags.Any() == false)
                 return (null, str);
 
-            var (uriFlags, _) = GetFlags(flags[0], UriRegex);
+            var (uriFlags, _) = GetFlags(RemoveWhitespaces(flags[0]), UriRegex);
             if (uriFlags.Any() == false)
                 return (null, str);
 
@@ -30,6 +30,11 @@ namespace PilotRocketChatGateway.Utils
             }
 
             return (flags, result);
+        }
+
+        private static string RemoveWhitespaces(string str)
+        {
+            return str.Replace(' ', '_');
         }
     }
 }
