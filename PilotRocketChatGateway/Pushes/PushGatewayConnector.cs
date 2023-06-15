@@ -53,7 +53,7 @@ namespace PilotRocketChatGateway.Pushes
 
             var action = new Action<string>((t) =>
             {
-                if (AccessToken == null)
+                if (string.IsNullOrEmpty(AccessToken))
                     AccessToken = t;
 
                 PushAsync(userToken, options, userName);

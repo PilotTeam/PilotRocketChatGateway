@@ -61,12 +61,12 @@ namespace PilotRocketChatGateway.Pushes
             if (code == HttpStatusCode.Created) 
             {
                 var data = JsonConvert.DeserializeObject<PushGatewayAccessData>(result);
-                logger.Log(LogLevel.Information, $"successfully authorizes in cloud.rocket.chat");
+                logger.Log(LogLevel.Information, $"successfully authorized in cloud.rocket.chat");
                 return data.access_token;
             }
 
             logger.Log(LogLevel.Information, $"Result: {result}, code: {code}");
-            return string.Empty;
+            return null;
         }
     }
 }
