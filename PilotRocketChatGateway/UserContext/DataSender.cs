@@ -10,7 +10,7 @@ namespace PilotRocketChatGateway.UserContext
     {
         void SendTextMessageToServer(string roomId, string msgId, string text, Uri replyLink);
         void SendEditMessageToServer(string roomId, string msgId, string text);
-        void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text);
+        Task SendAttachmentMessageToServerAsync(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         void SendTypingMessageToServer(string roomId);
         void SendChageNotificationMessageToServer(string roomId, bool on);
@@ -69,9 +69,9 @@ namespace PilotRocketChatGateway.UserContext
             edit.ServerDate = _context.RemoteService.ServerApi.SendMessage(edit);
             _context.WebSocketsNotifyer.NotifyMessageCreated(origin, NotifyClientKind.FullChat);
         }
-        public void SendAttachmentMessageToServer(string roomId, string fileName, byte[] data, string text)
+        public async Task SendAttachmentMessageToServerAsync(string roomId, string fileName, byte[] data, string text)
         {
-            var objId = _context.RemoteService.ServerApi.CreateAttachmentObject(fileName, data);
+            var objId = await _context.RemoteService.ServerApi.CreateAttachmentObjectAsync(fileName, data);
             var chatId = _commonConverter.ConvertToChatId(roomId);
             var dMessage = CreateMessage(chatId, MessageType.TextMessage);
             var msgData = GetAttachmentsMessageData(objId, dMessage.Id, text);

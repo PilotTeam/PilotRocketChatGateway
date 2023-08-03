@@ -81,7 +81,8 @@ namespace PilotRocketChatGateway.PilotServer
 
             var fileLoader = new FileLoader(_client.GetFileArchiveApi(), new FileExtensionContentTypeProvider());
             _client.SetConnectionLostListener(this);
-            var serverApi = _client.GetServerApi(new NullableServerCallback());
+            var serverCallback = new ServerCallback();
+            var serverApi = _client.GetServerApi(serverCallback);
             var messageApi = _client.GetMessagesApi(new MessagesCallback(_context, _logger));
             messageApi.Open(30, DateTime.UtcNow);
             var dbInfo = serverApi.OpenDatabase();
@@ -90,7 +91,8 @@ namespace PilotRocketChatGateway.PilotServer
             _fileManager = new FileManager(archiveApi, serverApi, fileLoader);
             var attachmentHelper = new AttachmentHelper(serverApi, _fileManager, dbInfo.Person);
 
-            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo);
+            var changeSender = new ChangesetSender(serverApi, serverCallback);
+            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo, changeSender);
 
             IsConnected = true;
             _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");

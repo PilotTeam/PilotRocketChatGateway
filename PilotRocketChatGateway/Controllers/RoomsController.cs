@@ -31,7 +31,7 @@ namespace PilotRocketChatGateway.Controllers
         }
         [Authorize]
         [HttpPost("api/v1/rooms.upload/{roomId}")]
-        public string Upload(string roomId)
+        public async Task<string> Upload(string roomId)
         {
             var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
             var file = HttpContext.Request.Form.Files[0];
@@ -39,7 +39,7 @@ namespace PilotRocketChatGateway.Controllers
             using (var ms = new MemoryStream())
             {
                 file.CopyTo(ms);
-                context.ChatService.DataSender.SendAttachmentMessageToServer(roomId, file.FileName, ms.ToArray(), text);
+                await context.ChatService.DataSender.SendAttachmentMessageToServerAsync(roomId, file.FileName, ms.ToArray(), text);
 
                 var result = new MessageRequest()
                 {
