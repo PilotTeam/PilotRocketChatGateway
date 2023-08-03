@@ -23,14 +23,6 @@ namespace PilotRocketChatGateway.PilotServer
         }
         public void NotifyChangeAsyncCompleted(DChangeset changeset)
         {
-        }
-
-        public void NotifyChangeAsyncError(Guid identity, ProtoExceptionInfo exception)
-        {
-        }
-
-        public void NotifyChangeset(DChangeset changeset)
-        {
             lock (_lock)
             {
                 foreach (var l in _changeListeners.ToArray())
@@ -42,6 +34,14 @@ namespace PilotRocketChatGateway.PilotServer
                         _changeListeners.Remove(l);
                 }
             }
+        }
+
+        public void NotifyChangeAsyncError(Guid identity, ProtoExceptionInfo exception)
+        {
+        }
+
+        public void NotifyChangeset(DChangeset changeset)
+        {
         }
 
         public void NotifyCommandResult(Guid requestId, byte[] data, ServerCommandResult result)

@@ -1,8 +1,5 @@
-﻿using Ascon.Pilot.Common;
-using Ascon.Pilot.DataClasses;
+﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api;
-using Ascon.Pilot.Server.Api.Contracts;
-using Ascon.Pilot.Transport;
 using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.UserContext;
 
