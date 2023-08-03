@@ -106,13 +106,13 @@ namespace PilotRocketChatGateway.UserContext
         {
             var id = _commonConverter.ConvertToChatId(roomId);
             var dateTo = _commonConverter.ConvertFromJSDate(upperBound);
-            return LoadMessages(id, DateTime.MinValue, dateTo.AddMilliseconds(-1), count);
+            return LoadMessages(id, DateTime.MinValue.ToUniversalTime(), dateTo.AddMilliseconds(-1), count);
         }
         public IList<Message> LoadMessages(string roomId, string lowerBound)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
             var dateFrom = _commonConverter.ConvertFromJSDate(lowerBound);
-            return LoadMessages(id, dateFrom, DateTime.MaxValue, int.MaxValue);
+            return LoadMessages(id, dateFrom, DateTime.MaxValue.ToUniversalTime(), int.MaxValue);
         }
 
         public Message LoadMessage(string msgId)

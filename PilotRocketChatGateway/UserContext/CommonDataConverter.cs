@@ -57,7 +57,7 @@ namespace PilotRocketChatGateway.UserContext
         }
         public DateTime ConvertFromJSDate(string date)
         {
-            return string.IsNullOrEmpty(date) ? DateTime.MaxValue : DateTime.Parse(date).ToUniversalTime();
+            return string.IsNullOrEmpty(date) ? DateTime.MaxValue.ToUniversalTime() : DateTime.Parse(date).ToUniversalTime();
         }
         public bool IsRocketChatId(string msgId)
         {
