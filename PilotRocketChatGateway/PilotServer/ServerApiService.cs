@@ -23,7 +23,7 @@ namespace PilotRocketChatGateway.PilotServer
         void SendTypingMessage(Guid chatId);
         DDatabaseInfo GetDatabaseInfo();
         IReadOnlyDictionary<int, INPerson> GetPeople();
-        Guid CreateAttachmentObject(string fileName, byte[] attach);
+        Task<Guid> CreateAttachmentObjectAsync(string fileName, byte[] attach);
         INType GetNType(int typeId);
     }
     public class ServerApiService : IServerApiService
@@ -32,13 +32,15 @@ namespace PilotRocketChatGateway.PilotServer
         private readonly IMessagesApi _messagesApi;
         private readonly IAttachmentHelper _attachmentHelper;
         private readonly DDatabaseInfo _dbInfo;
+        private readonly IChangesetSender _changeSender;
         private readonly DPerson _currentPerson;
 
-        public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, IAttachmentHelper attachmentHelper, DDatabaseInfo dbInfo)
+        public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, IAttachmentHelper attachmentHelper, DDatabaseInfo dbInfo, IChangesetSender changeSender)
         {
             _serverApi = serverApi;
             _messagesApi = messagesApi;
             _dbInfo = dbInfo;
+            _changeSender = changeSender;
             _currentPerson = dbInfo.Person;
             _attachmentHelper = attachmentHelper;
         }
@@ -109,11 +111,11 @@ namespace PilotRocketChatGateway.PilotServer
             return _serverApi.GetObjects(new Guid[] { id }).First();
         }
 
-        public Guid CreateAttachmentObject(string fileName, byte[] data)
+        public async Task<Guid> CreateAttachmentObjectAsync(string fileName, byte[] data)
         {
             var change = _attachmentHelper.CreateChangeWithAttachmentObject(fileName, data);
             var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, change.GetNewFiles());
-            _serverApi.Change(changeset);
+            await _changeSender.ChangeAsync(changeset);
             return change.New.Id;
         }
 
