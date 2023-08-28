@@ -22,6 +22,7 @@ namespace PilotRocketChatGateway.UserContext
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
         bool IsChatNotifiable(Guid chatId);
+        bool IsChatNotifiable(Guid chatId, List<DChatMember> members);
         DChatInfo LoadChat(Guid chatId);
         INPerson LoadPerson(int userId);
     }
@@ -58,20 +59,22 @@ namespace PilotRocketChatGateway.UserContext
             var chats = _context.RemoteService.ServerApi.GetChats();
             var result = new List<Room>();
 
-            foreach(var chat in chats)
+            var people = _context.RemoteService.ServerApi.GetPeople().Values.ToList();
+            foreach (var chat in chats.GetRange(120, 140))
             {
                 try
                 {
-                    var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+                    var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage, people);
                     result.Add(rcChat);
-                }      
-                catch(Exception e)
+                }
+                catch (Exception e)
                 {
                     _logger.LogError(e.Message);
                 }
             }
             return result;
         }
+
         public Subscription LoadRoomsSubscription(string roomId)
         {
             var id = _commonConverter.ConvertToChatId(roomId);
@@ -82,11 +85,14 @@ namespace PilotRocketChatGateway.UserContext
         {
             var chats = _context.RemoteService.ServerApi.GetChats();
             var result = new List<Subscription>();
-            foreach (var chat in chats)
+
+            var people = _context.RemoteService.ServerApi.GetPeople().Values.ToList();
+
+            foreach (var chat in chats.GetRange(120, 140))
             {
                 try
                 {
-                    var rcChat = RCDataConverter.ConvertToSubscription(chat);
+                    var rcChat = RCDataConverter.ConvertToSubscription(chat, people);
                     result.Add(rcChat);
                 }
                 catch (Exception e)
@@ -182,6 +188,12 @@ namespace PilotRocketChatGateway.UserContext
         public bool IsChatNotifiable(Guid chatId)
         {
             var member = _context.RemoteService.ServerApi.GetChatMembers(chatId).First(x => x.PersonId == _context.RemoteService.ServerApi.CurrentPerson.Id);
+            return member.IsNotifiable;
+        }
+
+        public bool IsChatNotifiable(Guid chatId, List<DChatMember> members)
+        {
+            var member = members.First(x => x.PersonId == _context.RemoteService.ServerApi.CurrentPerson.Id);
             return member.IsNotifiable;
         }
 

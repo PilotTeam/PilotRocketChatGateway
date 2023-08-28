@@ -14,7 +14,9 @@ namespace PilotRocketChatGateway.UserContext
         ICommonDataConverter CommonDataConverter { get; }
         IMediaAttachmentLoader AttachmentLoader { get; }
         Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage);
+        Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage, IEnumerable<INPerson> people);
         Subscription ConvertToSubscription(DChatInfo chat);
+        Subscription ConvertToSubscription(DChatInfo chat, IEnumerable<INPerson> people);
         Message ConvertToMessage(DMessage msg);
         Message ConvertToMessage(DMessage msg, DChat chat, Dictionary<Guid, Guid> attachs);
         string ConvertToRoomId(DChat chat);
@@ -56,6 +58,22 @@ namespace PilotRocketChatGateway.UserContext
                 usernames = GetUserNames(chat)
             };
         }
+
+        public Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage, IEnumerable<INPerson> people)
+        {
+            var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
+            var roomId = ConvertToRoomId(chat, members, people);
+            return new Room()
+            {
+                updatedAt = CommonDataConverter.ConvertToJSDate(lastMessage.ServerDate.Value),
+                name = chat.Type == ChatKind.Personal ? string.Empty : chat.Name,
+                id = roomId,
+                channelType = GetChannelType(chat),
+                creationDate = CommonDataConverter.ConvertToJSDate(chat.CreationDateUtc),
+                lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToMessage(lastMessage, roomId, people),
+                usernames = GetUserNames(members, people)
+            };
+        }
         public Subscription ConvertToSubscription(DChatInfo chat)
         {
             return new Subscription()
@@ -71,6 +89,24 @@ namespace PilotRocketChatGateway.UserContext
                 roomId = ConvertToRoomId(chat.Chat),
                 channelType = GetChannelType(chat.Chat),
                 disableNotifications = !_context.ChatService.DataLoader.IsChatNotifiable(chat.Chat.Id)
+            };
+        }
+        public Subscription ConvertToSubscription(DChatInfo chat, IEnumerable<INPerson> people)
+        {
+            var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Chat.Id);
+            return new Subscription()
+            {
+                updatedAt = CommonDataConverter.ConvertToJSDate(chat.LastMessage.ServerDate.Value),
+                lastSeen = LoadLastSeenChatsDate(chat),
+                unread = chat.UnreadMessagesNumber,
+                open = true,
+                name = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(members, people).username : chat.Chat.Name,
+                displayName = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(members, people).name : chat.Chat.Name,
+                alert = chat.UnreadMessagesNumber > 0,
+                id = ConvertToRoomId(chat.Chat, members, people),
+                roomId = ConvertToRoomId(chat.Chat, members, people),
+                channelType = GetChannelType(chat.Chat),
+                disableNotifications = !_context.ChatService.DataLoader.IsChatNotifiable(chat.Chat.Id, members)
             };
         }
 
@@ -101,9 +137,34 @@ namespace PilotRocketChatGateway.UserContext
                 role = GetRole(msg)
             };
         }
+        public Message ConvertToMessage(DMessage msg, string roomId, IEnumerable<INPerson> persons)
+        {
+            var creator = persons.First(x => x.Id == msg.CreatorId);
+            var user = CommonDataConverter.ConvertToUser(creator);
+            var editedAt = GetEditedAt(msg);
+            return new Message()
+            {
+                id = GetMessageId(msg),
+                roomId = roomId,
+                updatedAt = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
+                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
+                msg = GetMessageText(msg),
+                u = user,
+                attachments = LoadAttachments(roomId, msg),
+                editedAt = editedAt,
+                editedBy = GetEditor(msg),
+                type = GetMsgType(msg),
+                role = GetRole(msg)
+            };
+        }
         public string ConvertToRoomId(DChat chat)
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
+        }
+
+        public string ConvertToRoomId(DChat chat, List<DChatMember> members, IEnumerable<INPerson> people)
+        {
+            return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(members, people).id.ToString() : chat.Id.ToString();
         }
 
         private string GetRole(DMessage msg)
@@ -153,10 +214,13 @@ namespace PilotRocketChatGateway.UserContext
 
             return string.Empty;
         }
-
         private string[] GetUserNames(DChat chat)
         {
             var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
+            return GetUserNames(members);
+        }
+        public string[] GetUserNames(List<DChatMember> members)
+        {
             var result = new List<string>();
             foreach (var member in members)
             {
@@ -166,6 +230,24 @@ namespace PilotRocketChatGateway.UserContext
                     result.Add(login);
                 }
                 catch(Exception e)
+                {
+                    _logger.LogError(e.Message);
+                }
+            }
+            return result.ToArray();
+        }
+        
+        private string[] GetUserNames(List<DChatMember> members, IEnumerable<INPerson> persons)
+        {
+            var result = new List<string>();
+            foreach (var member in members)
+            {
+                try
+                {
+                    var login = persons.FirstOrDefault(x => x.Id == member.PersonId).Login;
+                    result.Add(login);
+                }
+                catch (Exception e)
                 {
                     _logger.LogError(e.Message);
                 }
@@ -310,6 +392,15 @@ namespace PilotRocketChatGateway.UserContext
             var person = _context.RemoteService.ServerApi.GetPerson(target.PersonId);
             return CommonDataConverter.ConvertToUser(person);
         }
+
+        private User GetPersonalChatTarget(List<DChatMember> members, IEnumerable<INPerson> people)
+        {
+            var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
+            var target = members.First(x => x.PersonId != currentPersonId);
+            var person = people.FirstOrDefault(x => x.Id == target.PersonId);
+            return CommonDataConverter.ConvertToUser(person);
+        }
+
         private string GetEditedAt(DMessage msg)
         {
             var edit = GetEditMessage(msg);
