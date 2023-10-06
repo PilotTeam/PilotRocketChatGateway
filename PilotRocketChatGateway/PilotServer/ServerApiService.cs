@@ -69,7 +69,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public List<DChatInfo> GetChats()
         {
-            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, int.MaxValue, false).ToList();
+            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, 50, false).ToList();
         }
 
         public DDatabaseInfo GetDatabaseInfo()
