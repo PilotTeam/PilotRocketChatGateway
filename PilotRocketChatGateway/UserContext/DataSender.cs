@@ -133,7 +133,7 @@ namespace PilotRocketChatGateway.UserContext
 
             _context.WebSocketsNotifyer.NotifyMessageCreated(msg, NotifyClientKind.Chat);
 
-            return _rcConverter.ConvertToRoom(chat, new List<DChatRelation>(), msg);
+            return _rcConverter.ConvertToRoom(chat, msg);
         }
         private DTextMessageData GetAttachmentsMessageData(Guid objId, Guid messageId, string text)
         {

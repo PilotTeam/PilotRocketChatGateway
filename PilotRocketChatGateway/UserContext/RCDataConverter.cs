@@ -14,7 +14,7 @@ namespace PilotRocketChatGateway.UserContext
     {
         ICommonDataConverter CommonDataConverter { get; }
         IMediaAttachmentLoader AttachmentLoader { get; }
-        Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage);
+        Room ConvertToRoom(DChat chat, DMessage lastMessage);
         Subscription ConvertToSubscription(DChatInfo chat);
         Message ConvertToMessage(DMessage msg);
         Message ConvertToMessage(DMessage msg, DChat chat);
@@ -42,7 +42,7 @@ namespace PilotRocketChatGateway.UserContext
                 return ProtoSerializer.Deserialize<T>(stream);
             }
         }
-        public Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage)
+        public Room ConvertToRoom(DChat chat, DMessage lastMessage)
         {
             var roomId = ConvertToRoomId(chat);
             return new Room()
@@ -53,11 +53,11 @@ namespace PilotRocketChatGateway.UserContext
                 channelType = GetChannelType(chat),
                 creationDate = CommonDataConverter.ConvertToJSDate(chat.CreationDateUtc),
                 lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToSimpleMessage(lastMessage, chat),
-                usernames = GetUserNames(chat)
             };
         }
         public Subscription ConvertToSubscription(DChatInfo chat)
         {
+            var roomId = ConvertToRoomId(chat.Chat);
             return new Subscription()
             {
                 updatedAt = CommonDataConverter.ConvertToJSDate(chat.LastMessage.ServerDate.Value),
@@ -67,10 +67,10 @@ namespace PilotRocketChatGateway.UserContext
                 name = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).username : chat.Chat.Name,
                 displayName = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat.Chat).name : chat.Chat.Name,
                 alert = chat.UnreadMessagesNumber > 0,
-                id = ConvertToRoomId(chat.Chat),
-                roomId = ConvertToRoomId(chat.Chat),
+                id = roomId,
+                roomId = roomId,
                 channelType = GetChannelType(chat.Chat),
-                disableNotifications = !_context.ChatService.DataLoader.IsChatNotifiable(chat.Chat.Id)
+                disableNotifications = false
             };
         }
 
@@ -346,14 +346,28 @@ namespace PilotRocketChatGateway.UserContext
                     return string.IsNullOrEmpty(msgData.ThirdPartyInfo) ? msg.Id.ToString() : msgData.ThirdPartyInfo;
             }
         }
+
         private User GetPersonalChatTarget(DChat chat)
         {
-            var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
             var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
-            var target = members.First(x => x.PersonId != currentPersonId);
-            var person = _context.RemoteService.ServerApi.GetPerson(target.PersonId);
-            return CommonDataConverter.ConvertToUser(person);
+            if (chat.CreatorId != currentPersonId)
+            {
+                var person = _context.RemoteService.ServerApi.GetPerson(chat.CreatorId);
+                return CommonDataConverter.ConvertToUser(person);
+            }
+
+            if (string.IsNullOrEmpty(chat.Name))
+            {
+                var members = _context.RemoteService.ServerApi.GetChatMembers(chat.Id);
+                var target = members.First(x => x.PersonId != currentPersonId);
+                var person = _context.RemoteService.ServerApi.GetPerson(target.PersonId);
+                return CommonDataConverter.ConvertToUser(person);
+            }
+
+            var p = _context.RemoteService.ServerApi.GetPerson(int.Parse(chat.Name));
+            return CommonDataConverter.ConvertToUser(p);
         }
+
         private string GetEditedAt(DMessage msg)
         {
             var edit = GetEditMessage(msg);

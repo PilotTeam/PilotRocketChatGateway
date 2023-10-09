@@ -36,7 +36,8 @@ namespace PilotRocketChatGateway.Controllers
                 return JsonConvert.SerializeObject(result);
             }
 
-            room = context.ChatService.DataSender.SendChatCreationMessageToServer(string.Empty, new List<string>() { user.username }, ChatKind.Personal);
+            var person = context.RemoteService.ServerApi.GetPerson(user.username);
+            room = context.ChatService.DataSender.SendChatCreationMessageToServer(person.Id.ToString(), new List<string>() { user.username }, ChatKind.Personal);
             var result1 = new { room = room, success = true };
             return JsonConvert.SerializeObject(result1);
         }
