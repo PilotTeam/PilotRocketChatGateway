@@ -11,6 +11,7 @@ namespace PilotRocketChatGateway.UserContext
         Guid ConvertToMsgId(string rcMsgId);
         DateTime ConvertFromJSDate(string date);
         string GetUserDisplayName(INPerson person);
+        string GetUserStatus(int person);
         bool IsRocketChatId(string msgId);
     }
     public class CommonDataConverter : ICommonDataConverter
@@ -28,7 +29,6 @@ namespace PilotRocketChatGateway.UserContext
                 id = person.Id.ToString(),
                 username = person.Login,
                 name = GetUserDisplayName(person),
-                status = GetUserStatus(person.Id),
                 roles = new string[] { "user" }
             };
         }
@@ -75,7 +75,7 @@ namespace PilotRocketChatGateway.UserContext
 
             return words[0] + " " + words[words.Count() -2][0] + ".";
         } 
-        private string GetUserStatus(int person)
+        public string GetUserStatus(int person)
         {
             if (_context.RemoteService.ServerApi.IsOnline(person))
                 return nameof(UserStatuses.online);

@@ -29,6 +29,7 @@ namespace PilotRocketChatGateway.Controllers
             foreach (var id in ids.Split(',').Select(x => int.Parse(x)))
             {
                 var user = context.ChatService.DataLoader.LoadUser(id);
+                user.status = context.ChatService.DataLoader.RCDataConverter.CommonDataConverter.GetUserStatus(id);
                 users.Add(user);
             }
 
