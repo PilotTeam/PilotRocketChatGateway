@@ -7,23 +7,32 @@ namespace PilotRocketChatGateway.PilotServer
     public interface IChangeNotifier
     {
         void Subscribe(IChangesetListener listener);
+        void Subscribe(IPersonChangeListener listener);
     }
-
     public class ServerCallback : IServerCallback, IChangeNotifier
     {
         private readonly List<WeakReference> _changeListeners = new List<WeakReference>();
-        private object _lock = new object();
+        private readonly List<WeakReference> _personListeners = new List<WeakReference>();
+        private object _changeLock = new object();
+        private object _personLock = new object();
 
         public void Subscribe(IChangesetListener listener)
         {
-            lock (_lock)
+            lock (_changeLock)
             {
                 _changeListeners.Add(new WeakReference(listener));
             }
         }
+        public void Subscribe(IPersonChangeListener listener)
+        {
+            lock (_personLock)
+            {
+                _personListeners.Add(new WeakReference(listener));
+            }
+        }
         public void NotifyChangeAsyncCompleted(DChangeset changeset)
         {
-            lock (_lock)
+            lock (_changeLock)
             {
                 foreach (var l in _changeListeners.ToArray())
                 {
@@ -70,6 +79,17 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyPersonChangeset(PersonChangeset changeset)
         {
+            lock (_personLock)
+            {
+                foreach (var l in _changeListeners.ToArray())
+                {
+                    var listener = l.Target as IPersonChangeListener;
+                    if (listener != null)
+                        listener.Notify(changeset.Changed);
+                    else
+                        _changeListeners.Remove(l);
+                }
+            }
         }
 
         public void NotifySearchResult(DSearchResult searchResult)

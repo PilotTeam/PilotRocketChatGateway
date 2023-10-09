@@ -93,6 +93,7 @@ namespace PilotRocketChatGateway.PilotServer
 
             var changeSender = new ChangesetSender(serverApi, serverCallback);
             _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo, changeSender);
+            serverCallback.Subscribe(_serverApi);
 
             IsConnected = true;
             _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");

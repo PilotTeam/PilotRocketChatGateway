@@ -1,6 +1,7 @@
 ﻿using Ascon.Pilot.DataClasses;
 using Ascon.Pilot.Server.Api.Contracts;
 using Serilog;
+using System.Collections.Concurrent;
 
 namespace PilotRocketChatGateway.PilotServer
 {
@@ -26,7 +27,11 @@ namespace PilotRocketChatGateway.PilotServer
         Task<Guid> CreateAttachmentObjectAsync(string fileName, byte[] attach);
         INType GetNType(int typeId);
     }
-    public class ServerApiService : IServerApiService
+    public interface IPersonChangeListener
+    {
+        void Notify(IEnumerable<DPerson> personChangeset);
+    }
+    public class ServerApiService : IServerApiService, IPersonChangeListener
     {
         private readonly IServerApi _serverApi;
         private readonly IMessagesApi _messagesApi;
@@ -34,6 +39,7 @@ namespace PilotRocketChatGateway.PilotServer
         private readonly DDatabaseInfo _dbInfo;
         private readonly IChangesetSender _changeSender;
         private readonly DPerson _currentPerson;
+        private readonly ConcurrentDictionary<int, INPerson> _people = new ConcurrentDictionary<int, INPerson>();
 
         public ServerApiService(IServerApi serverApi, IMessagesApi messagesApi, IAttachmentHelper attachmentHelper, DDatabaseInfo dbInfo, IChangesetSender changeSender)
         {
@@ -43,6 +49,8 @@ namespace PilotRocketChatGateway.PilotServer
             _changeSender = changeSender;
             _currentPerson = dbInfo.Person;
             _attachmentHelper = attachmentHelper;
+            var people = _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
+            _people = new ConcurrentDictionary<int, INPerson>(people);
         }
 
         public INPerson CurrentPerson => _currentPerson;
@@ -84,16 +92,17 @@ namespace PilotRocketChatGateway.PilotServer
 
         public IReadOnlyDictionary<int, INPerson> GetPeople()
         {
-            return _serverApi.LoadPeople().ToDictionary(k => k.Id, v => (INPerson)v);
+            return _people;
         }
 
         public INPerson GetPerson(int id)
         {
-            return _serverApi.LoadPeople().FirstOrDefault(x => x.Id == id);
+            _people.TryGetValue(id, out var person);
+            return person;
         }
         public INPerson GetPerson(string login)
         {
-            return _serverApi.LoadPeople().FirstOrDefault(x => x.Login == login);
+            return _people.Values.FirstOrDefault(x => x.Login == login);
         }
 
         public DateTime SendMessage(DMessage message)
@@ -138,6 +147,14 @@ namespace PilotRocketChatGateway.PilotServer
         {
             var type = _serverApi.GetMetadata(0).Types.FirstOrDefault(x => x.Id == typeId);
             return type;
+        }
+
+        public void Notify(IEnumerable<DPerson> personChangeset)
+        {
+            foreach (var person in personChangeset)
+            {
+                _people[person.Id] = person;
+            }
         }
     }
 
