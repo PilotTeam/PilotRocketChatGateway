@@ -193,14 +193,12 @@ namespace PilotRocketChatGateway.UserContext
                 return new List<Message>();
 
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
-            var attachs = GetAttachmentsIds(chat.Relations);
-
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
                 try
                 {
-                    var rcMsg = RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs);
+                    var rcMsg = RCDataConverter.ConvertToMessage(msg, chat.Chat);
                     result.Add(rcMsg);
                 }
                 catch (Exception e)

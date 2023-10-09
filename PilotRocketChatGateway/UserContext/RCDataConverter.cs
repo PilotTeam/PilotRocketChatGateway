@@ -4,6 +4,7 @@ using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.Security.Cryptography;
 using System.ServiceModel.Channels;
 using static System.Net.WebRequestMethods;
 
@@ -16,7 +17,7 @@ namespace PilotRocketChatGateway.UserContext
         Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage);
         Subscription ConvertToSubscription(DChatInfo chat);
         Message ConvertToMessage(DMessage msg);
-        Message ConvertToMessage(DMessage msg, DChat chat, Dictionary<Guid, Guid> attachs);
+        Message ConvertToMessage(DMessage msg, DChat chat);
         string ConvertToRoomId(DChat chat);
     }
     public class RCDataConverter : IRCDataConverter
@@ -44,7 +45,6 @@ namespace PilotRocketChatGateway.UserContext
         public Room ConvertToRoom(DChat chat, IList<DChatRelation> chatRelations, DMessage lastMessage)
         {
             var roomId = ConvertToRoomId(chat);
-            var attachs = AttachmentLoader.GetAttachmentsIds(chatRelations);
             return new Room()
             {
                 updatedAt = CommonDataConverter.ConvertToJSDate(lastMessage.ServerDate.Value),
@@ -52,7 +52,7 @@ namespace PilotRocketChatGateway.UserContext
                 id = roomId,
                 channelType = GetChannelType(chat),
                 creationDate = CommonDataConverter.ConvertToJSDate(chat.CreationDateUtc),
-                lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToMessage(lastMessage, chat, attachs),
+                lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToSimpleMessage(lastMessage, chat),
                 usernames = GetUserNames(chat)
             };
         }
@@ -78,10 +78,9 @@ namespace PilotRocketChatGateway.UserContext
         {
             var origin = GetOriginMessage(msg);
             var chat = _context.RemoteService.ServerApi.GetChat(origin.ChatId);
-            var attachs = AttachmentLoader.GetAttachmentsIds(chat.Relations);
-            return ConvertToMessage(origin, chat.Chat, attachs);
+            return ConvertToMessage(origin, chat.Chat);
         }
-        public Message ConvertToMessage(DMessage msg, DChat chat, Dictionary<Guid, Guid> attachs)
+        public Message ConvertToMessage(DMessage msg, DChat chat)
         {
             var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId));
             var roomId = ConvertToRoomId(chat);
@@ -95,6 +94,26 @@ namespace PilotRocketChatGateway.UserContext
                 msg = GetMessageText(msg),
                 u = user,
                 attachments = LoadAttachments(roomId, msg),
+                editedAt = editedAt,
+                editedBy = GetEditor(msg),
+                type = GetMsgType(msg),
+                role = GetRole(msg)
+            };
+        }
+        public Message ConvertToSimpleMessage(DMessage msg, DChat chat)
+        {
+            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId));
+            var roomId = ConvertToRoomId(chat);
+            var editedAt = GetEditedAt(msg);
+            return new Message()
+            {
+                id = GetMessageId(msg),
+                roomId = roomId,
+                updatedAt = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
+                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
+                msg = GetMessageText(msg),
+                u = user,
+                attachments = GetSimpleAttachments(msg),
                 editedAt = editedAt,
                 editedBy = GetEditor(msg),
                 type = GetMsgType(msg),
@@ -247,9 +266,34 @@ namespace PilotRocketChatGateway.UserContext
                 return attachments;
             }
         }
+
+        private IList<Attachment> GetSimpleAttachments(DMessage msg)
+        {
+            List<Attachment> attachments = new List<Attachment>();
+            try
+            {
+                if (msg.Type != MessageType.MessageAnswer && msg.Type != MessageType.TextMessage)
+                    return attachments;
+
+
+                var edited = GetEditMessage(msg);
+                var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
+                return attachments.Concat(GetSimpleAttachments(attachId)).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return attachments;
+            }
+        }
         private IList<Attachment> LoadAttachments(Guid? objId)
         {
             var attach = AttachmentLoader.LoadAttachment(objId);
+            return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
+        }
+        private IList<Attachment> GetSimpleAttachments(Guid? objId)
+        {
+            var attach = AttachmentLoader.GetSimpleAttachment(objId);
             return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
         }
 
