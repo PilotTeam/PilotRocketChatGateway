@@ -16,7 +16,6 @@ namespace PilotRocketChatGateway.UserContext
         IMediaAttachmentLoader AttachmentLoader { get; }
         Room ConvertToRoom(DChat chat, DMessage lastMessage);
         Subscription ConvertToSubscription(DChatInfo chat);
-        Message ConvertToMessage(DMessage msg);
         Message ConvertToMessage(DMessage msg, DChat chat);
         Message ConvertToSimpleMessage(DMessage msg, DChat chat);
         string ConvertToRoomId(DChat chat);
@@ -75,50 +74,46 @@ namespace PilotRocketChatGateway.UserContext
             };
         }
 
-        public Message ConvertToMessage(DMessage msg)
-        {
-            var origin = GetOriginMessage(msg);
-            var chat = _context.RemoteService.ServerApi.GetChat(origin.ChatId);
-            return ConvertToMessage(origin, chat.Chat);
-        }
         public Message ConvertToMessage(DMessage msg, DChat chat)
         {
-            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId));
+            var origin = GetOriginMessage(msg);
+            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(origin.CreatorId));
             var roomId = ConvertToRoomId(chat);
-            var editedAt = GetEditedAt(msg);
+            var editedAt = GetEditedAt(origin);
             return new Message()
             {
-                id = GetMessageId(msg),
+                id = GetMessageId(origin),
                 roomId = roomId,
-                updatedAt = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
-                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
-                msg = GetMessageText(msg),
+                updatedAt = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
+                creationDate = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
+                msg = GetMessageText(origin),
                 u = user,
-                attachments = LoadAttachments(roomId, msg),
+                attachments = LoadAttachments(roomId, origin),
                 editedAt = editedAt,
-                editedBy = GetEditor(msg),
-                type = GetMsgType(msg),
-                role = GetRole(msg)
+                editedBy = GetEditor(origin),
+                type = GetMsgType(origin),
+                role = GetRole(origin)
             };
         }
         public Message ConvertToSimpleMessage(DMessage msg, DChat chat)
         {
-            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(msg.CreatorId));
+            var origin = GetOriginMessage(msg);
+            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(origin.CreatorId));
             var roomId = ConvertToRoomId(chat);
-            var editedAt = GetEditedAt(msg);
+            var editedAt = GetEditedAt(origin);
             return new Message()
             {
-                id = GetMessageId(msg),
+                id = GetMessageId(origin),
                 roomId = roomId,
-                updatedAt = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
-                creationDate = CommonDataConverter.ConvertToJSDate(msg.ServerDate.Value),
-                msg = GetMessageText(msg),
+                updatedAt = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
+                creationDate = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
+                msg = GetMessageText(origin),
                 u = user,
-                attachments = GetSimpleAttachments(msg),
+                attachments = GetSimpleAttachments(origin),
                 editedAt = editedAt,
-                editedBy = GetEditor(msg),
-                type = GetMsgType(msg),
-                role = GetRole(msg)
+                editedBy = GetEditor(origin),
+                type = GetMsgType(origin),
+                role = GetRole(origin)
             };
         }
         public string ConvertToRoomId(DChat chat)

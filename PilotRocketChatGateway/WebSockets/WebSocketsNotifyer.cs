@@ -11,10 +11,10 @@ namespace PilotRocketChatGateway.WebSockets
         Dictionary<int, IWebSocksetsService> Services { get; }
         void RegisterWebSocketService(IWebSocksetsService service);
         void RemoveWebSocketService(IWebSocksetsService service);
-        void SendMessage(DMessage dMessage, bool isChatNotifiable);
+        void SendMessage(DMessage dMessage, DChatInfo chat, bool isChatNotifiable);
         void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessage(DChat chat, int personId);
-        void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify);
+        void NotifyMessageCreated(DMessage dMessage, DChatInfo chat, NotifyClientKind notify);
     }
     public class WebSocketsNotifyer : IWebSocketsNotifyer
     {
@@ -31,10 +31,10 @@ namespace PilotRocketChatGateway.WebSockets
             Services.Remove(service.GetHashCode(), out _);
         }
 
-        public void SendMessage(DMessage dMessage, bool isChatNotifiable)
+        public void SendMessage(DMessage dMessage, DChatInfo chat, bool isChatNotifiable)
         {
             foreach (var service in Services)
-                service.Value.Session.SendMessageToClient(dMessage, isChatNotifiable);
+                service.Value.Session.SendMessageToClient(dMessage, chat, isChatNotifiable);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
@@ -49,10 +49,10 @@ namespace PilotRocketChatGateway.WebSockets
                 service.Value.Session.SendTypingMessageToClient(chat, personId);
         }
 
-        public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
+        public void NotifyMessageCreated(DMessage dMessage, DChatInfo chat, NotifyClientKind notify)
         {
             foreach (var service in Services)
-                service.Value.Session.NotifyMessageCreated(dMessage, notify, false);
+                service.Value.Session.NotifyMessageCreated(dMessage, chat, notify, false);
         }
         public void Dispose()
         {

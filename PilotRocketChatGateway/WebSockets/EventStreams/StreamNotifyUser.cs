@@ -16,13 +16,13 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             _webSocket = webSocket;
             _chatService = chatService;
         }
-        public void UpdateRoomsSubscription(Guid chatId)
+        public void UpdateRoomsSubscription(DChatInfo chat)
         {
             var (eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_SUBSCRIPTIONS_CHANGED)).FirstOrDefault();
             if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
                 return;
 
-            var sub = _chatService.DataLoader.LoadRoomsSubscription(chatId.ToString());
+            var sub = _chatService.DataLoader.LoadRoomsSubscription(chat);
             var result = new
             {
                 msg = "updated",
@@ -36,13 +36,13 @@ namespace PilotRocketChatGateway.WebSockets.Subscriptions
             };
             _webSocket.SendResultAsync(result);
         }
-        public void UpdateRoom(Guid chatId)
+        public void UpdateRoom(DChat chat, DMessage dMessage)
         {
             var (eventName, id) = _events.Where(x => x.Key.Contains(Events.EVENT_ROOMS_CHANGED)).FirstOrDefault();
             if (string.IsNullOrEmpty(eventName) || string.IsNullOrEmpty(id))
                 return;
 
-            var room = _chatService.DataLoader.LoadRoom(chatId);
+            var room = _chatService.DataLoader.LoadRoom(chat, dMessage);
             var result = new
             {
                 msg = "updated",

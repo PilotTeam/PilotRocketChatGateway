@@ -38,8 +38,8 @@ namespace PilotRocketChatGateway.WebSockets
     }
     public interface IWebSocketSession : IDisposable
     {
-        void SendMessageToClient(DMessage dMessage, bool isChatNotifiable);
-        void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify, bool isChatNotifiable);
+        void SendMessageToClient(DMessage dMessage, DChatInfo chat, bool isChatNotifiable);
+        void NotifyMessageCreated(DMessage dMessage, DChatInfo chat, NotifyClientKind notify, bool isChatNotifiable);
         void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessageToClient(DChat chat, int personId);
         void Subscribe(dynamic request);
@@ -120,7 +120,7 @@ namespace PilotRocketChatGateway.WebSockets
             }
         }
 
-        public void SendMessageToClient(DMessage dMessage, bool isChatNotifiable)
+        public void SendMessageToClient(DMessage dMessage, DChatInfo chat, bool isChatNotifiable)
         {
             switch (dMessage.Type)
             {
@@ -129,35 +129,34 @@ namespace PilotRocketChatGateway.WebSockets
                 case MessageType.MessageAnswer:
                 case MessageType.ChatMembers:
                 case MessageType.ChatChanged:
-                    NotifyMessageCreated(dMessage, NotifyClientKind.FullChat, isChatNotifiable);
+                    NotifyMessageCreated(dMessage, chat, NotifyClientKind.FullChat, isChatNotifiable);
                     return;
 
                 case MessageType.ChatCreation:
-                    NotifyMessageCreated(dMessage, NotifyClientKind.Chat, isChatNotifiable);
+                    NotifyMessageCreated(dMessage, chat, NotifyClientKind.Chat, isChatNotifiable);
                     return;
 
                 default:
                     return;
             }
         }
-        public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify, bool isChatNotifiable)
+        public void NotifyMessageCreated(DMessage dMessage, DChatInfo chat, NotifyClientKind notify, bool isChatNotifiable)
         {
 
             if (notify.HasFlag(NotifyClientKind.Subscription))
-                _streamNotifyUser.UpdateRoomsSubscription(dMessage.ChatId);
+                _streamNotifyUser.UpdateRoomsSubscription(chat);
 
             if (notify.HasFlag(NotifyClientKind.Room))
-                _streamNotifyUser.UpdateRoom(dMessage.ChatId);
+                _streamNotifyUser.UpdateRoom(chat.Chat, dMessage);
 
             if (notify.HasFlag(NotifyClientKind.Message))
             {
-                var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage);
+                var rocketChatMessage = _chatService.DataLoader.RCDataConverter.ConvertToMessage(dMessage, chat.Chat);
                 _streamNotifyRoom.SendTypingMessageToClient(rocketChatMessage.roomId, dMessage.CreatorId, false);
                 _streamRoomMessages.SendMessageUpdate(rocketChatMessage);
 
                 if (dMessage.CreatorId != _currentPerson.Id && isChatNotifiable)
                 {
-                    var chat = _chatService.DataLoader.LoadChat(dMessage.ChatId);
                     _streamNotifyUser.NotifyUser(rocketChatMessage, chat.Chat.Type);
                 }
             }

@@ -24,8 +24,9 @@ namespace PilotRocketChatGateway.PilotServer
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
-                _context.WebSocketsNotifyer.SendMessage(message.Message, message.IsNotifiable);
-                await _context.PushService.SendPushAsync(message);
+                var chat = _context.RemoteService.ServerApi.GetChat(message.Message.ChatId);
+                _context.WebSocketsNotifyer.SendMessage(message.Message, chat, message.IsNotifiable);
+                await _context.PushService.SendPushAsync(message, chat.Chat);
             }
             catch (Exception e)
             {

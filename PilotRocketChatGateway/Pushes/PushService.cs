@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json.Linq;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
@@ -9,7 +10,7 @@ namespace PilotRocketChatGateway.Pushes
     public interface IPushService : IService
     {
         PushToken PushToken { get; set; }
-        Task SendPushAsync(NotifiableDMessage message);
+        Task SendPushAsync(NotifiableDMessage message, DChat chat);
     }
     public enum PushTokenTypes
     {
@@ -52,13 +53,12 @@ namespace PilotRocketChatGateway.Pushes
             }
         }
 
-        public async Task SendPushAsync(NotifiableDMessage message)
+        public async Task SendPushAsync(NotifiableDMessage message, DChat chat)
         {
             if (CanPushToUser(message) == false)
                 return;
 
-            var chat = _context.RemoteService.ServerApi.GetChat(message.Message.ChatId);
-            var options = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatOption(message.Message, chat.Chat) : GetGroupChatOption(message.Message, chat.Chat);
+            var options = chat.Type == ChatKind.Personal ? GetPersonalChatOption(message.Message, chat) : GetGroupChatOption(message.Message, chat);
             await _connector.SendPushAsync(PushToken, options, _context.UserData.Username);
         }
 
