@@ -18,6 +18,7 @@ namespace PilotRocketChatGateway.UserContext
         Subscription ConvertToSubscription(DChatInfo chat);
         Message ConvertToMessage(DMessage msg);
         Message ConvertToMessage(DMessage msg, DChat chat);
+        Message ConvertToSimpleMessage(DMessage msg, DChat chat);
         string ConvertToRoomId(DChat chat);
     }
     public class RCDataConverter : IRCDataConverter

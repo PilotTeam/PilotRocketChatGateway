@@ -11,7 +11,7 @@ namespace PilotRocketChatGateway.WebSockets
         Dictionary<int, IWebSocksetsService> Services { get; }
         void RegisterWebSocketService(IWebSocksetsService service);
         void RemoveWebSocketService(IWebSocksetsService service);
-        void SendMessage(DMessage dMessage);
+        void SendMessage(DMessage dMessage, bool isChatNotifiable);
         void SendUserStatusChange(int person, UserStatuses status);
         void SendTypingMessage(DChat chat, int personId);
         void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify);
@@ -31,10 +31,10 @@ namespace PilotRocketChatGateway.WebSockets
             Services.Remove(service.GetHashCode(), out _);
         }
 
-        public void SendMessage(DMessage dMessage)
+        public void SendMessage(DMessage dMessage, bool isChatNotifiable)
         {
             foreach (var service in Services)
-                service.Value.Session.SendMessageToClient(dMessage);
+                service.Value.Session.SendMessageToClient(dMessage, isChatNotifiable);
         }
 
         public void SendUserStatusChange(int person, UserStatuses status)
@@ -52,7 +52,7 @@ namespace PilotRocketChatGateway.WebSockets
         public void NotifyMessageCreated(DMessage dMessage, NotifyClientKind notify)
         {
             foreach (var service in Services)
-                service.Value.Session.NotifyMessageCreated(dMessage, notify);
+                service.Value.Session.NotifyMessageCreated(dMessage, notify, false);
         }
         public void Dispose()
         {

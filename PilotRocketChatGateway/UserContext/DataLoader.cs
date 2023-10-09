@@ -21,7 +21,6 @@ namespace PilotRocketChatGateway.UserContext
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
-        bool IsChatNotifiable(Guid chatId);
         DChatInfo LoadChat(Guid chatId);
         INPerson LoadPerson(int userId);
     }
