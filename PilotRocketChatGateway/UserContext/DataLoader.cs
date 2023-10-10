@@ -9,9 +9,9 @@ namespace PilotRocketChatGateway.UserContext
     public interface IDataLoader
     {
         IRCDataConverter RCDataConverter { get; }
-        Room LoadRoom(Guid id);
+        Room LoadRoom(DChat chat, DMessage lastMessage);
         IList<Room> LoadRooms();
-        Subscription LoadRoomsSubscription(string roomId);
+        Subscription LoadRoomsSubscription(DChatInfo chat);
         IList<Subscription> LoadRoomsSubscriptions();
         Room LoadPersonalRoom(string username);
         IList<Message> LoadMessages(string roomId, int count, string upperBound);
@@ -21,7 +21,6 @@ namespace PilotRocketChatGateway.UserContext
         User LoadUser(int usderId);
         IList<User> LoadUsers(int count);
         IList<User> LoadMembers(string roomId);
-        bool IsChatNotifiable(Guid chatId);
         DChatInfo LoadChat(Guid chatId);
         INPerson LoadPerson(int userId);
     }
@@ -41,12 +40,9 @@ namespace PilotRocketChatGateway.UserContext
             _logger = logger;
         }
         public IRCDataConverter RCDataConverter { get; }
-        public Room LoadRoom(Guid id)
+        public Room LoadRoom(DChat chat, DMessage lastMessage)
         {
-            var roomId = _commonConverter.ConvertToChatId(id.ToString());
-            var chat = _context.RemoteService.ServerApi.GetChat(roomId);
-            var lastMsg = _context.RemoteService.ServerApi.GetMessage(chat.LastMessage.Id);
-            return RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, lastMsg);
+            return RCDataConverter.ConvertToRoom(chat, lastMessage);
         }
         public DChatInfo LoadChat(Guid chatId)
         {
@@ -62,7 +58,7 @@ namespace PilotRocketChatGateway.UserContext
             {
                 try
                 {
-                    var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+                    var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.LastMessage);
                     result.Add(rcChat);
                 }      
                 catch(Exception e)
@@ -72,10 +68,8 @@ namespace PilotRocketChatGateway.UserContext
             }
             return result;
         }
-        public Subscription LoadRoomsSubscription(string roomId)
+        public Subscription LoadRoomsSubscription(DChatInfo chat)
         {
-            var id = _commonConverter.ConvertToChatId(roomId);
-            var chat = _context.RemoteService.ServerApi.GetChat(id);
             return RCDataConverter.ConvertToSubscription(chat);
         }
         public IList<Subscription> LoadRoomsSubscriptions()
@@ -100,7 +94,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             var person = _context.RemoteService.ServerApi.GetPerson(username);
             var chat = _context.RemoteService.ServerApi.GetPersonalChat(person.Id);
-            return chat.Chat.Id == Guid.Empty ? null : RCDataConverter.ConvertToRoom(chat.Chat, chat.Relations, chat.LastMessage);
+            return chat.Chat.Id == Guid.Empty ? null : RCDataConverter.ConvertToRoom(chat.Chat, chat.LastMessage);
         }
         public IList<Message> LoadMessages(string roomId, int count, string upperBound)
         {
@@ -121,15 +115,17 @@ namespace PilotRocketChatGateway.UserContext
                 _context.RemoteService.ServerApi.GetMessage(msgId) :
                 _context.RemoteService.ServerApi.GetMessage(Guid.Parse(msgId));
 
-            return RCDataConverter.ConvertToMessage(msg);
+            var chat = _context.RemoteService.ServerApi.GetChat(msg.ChatId);
+            return RCDataConverter.ConvertToMessage(msg, chat.Chat);
         }
 
         public IList<Message> LoadSurroundingMessages(string rcMsgId, string roomId, int count)
         {
             Guid msgId = _commonConverter.ConvertToMsgId(rcMsgId);
             Guid chatId = _commonConverter.ConvertToChatId(roomId);
+            var chat = _context.RemoteService.ServerApi.GetChat(chatId);
             var messages = _loader.FindMessage(msgId, chatId, count);
-            return messages.Select(x => RCDataConverter.ConvertToMessage(x)).ToList();
+            return messages.Select(x => RCDataConverter.ConvertToMessage(x, chat.Chat)).ToList();
         }
 
         public User LoadUser(int userId)
@@ -193,14 +189,12 @@ namespace PilotRocketChatGateway.UserContext
                 return new List<Message>();
 
             var chat = _context.RemoteService.ServerApi.GetChat(roomId);
-            var attachs = GetAttachmentsIds(chat.Relations);
-
             var result = new List<Message>();
             foreach (var msg in msgs)
             {
                 try
                 {
-                    var rcMsg = RCDataConverter.ConvertToMessage(msg, chat.Chat, attachs);
+                    var rcMsg = RCDataConverter.ConvertToMessage(msg, chat.Chat);
                     result.Add(rcMsg);
                 }
                 catch (Exception e)

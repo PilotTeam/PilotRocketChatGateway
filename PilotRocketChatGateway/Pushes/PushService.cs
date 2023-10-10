@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json.Linq;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
@@ -9,7 +10,7 @@ namespace PilotRocketChatGateway.Pushes
     public interface IPushService : IService
     {
         PushToken PushToken { get; set; }
-        Task SendPushAsync(DMessage message);
+        Task SendPushAsync(NotifiableDMessage message, DChat chat);
     }
     public enum PushTokenTypes
     {
@@ -52,26 +53,25 @@ namespace PilotRocketChatGateway.Pushes
             }
         }
 
-        public async Task SendPushAsync(DMessage message)
+        public async Task SendPushAsync(NotifiableDMessage message, DChat chat)
         {
             if (CanPushToUser(message) == false)
                 return;
 
-            var chat = _context.RemoteService.ServerApi.GetChat(message.ChatId);
-            var options = chat.Chat.Type == ChatKind.Personal ? GetPersonalChatOption(message) : GetGroupChatOption(message, chat.Chat);
+            var options = chat.Type == ChatKind.Personal ? GetPersonalChatOption(message.Message, chat) : GetGroupChatOption(message.Message, chat);
             await _connector.SendPushAsync(PushToken, options, _context.UserData.Username);
         }
 
-        private bool CanPushToUser(DMessage message)
+        private bool CanPushToUser(NotifiableDMessage message)
         {
             if (_pushToken == null)
                 return false;
 
             var currentPersonId = _context.RemoteService.ServerApi.CurrentPerson.Id;
-            if (message.CreatorId == currentPersonId)
+            if (message.Message.CreatorId == currentPersonId)
                 return false;
 
-            if (message.Type != MessageType.TextMessage && message.Type != MessageType.MessageAnswer)
+            if (message.Message.Type != MessageType.TextMessage && message.Message.Type != MessageType.MessageAnswer)
                 return false;
 
             if (_context.WebSocketsNotifyer.Services.Any(x => x.Value.RCPresenceStatus == WebSockets.UserStatuses.online))
@@ -79,7 +79,7 @@ namespace PilotRocketChatGateway.Pushes
                 return false;
             }
 
-            if (_context.ChatService.DataLoader.IsChatNotifiable(message.ChatId) == false)
+            if (!message.IsNotifiable)
                 return false;
 
             return true;
@@ -87,7 +87,7 @@ namespace PilotRocketChatGateway.Pushes
 
         private PushOptions GetGroupChatOption(DMessage message, DChat chat)
         {
-            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToMessage(message);
+            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToSimpleMessage(message, chat);
             return new PushOptions
             {
                 createdAt = rcMesssage.creationDate,
@@ -103,9 +103,9 @@ namespace PilotRocketChatGateway.Pushes
             };
         }
 
-        private PushOptions GetPersonalChatOption(DMessage message)
+        private PushOptions GetPersonalChatOption(DMessage message, DChat chat)
         {
-            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToMessage(message);
+            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToSimpleMessage(message, chat);
             return new PushOptions
             {
                 createdAt = rcMesssage.creationDate,

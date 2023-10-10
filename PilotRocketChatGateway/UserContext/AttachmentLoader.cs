@@ -12,6 +12,7 @@ namespace PilotRocketChatGateway.UserContext
     {
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
         Attachment LoadAttachment(Guid? objId);
+        Attachment GetSimpleAttachment(Guid? objId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
     public class MediaAttachmentLoader : IMediaAttachmentLoader
@@ -60,6 +61,21 @@ namespace PilotRocketChatGateway.UserContext
             {
                 title = GetAttachmentTitle(obj, attach),
                 title_link = downloadUrl,
+                type = "file",
+            };
+        }
+
+        public Attachment GetSimpleAttachment(Guid? objId)
+        {
+            if (objId == null || objId == Guid.Empty)
+                return null;
+
+
+            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
+            return new Attachment()
+            {
+                title_link = downloadUrl,
+                image_url = downloadUrl,
                 type = "file",
             };
         }
