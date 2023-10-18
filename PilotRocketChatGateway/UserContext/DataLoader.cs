@@ -10,9 +10,9 @@ namespace PilotRocketChatGateway.UserContext
     {
         IRCDataConverter RCDataConverter { get; }
         Room LoadRoom(DChat chat, DMessage lastMessage);
-        IList<Room> LoadRooms();
+        IList<Room> LoadRooms(string updatedSince);
         Subscription LoadRoomsSubscription(DChatInfo chat);
-        IList<Subscription> LoadRoomsSubscriptions();
+        IList<Subscription> LoadRoomsSubscriptions(string updatedSince);
         Room LoadPersonalRoom(string username);
         IList<Message> LoadMessages(string roomId, int count, string upperBound);
         IList<Message> LoadMessages(string roomId, string lowerBound);
@@ -49,9 +49,10 @@ namespace PilotRocketChatGateway.UserContext
             return _context.RemoteService.ServerApi.GetChat(chatId);
         }
 
-        public IList<Room> LoadRooms()
+        public IList<Room> LoadRooms(string updatedSince)
         {
-            var chats = _context.RemoteService.ServerApi.GetChats();
+            var lastUpdated = string.IsNullOrEmpty(updatedSince) ? DateTime.MinValue : _commonConverter.ConvertFromJSDate(updatedSince);
+            var chats = _context.RemoteService.ServerApi.GetChats(lastUpdated);
             var result = new List<Room>();
 
             foreach(var chat in chats)
@@ -72,9 +73,10 @@ namespace PilotRocketChatGateway.UserContext
         {
             return RCDataConverter.ConvertToSubscription(chat);
         }
-        public IList<Subscription> LoadRoomsSubscriptions()
+        public IList<Subscription> LoadRoomsSubscriptions(string updatedSince)
         {
-            var chats = _context.RemoteService.ServerApi.GetChats();
+            var lastUpdated = string.IsNullOrEmpty(updatedSince) ? DateTime.MinValue : _commonConverter.ConvertFromJSDate(updatedSince);
+            var chats = _context.RemoteService.ServerApi.GetChats(lastUpdated);
             var result = new List<Subscription>();
             foreach (var chat in chats)
             {

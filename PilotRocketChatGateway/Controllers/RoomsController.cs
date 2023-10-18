@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PilotRocketChatGateway.Authentication;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
+using System.Web;
 
 namespace PilotRocketChatGateway.Controllers
 {
@@ -23,8 +24,12 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/rooms.get")]
         public string Get()
         {
+            string updatedSince;
+
+            updatedSince = GetParam(nameof(updatedSince));
+
             var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var rooms = context.ChatService.DataLoader.LoadRooms();
+            var rooms = context.ChatService.DataLoader.LoadRooms(updatedSince);
 
             var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
             return JsonConvert.SerializeObject(result);
@@ -62,6 +67,11 @@ namespace PilotRocketChatGateway.Controllers
             var result = new { success = true };
             return JsonConvert.SerializeObject(result);
 
+        }
+
+        private string GetParam(string query)
+        {
+            return HttpUtility.ParseQueryString(HttpContext.Request.QueryString.ToString()).Get(query) ?? string.Empty;
         }
     }
 }

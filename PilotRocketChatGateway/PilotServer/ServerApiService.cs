@@ -11,7 +11,7 @@ namespace PilotRocketChatGateway.PilotServer
         INPerson GetPerson(int id);
         INPerson GetPerson(string login);
         bool IsOnline(int person);
-        List<DChatInfo> GetChats();
+        List<DChatInfo> GetChats(DateTime lastUpdated);
         DChatInfo GetChat(Guid id);
         DObject GetObject(Guid id);
         DChatInfo GetPersonalChat(int personId);
@@ -75,9 +75,9 @@ namespace PilotRocketChatGateway.PilotServer
             return _messagesApi.GetPersonalChat(personId);
         }
 
-        public List<DChatInfo> GetChats()
+        public List<DChatInfo> GetChats(DateTime lastUpdated)
         {
-            return _messagesApi.GetChats(_currentPerson.Id, DateTime.MinValue, DateTime.MaxValue, 50, false).ToList();
+            return _messagesApi.GetChats(_currentPerson.Id, lastUpdated, DateTime.MaxValue, 50, false).ToList();
         }
 
         public DDatabaseInfo GetDatabaseInfo()
