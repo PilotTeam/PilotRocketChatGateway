@@ -21,7 +21,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public async void NotifyMessageCreated(NotifiableDMessage message)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)}. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)} in {_context.RemoteService.ServerApi.CurrentPerson.Login} context. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
                 var chat = _context.RemoteService.ServerApi.GetChat(message.Message.ChatId);
