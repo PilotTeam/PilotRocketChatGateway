@@ -51,31 +51,42 @@ namespace PilotRocketChatGateway.UserContext
 
         public IList<Room> LoadRooms(string updatedSince)
         {
-            var lastUpdated = string.IsNullOrEmpty(updatedSince) ? DateTime.MinValue : _commonConverter.ConvertFromJSDate(updatedSince);
+            DateTime lastUpdated = GetChatListLastUpdated(updatedSince);
             var chats = _context.RemoteService.ServerApi.GetChats(lastUpdated);
             var result = new List<Room>();
 
-            foreach(var chat in chats)
+            foreach (var chat in chats)
             {
                 try
                 {
                     var rcChat = RCDataConverter.ConvertToRoom(chat.Chat, chat.LastMessage);
                     result.Add(rcChat);
-                }      
-                catch(Exception e)
+                }
+                catch (Exception e)
                 {
                     _logger.LogError(e.Message);
                 }
             }
             return result;
         }
+
+        private DateTime GetChatListLastUpdated(string updatedSince)
+        {
+            var date = string.IsNullOrEmpty(updatedSince) ? DateTime.MinValue : _commonConverter.ConvertFromJSDate(updatedSince);
+
+            if (date == DateTime.MinValue)
+                return date;
+
+            return date.AddDays(-1);
+        }
+
         public Subscription LoadRoomsSubscription(DChatInfo chat)
         {
             return RCDataConverter.ConvertToSubscription(chat);
         }
         public IList<Subscription> LoadRoomsSubscriptions(string updatedSince)
         {
-            var lastUpdated = string.IsNullOrEmpty(updatedSince) ? DateTime.MinValue : _commonConverter.ConvertFromJSDate(updatedSince);
+            var lastUpdated = GetChatListLastUpdated(updatedSince);
             var chats = _context.RemoteService.ServerApi.GetChats(lastUpdated);
             var result = new List<Subscription>();
             foreach (var chat in chats)
