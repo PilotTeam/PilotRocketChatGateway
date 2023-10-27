@@ -6,7 +6,7 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class InfoController : ControllerBase
     {
-        public const string SERVER_VERSION = "5.0"; 
+        public const string SERVER_VERSION = "6.5"; 
         [HttpGet]
         public Info Get()
         {
