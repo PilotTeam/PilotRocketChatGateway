@@ -19,10 +19,21 @@ namespace PilotRocketChatGateway.Controllers
         [HttpGet("api/v1/settings.public")]
         public string Public(string query)
         {
-            var settings = JsonConvert.DeserializeObject<SettingsRequest>(query);
+            try
+            {
+                var settings = JsonConvert.DeserializeObject<SettingsRequest>(query);
+                var serverSettings = GetServerSetting(settings);
+                return JsonConvert.SerializeObject(serverSettings);
+            }
+            catch(Exception)
+            {
+                var settings = new SettingsListRequest()
+                {
+                    settings = new List<string>()
+                };
+                return JsonConvert.SerializeObject(settings);
+            }
 
-            var serverSettings = GetServerSetting(settings);
-            return JsonConvert.SerializeObject(serverSettings);
         }
 
         private ServerSettings GetServerSetting(SettingsRequest settingsRequest)
