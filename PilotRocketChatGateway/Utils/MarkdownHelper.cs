@@ -5,7 +5,7 @@ namespace PilotRocketChatGateway.Utils
     public class MarkdownHelper
     {
         public static readonly Regex MarkdownRegex = new Regex(@"(\[([^\]\(\)\r\n]+\])\(([^\[\]\)\n\r]+\)))", RegexOptions.Compiled);
-        public static readonly Regex UriRegex = new Regex(@"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)", RegexOptions.Compiled);
+        public static readonly Regex UriRegex = new Regex(@"((http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#$]*[\w\-\@?^=%&amp;/~\+#$])?)", RegexOptions.Compiled);
         public static (Uri, string) CutHyperLink(string str)
         {
             var (flags, text) = GetFlags(str, MarkdownRegex);
