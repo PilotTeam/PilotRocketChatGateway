@@ -22,6 +22,8 @@ namespace PilotRocketChatGateway.PilotServer
         private ServerApiService _serverApi;
         private IFileFileManager _fileManager;
         private bool _disposed = false;
+        private object _lock = new object();
+
 
         public RemoteService(IContext context, IConnectionService connector, ILogger logger)
         {
@@ -40,14 +42,21 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void ConnectionLost(Exception ex = null)
         {
-            if (_disposed)
+            if (_disposed || !IsConnected)
                 return;
+
+            lock (_lock)
+            {
+                if (_disposed || !IsConnected)
+                    return;
+
+                IsConnected = false;
+            }
 
             _client?.Dispose();
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
             _logger.LogError(0, ex, ex.Message);
 
-            IsConnected = false;
             TryConnect();
         }
 
@@ -95,15 +104,21 @@ namespace PilotRocketChatGateway.PilotServer
             _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo, changeSender);
             serverCallback.Subscribe(_serverApi);
 
-            IsConnected = true;
+            lock (_lock)
+            {
+                IsConnected = true;
+            }
             _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");
         }
 
         public void Dispose()
         {
-            _disposed = true;
-            _client.Disconnect();
-            _client?.Dispose();
+            lock (_lock)
+            {
+                _disposed = true;
+                _client.Disconnect();
+                _client?.Dispose();
+            }
         }
     }
 }

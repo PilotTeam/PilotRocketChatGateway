@@ -9,7 +9,6 @@ namespace PilotRocketChatGateway.PilotServer
     {
         private readonly ILogger _logger;
         private readonly IContext _context;
-        private Guid _lastProcessedMsgId;
 
         public MessagesCallback(IContext context, ILogger logger)
         {
@@ -22,13 +21,6 @@ namespace PilotRocketChatGateway.PilotServer
 
         public async void NotifyMessageCreated(NotifiableDMessage message)
         {
-            if (_lastProcessedMsgId == message.Message.Id)
-            {
-                _logger.Log(LogLevel.Information, $"Duplicate notification user: {_context.RemoteService.ServerApi.CurrentPerson.Login} msgId: {message.Message.Id}  chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
-                return;
-            }
-
-            _lastProcessedMsgId = message.Message.Id;
             _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyMessageCreated)} in {_context.RemoteService.ServerApi.CurrentPerson.Login} context. creatorId: {message.Message.CreatorId} chatId: {message.Message.ChatId} messageType: {message.Message.Type}");
             try
             {
