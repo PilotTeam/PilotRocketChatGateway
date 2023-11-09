@@ -36,7 +36,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyOffline(int personId)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)}. personId: {personId}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOffline)} in {_context.RemoteService.ServerApi.CurrentPerson.Login} context. personId: {personId}");
             try
             {
                 _context.WebSocketsNotifyer.SendUserStatusChange(personId, UserStatuses.offline);
@@ -49,7 +49,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyOnline(int personId)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)}. personId: {personId}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyOnline)} in {_context.RemoteService.ServerApi.CurrentPerson.Login} context. personId: {personId}");
             try
             {
                 _context.WebSocketsNotifyer.SendUserStatusChange(personId, UserStatuses.online);
@@ -62,7 +62,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void NotifyTypingMessage(Guid chatId, int personId)
         {
-            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyTypingMessage)}. chatId: {chatId}, personId: {personId}");
+            _logger.Log(LogLevel.Information, $"Call on {nameof(NotifyTypingMessage)} in {_context.RemoteService.ServerApi.CurrentPerson.Login} context. chatId: {chatId}, personId: {personId}");
             try
             {
                 var chat = _context.RemoteService.ServerApi.GetChat(chatId);
