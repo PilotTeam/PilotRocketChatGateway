@@ -12,8 +12,8 @@ namespace PilotRocketChatGateway.UserContext
         IWebSocketsNotifyer WebSocketsNotifyer { get; }
         void SetService(IService service);
         UserData UserData { get; }
-
         bool IsDisposed { get; }
+        Guid LastSentMsg { get; set; }
     }
     public class Context : IContext
     {
@@ -28,7 +28,8 @@ namespace PilotRocketChatGateway.UserContext
             UserData = credentials;
         }
         public UserData UserData { get; }
-        
+        public Guid LastSentMsg { get; set; }
+
         public IRemoteService RemoteService
         {
 
