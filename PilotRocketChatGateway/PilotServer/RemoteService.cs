@@ -61,7 +61,6 @@ namespace PilotRocketChatGateway.PilotServer
 
         private void TryConnect()
         {
-            int tryCount = 0;
             while (!IsConnected)
             {
                 try
@@ -74,12 +73,8 @@ namespace PilotRocketChatGateway.PilotServer
                 }
                 catch (Exception e)
                 {
-                    if (tryCount < 10)
-                    {
-                        _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
-                        _logger.LogError(e.Message);
-                        tryCount++;
-                    }
+                    _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
+                    _logger.LogError(e.Message);
                     Thread.Sleep(RECONNECT_TIME_OUT);
                 }
             }
