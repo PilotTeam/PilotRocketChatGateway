@@ -53,7 +53,6 @@ namespace PilotRocketChatGateway.PilotServer
                 IsConnected = false;
             }
 
-            _client?.Dispose();
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
             _logger.LogError(0, ex, ex.Message);
 
@@ -62,7 +61,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         private void TryConnect()
         {
-            bool firstTry = true;
+            int tryCount = 0;
             while (!IsConnected)
             {
                 try
@@ -70,14 +69,16 @@ namespace PilotRocketChatGateway.PilotServer
                     if (_disposed)
                         return;
 
+                    _client?.Dispose();
                     Connect();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    if (firstTry)
+                    if (tryCount < 10)
                     {
                         _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
-                        firstTry = false;
+                        _logger.LogError(e.Message);
+                        tryCount++;
                     }
                     Thread.Sleep(RECONNECT_TIME_OUT);
                 }
