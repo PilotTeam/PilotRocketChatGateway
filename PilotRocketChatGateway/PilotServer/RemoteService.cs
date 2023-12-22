@@ -42,6 +42,8 @@ namespace PilotRocketChatGateway.PilotServer
 
         public void ConnectionLost(Exception ex = null)
         {
+            _logger.Log(LogLevel.Information, $"Notification on ConnectionLost. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}. Erorr: {ex?.Message}");
+
             if (_disposed || !IsConnected)
                 return;
 
@@ -54,7 +56,7 @@ namespace PilotRocketChatGateway.PilotServer
             }
 
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
-            _logger.LogError(0, ex, ex.Message);
+            _logger.LogError(0, ex, ex?.Message);
 
             TryConnect();
         }
