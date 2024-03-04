@@ -123,7 +123,7 @@ namespace PilotRocketChatGateway.PilotServer
         public async Task<Guid> CreateAttachmentObjectAsync(string fileName, byte[] data)
         {
             var change = _attachmentHelper.CreateChangeWithAttachmentObject(fileName, data);
-            var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change }, change.GetNewFiles());
+            var changeset = new DChangesetData(Guid.NewGuid(), DateTime.UtcNow, CurrentPerson.Id, string.Empty, new List<DChange> { change });
             await _changeSender.ChangeAsync(changeset);
             return change.New.Id;
         }
