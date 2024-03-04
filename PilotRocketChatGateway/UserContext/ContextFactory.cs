@@ -8,15 +8,16 @@ namespace PilotRocketChatGateway.UserContext
 {
     public interface IContextFactory
     {
-        IContext CreateContext(UserData credentials, IConnectionService connector, ILogger logger, IPushGatewayConnector pushConnector);
+        Task<IContext> CreateContextAsync(UserData credentials, IConnectionService connector, ILogger logger, IPushGatewayConnector pushConnector);
     }
 
     public class ContextFactory : IContextFactory
     {
-        public IContext CreateContext(UserData credentials, IConnectionService connector, ILogger logger, IPushGatewayConnector pushConnector)
+        public async Task<IContext> CreateContextAsync(UserData credentials, IConnectionService connector, ILogger logger, IPushGatewayConnector pushConnector)
         {
             var context = new Context(credentials);
             var remoteSerive = new RemoteService(context, connector, logger);
+            await remoteSerive.ConnectAsync();
 
             var commonConverter = new CommonDataConverter(context);
             var attachLoader = new MediaAttachmentLoader(commonConverter, context);

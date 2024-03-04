@@ -10,7 +10,7 @@ namespace PilotRocketChatGateway.UserContext
     public interface IContextsBank
     {
         IContext GetContext(string actor);
-        void CreateContext(UserData credentials);
+        Task CreateContextAsync(UserData credentials);
         bool RemoveContext(string actor);
     }
 
@@ -30,14 +30,17 @@ namespace PilotRocketChatGateway.UserContext
             _pushConnector = pushConnector;
         }
 
-        public void CreateContext(UserData credentials)
+        public async Task CreateContextAsync(UserData credentials)
         {
             lock (_contexts)
             {
                 if (_contexts.TryGetValue(credentials.Username, out var old))
-                    old?.Dispose();                
-
-                var context = _contextFactory.CreateContext(credentials, _connectionService, _logger, _pushConnector);
+                    old?.Dispose();
+            }
+        
+            var context = await _contextFactory.CreateContextAsync(credentials, _connectionService, _logger, _pushConnector);
+            lock (_contexts)
+            { 
                 _contexts[credentials.Username] = context;
             }
         }

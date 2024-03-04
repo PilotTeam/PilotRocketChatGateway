@@ -1,5 +1,5 @@
-﻿using Ascon.Pilot.DataClasses;
-using Ascon.Pilot.Server.Api;
+﻿using Ascon.Pilot.Server.Api;
+using Ascon.Pilot.Transport;
 using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.UserContext;
 
@@ -30,8 +30,6 @@ namespace PilotRocketChatGateway.PilotServer
             _logger = logger;
             _context = context;
             _connector = connector;
-
-            Connect();
         }
 
         public bool IsConnected { get; private set; }
@@ -58,33 +56,13 @@ namespace PilotRocketChatGateway.PilotServer
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
             _logger.LogError(0, ex, ex?.Message);
 
-            TryConnect();
+            _ = TryConnectAsync();
         }
 
-        private void TryConnect()
+        
+        public async Task ConnectAsync()
         {
-            while (!IsConnected)
-            {
-                try
-                {
-                    if (_disposed)
-                        return;
-
-                    _client?.Dispose();
-                    Connect();
-                }
-                catch (Exception e)
-                {
-                    _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
-                    _logger.LogError(e.Message);
-                    Thread.Sleep(RECONNECT_TIME_OUT);
-                }
-            }
-        }
-
-        private void Connect()
-        {
-            _client = _connector.Connect(_context.UserData);
+            _client = await _connector.ConnectAsync(_context.UserData);
 
             var fileLoader = new FileLoader(_client.GetFileArchiveApi(), new FileExtensionContentTypeProvider());
             _client.SetConnectionLostListener(this);
@@ -108,6 +86,27 @@ namespace PilotRocketChatGateway.PilotServer
             }
             _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");
         }
+        private async Task TryConnectAsync()
+        {
+            while (!IsConnected)
+            {
+                try
+                {
+                    if (_disposed)
+                        return;
+
+                    _client?.Dispose();
+                    await ConnectAsync();
+                }
+                catch (Exception e)
+                {
+                    _logger.Log(LogLevel.Information, $"failed to connect to the server. person: {ServerApi.CurrentPerson.Login}");
+                    _logger.LogError(e.Message);
+                    Thread.Sleep(RECONNECT_TIME_OUT);
+                }
+            }
+        }
+
 
         public void Dispose()
         {

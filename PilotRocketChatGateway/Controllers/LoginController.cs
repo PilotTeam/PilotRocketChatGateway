@@ -35,12 +35,12 @@ namespace PilotRocketChatGateway.Controllers
         }
 
         [HttpPost]
-        public string Post(object request)
+        public async Task<string> Post(object request)
         {
             try
             {
                 var user = JsonConvert.DeserializeObject<LoginRequest>(request.ToString());
-                var response = Login(user);
+                var response = await LoginAsync(user);
                 return JsonConvert.SerializeObject(response);
             }
             catch(PilotSecurityAccessDeniedException e) //if login or password is incorrect
@@ -80,10 +80,10 @@ namespace PilotRocketChatGateway.Controllers
             return error;
         }
 
-        private HttpLoginResponse Login(LoginRequest? user)
+        private async Task<HttpLoginResponse> LoginAsync(LoginRequest? user)
         {
             if (user.token == null)
-                return CreateNewSession(user);
+                return await CreateNewSessionAsync(user);
 
             return ContinueSession(user);
         }
@@ -95,16 +95,16 @@ namespace PilotRocketChatGateway.Controllers
             return GetLoginResponse(context.RemoteService.ServerApi, context.ChatService, user.token);
         }
 
-        private IContext CreateContext(UserData credentials)
+        private async Task<IContext> CreateContextAsync(UserData credentials)
         {
-            _contextsBank.CreateContext(credentials);
+            await _contextsBank.CreateContextAsync(credentials);
             return  _contextsBank.GetContext(credentials.Username);
         }
 
-        private HttpLoginResponse CreateNewSession(LoginRequest? user)
+        private async Task<HttpLoginResponse> CreateNewSessionAsync(LoginRequest? user)
         {
             var credentials = UserData.GetConnectionCredentials(user.user, user.password);
-            var context = CreateContext(credentials);
+            var context = await CreateContextAsync(credentials);
             var tokenString = CreateToken(user);
 
             _logger.Log(LogLevel.Information, $"Logged in successfully successfully. Username: {user.user}.");

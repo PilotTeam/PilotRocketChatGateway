@@ -95,5 +95,9 @@ namespace PilotRocketChatGateway.PilotServer
         public void NotifySearchResult(DSearchResult searchResult)
         {
         }
+
+        public void NotifyAccessChangeset(Guid objectId)
+        {
+        }
     }
 }
