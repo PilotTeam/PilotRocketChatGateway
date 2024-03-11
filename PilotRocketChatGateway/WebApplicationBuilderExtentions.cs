@@ -8,7 +8,7 @@ namespace PilotRocketChatGateway
 {
     public static class WebApplicationBuilderExtentions
     {
-        public static async Task RegisterInCloudAsync(this WebApplicationBuilder builder, IWorkspace workspace)
+        public static async Task RegisterInCloudAsync(this WebApplicationBuilder builder, IWorkspace workspace, IWebHostEnvironment env)
         {
             if (workspace.Data != null)
                 return;
@@ -16,7 +16,7 @@ namespace PilotRocketChatGateway
             var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
             if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
             {
-                var cloudConnector = new CloudConnector(new HttpRequestHelper());
+                var cloudConnector = new CloudConnector(new HttpRequestHelper(env));
                 var result = await cloudConnector.RegisterAsync(cloudSettings, Log.Logger);
                 if (result != null)
                     workspace.SaveData(result);

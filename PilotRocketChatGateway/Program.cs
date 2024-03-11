@@ -11,6 +11,7 @@ using Serilog.Events;
 using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.Pushes;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.CompilerServices;
 
 AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 var builder = WebApplication.CreateBuilder(args);
@@ -62,7 +63,6 @@ app.UseMiddleware<RequestHandlerMiddleware>();
 
 app.MapControllers();
 
-builder.RegisterInCloudAsync(app.Services.GetService<IWorkspace>());
-
+builder.RegisterInCloudAsync(app.Services.GetService<IWorkspace>(), app.Environment);
 
 app.Run();

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Newtonsoft.Json;
+using System.Net;
 using System.Text;
 
 namespace PilotRocketChatGateway.Utils
@@ -11,9 +12,17 @@ namespace PilotRocketChatGateway.Utils
 
     public class HttpRequestHelper : IHttpRequestHelper
     {
+        private const string PROXY_FILE_NAME = "proxy.json";
+
+        private ProxySettings _proxySettings;
+        public HttpRequestHelper(IWebHostEnvironment env)
+        {
+            SetUpProxy(env);
+        }
+
         public async Task<(string, HttpStatusCode)> PostJsonAsync(string requestUri, string json, string accessToken)
         {
-            var client = CreateHttpClient(accessToken);
+            var client = InitializeHttpClient(accessToken);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
                 HttpResponseMessage response = await client.PostAsync(requestUri, content);
@@ -23,7 +32,7 @@ namespace PilotRocketChatGateway.Utils
 
         public async Task<(string, HttpStatusCode)> PostEncodedContentAsync(string requestUri, IEnumerable<KeyValuePair<string, string>> payload)
         {
-            var client = CreateHttpClient();
+            var client = InitializeHttpClient();
 
             using (var content = new FormUrlEncodedContent(payload))
             {
@@ -35,9 +44,9 @@ namespace PilotRocketChatGateway.Utils
             }
         }
 
-        private static HttpClient CreateHttpClient(string accessToken = null)
+        private HttpClient InitializeHttpClient(string accessToken = null)
         {
-            HttpClient httpClient = new HttpClient();
+            var httpClient = CreateHttpClient();
 
             if (accessToken != null)
                 httpClient.DefaultRequestHeaders.Add("Authorization", accessToken);
@@ -45,6 +54,36 @@ namespace PilotRocketChatGateway.Utils
             return httpClient;
         }
 
+        private HttpClient CreateHttpClient()
+        {
+            if (_proxySettings == null)
+                return new HttpClient();
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_proxySettings.address),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(_proxySettings.login, _proxySettings.password)
+            };
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+            };
+
+            return new HttpClient(httpClientHandler);
+            
+        }
+
+        private void SetUpProxy(IHostEnvironment env)
+        {
+            var proxyfile = Path.Combine(env.ContentRootPath, PROXY_FILE_NAME);
+            if (File.Exists(proxyfile) == false)
+                return;
+
+            var json = File.ReadAllText(proxyfile);
+            _proxySettings = JsonConvert.DeserializeObject<ProxySettings>(json);
+        }
 
     }
 }

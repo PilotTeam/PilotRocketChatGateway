@@ -78,9 +78,16 @@ namespace PilotRocketChatGateway
         public string settingId { get; init; }
         public int sorter { get; init; }
     }
+
+    public record ProxySettings
+    {
+        public string address { get; init; }
+        public string login { get; init; }
+        public string password { get; init; }
+    }
     #endregion settings
     #region websocket
-    public class User
+        public class User
     {
         [JsonProperty("_id")]
         public string id;
