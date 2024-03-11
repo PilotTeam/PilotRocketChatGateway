@@ -39,6 +39,7 @@ builder.Services.AddSingleton<ICloudsAuthorizeQueue, CloudsAuthorizeQueue>();
 builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
 builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
+builder.Services.AddSingleton<IPollRegistration, PollRegistration>();
 
 
 builder.AddAuthentication();

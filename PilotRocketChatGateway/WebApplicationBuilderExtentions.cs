@@ -14,9 +14,10 @@ namespace PilotRocketChatGateway
                 return;
 
             var cloudSettings = builder.Configuration.GetSection("RocketChatCloud").Get<RocketChatCloudSettings>();
-            if (string.IsNullOrEmpty(cloudSettings.RegistrationToken) == false)
+            if (string.IsNullOrEmpty(cloudSettings.WorkspaceEmail) == false)
             {
-                var cloudConnector = new CloudConnector(new HttpRequestHelper(env));
+                var requsetHelper = new HttpRequestHelper(env);
+                var cloudConnector = new CloudConnector(requsetHelper, new PollRegistration(requsetHelper));
                 var result = await cloudConnector.RegisterAsync(cloudSettings, Log.Logger);
                 if (result != null)
                     workspace.SaveData(result);

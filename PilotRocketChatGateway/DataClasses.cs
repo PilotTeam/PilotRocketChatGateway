@@ -299,6 +299,11 @@ namespace PilotRocketChatGateway
         public string type { get; init; }
         public string appName { get; init; }
     }
+    public record WorkspacePollResult
+    {
+        public bool successful { get; init; }
+        public WorkspaceData payload { get; init; }
+    }
 
     public record WorkspaceData
     {
@@ -310,9 +315,16 @@ namespace PilotRocketChatGateway
         public string publicKey { get; init; }
         public string registration_client_uri { get; init; }
     }
+
+    public record IntentData
+    {
+        public string device_code { get; init; }
+        public string user_code { get; init; }
+        public string interval { get; init; }
+        public long expires_in { get; init; }
+    }
     public class RocketChatCloudSettings
     {
-        public string RegistrationToken { get; set; }
         public string WorkspaceName { get; set; }
         public string WorkspaceEmail { get; set; }
         public string WorkspaceUri { get; set; }
@@ -340,6 +352,11 @@ namespace PilotRocketChatGateway
         public User sender { get; init; }
         public string type { get; init; }
         public string appName { get; init; }
-}
+    }
+
+    public record PollStatus
+    {
+        public string status { get; set; }
+    }
     #endregion
 }
