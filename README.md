@@ -34,26 +34,23 @@
 `SecretKey` - секретный ключ для формирования токена. Должен содержать различные символы и цифры.
 
 #### Регистрация шлюза в RocketChatCloud
-Для пуш-нотификаций необходимо зарегистрировать шлюз в RocketChatCloud. Для это нужно заполнить поля:
+Для пуш-нотификаций необходимо зарегистрировать шлюз в RocketChatCloud. Для это нужно перерейти по адресу `https://cloud.rocket.chat` и авторизоваться, затем заполнить поля:
 ```
 "RocketChatCloud": {
-    "RegistrationToken": "04c1f83b-1c00-4864-b6e5-9ffda1e64e61",
     "WorkspaceName": "",
     "WorkspaceEmail": "",
     "WorkspaceUri": ""
   }
 ```
-где:\
-`RegistrationToken` - токен регистрации; чтобы получить, нужно:
-- прейти по адресу `https://cloud.rocket.chat`.
-- авторизоваться.
-- на вкладке Workspaces нажать на кнопку Register self-managed.
-
-`WorkspaceName` - произвольное имя шлюза.\
-`WorkspaceEmail` - почта, указанная при авторизации в RocketChatCloud.\
+где:
+`WorkspaceEmail` - почта, указанная при авторизации в RocketChatCloud.
+`WorkspaceName` - произвольное имя шлюза.
 `WorkspaceUri` -  адрес подключения шлюза.
+`HidePushInfo` - укажите значение true, если не хотите отправлять информацию о сообщении в пуш-нотификации на сервер RocketChatCloud. Значение по-умолчанию false. 
 
-Также для регистрации в RocketChatCloud необходимо дать права шлюзу на запись в папку `/ProgramData` (для Win) или `/usr/share` (linux)
+Затем необходимо необходимо дать права шлюзу на запись в папку `/ProgramData` (для Win) или `/usr/share` (linux). После этого запустите шлюз, откройте почту и подтвердите регистрацию в RocketChatCloud. 
+
+Информация о успешной регистрации или об ошибках будет указана в лог-файле.
 
 ## Запуск на на linux
 
