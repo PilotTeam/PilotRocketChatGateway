@@ -28,6 +28,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddControllers();
 builder.Services.Configure<PilotSettings>(builder.Configuration.GetSection("PilotServer"));
 builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
+builder.Services.Configure<RocketChatCloudSettings>(builder.Configuration.GetSection("RocketChatCloud"));
 builder.Services.AddSingleton<IConnectionService, ConnectionService>();
 builder.Services.AddSingleton<IContextFactory, ContextFactory>();
 builder.Services.AddSingleton<IWebSocketsServiceFactory, WebSocketsServiceFactory>();

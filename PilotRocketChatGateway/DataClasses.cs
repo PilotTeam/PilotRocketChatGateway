@@ -328,6 +328,7 @@ namespace PilotRocketChatGateway
         public string WorkspaceName { get; set; }
         public string WorkspaceEmail { get; set; }
         public string WorkspaceUri { get; set; }
+        public bool HidePushInfo { get; set; }
     }
 
     public class PushGatewayAccessData

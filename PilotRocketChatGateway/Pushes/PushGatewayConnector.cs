@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.UserContext;
 using PilotRocketChatGateway.Utils;
 using System.Net;
@@ -17,11 +18,13 @@ namespace PilotRocketChatGateway.Pushes
         private readonly ILogger<PushGatewayConnector> _logger;
         private readonly ICloudsAuthorizeQueue _authorizeQueue;
         private readonly IHttpRequestHelper _requestHelper;
+        private readonly RocketChatCloudSettings _cloudSettings;
         private object _locker = new object();
         private string _accessToken;
 
-        public PushGatewayConnector(IWorkspace workspace, ICloudsAuthorizeQueue authorizeQueue, IHttpRequestHelper requestHelper, ILogger<PushGatewayConnector> logger)
+        public PushGatewayConnector(IWorkspace workspace, ICloudsAuthorizeQueue authorizeQueue, IHttpRequestHelper requestHelper, ILogger<PushGatewayConnector> logger, IOptions<RocketChatCloudSettings> settings)
         {
+            _cloudSettings = settings.Value;
             _workspace = workspace;
             _logger = logger;
             _authorizeQueue = authorizeQueue;
@@ -90,22 +93,22 @@ namespace PilotRocketChatGateway.Pushes
                     sent = false,
                     sending = 0,
                     from = "push",
-                    title = options.title,
-                    text = options.text,
-                    userId = options.userId,
+                    title = _cloudSettings.HidePushInfo ? "new message" : options.title,
+                    text = _cloudSettings.HidePushInfo ? "new message in rocket chat." : options.text,
+                    userId = _cloudSettings.HidePushInfo ? "" : options.userId,
                     sound = "default",
                     topic = options.appName,
                     badge = options.badge,
                     payload = new
                     {
                         host = "",
-                        messageId = options.msgId,
+                        messageId = _cloudSettings.HidePushInfo ? "" : options.msgId,
                         notificationType = "message",
-                        rid = options.roomId,
-                        sender = options.sender,
-                        senderName = options.sender.name,
-                        type = options.type,
-                        name = options.name
+                        rid = _cloudSettings.HidePushInfo ? "" : options.roomId,
+                        sender = _cloudSettings.HidePushInfo ? null : options.sender,
+                        senderName = _cloudSettings.HidePushInfo ? "" : options.sender.name,
+                        type = _cloudSettings.HidePushInfo ? "" : options.type,
+                        name = _cloudSettings.HidePushInfo ? "" : options.name
                     },
 
                 }
