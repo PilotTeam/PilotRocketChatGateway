@@ -14,7 +14,7 @@ namespace PilotRocketChatGateway.PilotServer
 
     class FileLoader : IFileLoader
     {
-        private static int CHUNK_SIZE = 1024 * 1024; // 1 Mb
+        private static int CHUNK_SIZE = 512 * 1024; //512 kb
 
         private readonly IFileArchiveApi _fileArchiveApi;
         private readonly IContentTypeProvider _contentTypeProvider;

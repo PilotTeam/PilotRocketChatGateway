@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.Server.Api;
+using Ascon.Pilot.Server.Api.Contracts;
 using Ascon.Pilot.Transport;
 using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.UserContext;
@@ -19,11 +20,11 @@ namespace PilotRocketChatGateway.PilotServer
         private IContext _context;
         private IConnectionService _connector;
         private HttpPilotClient _client;
-        private ServerApiService _serverApi;
+        private ServerApiService _serverApiService;
         private IFileFileManager _fileManager;
         private bool _disposed = false;
         private object _lock = new object();
-
+        private ServerApiWrapper _apiWrapper;
 
         public RemoteService(IContext context, IConnectionService connector, ILogger logger)
         {
@@ -32,9 +33,9 @@ namespace PilotRocketChatGateway.PilotServer
             _connector = connector;
         }
 
-        public bool IsConnected { get; private set; }
+        public bool IsConnected => _apiWrapper.IsConnected;
 
-        public IServerApiService ServerApi => _serverApi;
+        public IServerApiService ServerApi => _serverApiService;
 
         public IFileFileManager FileManager => _fileManager;
 
@@ -50,7 +51,7 @@ namespace PilotRocketChatGateway.PilotServer
                 if (_disposed || !IsConnected)
                     return;
 
-                IsConnected = false;
+                _apiWrapper.LostConnection();
             }
 
             _logger.Log(LogLevel.Information, $"Lost connection to pilot-server. person: {_context.RemoteService.ServerApi.CurrentPerson.Login}");
@@ -59,33 +60,38 @@ namespace PilotRocketChatGateway.PilotServer
             _ = TryConnectAsync();
         }
 
-        
         public async Task ConnectAsync()
         {
             _client = await _connector.ConnectAsync(_context.UserData);
 
-            var fileLoader = new FileLoader(_client.GetFileArchiveApi(), new FileExtensionContentTypeProvider());
-            _client.SetConnectionLostListener(this);
             var serverCallback = new ServerCallback();
             var serverApi = _client.GetServerApi(serverCallback);
             var messageApi = _client.GetMessagesApi(new MessagesCallback(_context, _logger));
-            messageApi.Open(30, DateTime.UtcNow);
+            var archiveApi = _client.GetFileArchiveApi();
+
+            _apiWrapper = new ServerApiWrapper(_client, _context.UserData, _connector, serverApi, messageApi, archiveApi, isConnected: true);
+
+            SetUpServices(_apiWrapper, _apiWrapper, _apiWrapper, serverCallback);
+            _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");
+        }
+
+        private void SetUpServices(IServerApi serverApi, IMessagesApi messagesApi, IFileArchiveApi archiveApi, ServerCallback serverCallback)
+        {
+
+            var fileLoader = new FileLoader(archiveApi, new FileExtensionContentTypeProvider());
+            _client.SetConnectionLostListener(this);
+
+            messagesApi.Open(30, DateTime.UtcNow);
             var dbInfo = serverApi.OpenDatabase();
 
-            var archiveApi = _client.GetFileArchiveApi();
             _fileManager = new FileManager(archiveApi, serverApi, fileLoader);
             var attachmentHelper = new AttachmentHelper(serverApi, _fileManager, dbInfo.Person);
 
             var changeSender = new ChangesetSender(serverApi, serverCallback);
-            _serverApi = new ServerApiService(serverApi, messageApi, attachmentHelper, dbInfo, changeSender);
-            serverCallback.Subscribe(_serverApi);
-
-            lock (_lock)
-            {
-                IsConnected = true;
-            }
-            _logger.Log(LogLevel.Information, $"connected to pilot-server. person: {ServerApi.CurrentPerson.Login}");
+            _serverApiService = new ServerApiService(serverApi, messagesApi, attachmentHelper, dbInfo, changeSender);
+            serverCallback.Subscribe(_serverApiService);
         }
+
         private async Task TryConnectAsync()
         {
             while (!IsConnected)
@@ -95,8 +101,7 @@ namespace PilotRocketChatGateway.PilotServer
                     if (_disposed)
                         return;
 
-                    _client?.Dispose();
-                    await ConnectAsync();
+                    await _apiWrapper.LoginAsync();
                 }
                 catch (Exception e)
                 {
