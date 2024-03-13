@@ -1,0 +1,51 @@
+name: Publish
+env:
+  RELESE_FOLDER: ${{ github.workspace }}\upload
+  APP_NAME: "PilotRocketChatGateway"
+  
+on:
+  push:
+    branches: [ main ]
+    
+jobs:
+  build: 
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Publish Linux x64
+      run: dotnet publish --runtime linux-x64 --self-contained true -c Release
+    - name: Publish Windows x64
+      run: dotnet publish --runtime win-x64 --self-contained true -c Release  
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%d.%m.%y')" 
+    - name: Prepare files to release
+      run: |
+        mkdir ${{ env.RELESE_FOLDER }}
+        move ${{ github.workspace }}\${{ env.APP_NAME }}\bin\Release\net6.0\linux-x64\publish ${{ env.RELESE_FOLDER }}\linux-x64
+        move ${{ github.workspace }}\${{ env.APP_NAME }}\bin\Release\net6.0\win-x64\publish ${{ env.RELESE_FOLDER }}\win-x64
+    - name: Zip binaries
+      run: |
+          cd ${{ env.RELESE_FOLDER }}
+          tar -a -c -f binaries${{ env.TAG_NAME }}.zip *
+      env:
+          TAG_NAME: ${{ steps.date.outputs.date }}.${{ github.run_id }}
+    - name: Upload binaries to release
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: ${{ env.RELESE_FOLDER }}\binaries${{ env.TAG_NAME }}.zip
+        tag: ${{ env.TAG_NAME }}
+        name: ${{ env.RELEASE_NAME }}
+      env:
+          TAG_NAME: ${{ steps.date.outputs.date }}.${{ github.run_id }}
+          RELEASE_NAME: ${{ steps.date.outputs.date }}
