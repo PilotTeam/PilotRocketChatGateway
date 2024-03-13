@@ -6,11 +6,10 @@ namespace PilotRocketChatGateway.Controllers
     [ApiController]
     public class InfoController : ControllerBase
     {
-        public const string SERVER_VERSION = "6.5"; 
         [HttpGet]
         public Info Get()
         {
-            return new Info { success = true, version = SERVER_VERSION };
+            return new Info { success = true, version = Const.SERVER_VERSION };
         }
     }
 }
