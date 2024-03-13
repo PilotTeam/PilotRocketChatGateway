@@ -40,14 +40,14 @@
     "WorkspaceName": "",
     "WorkspaceEmail": "",
     "WorkspaceUri": "",
-	"HidePushInfo": false
+    "HidePushInfo": false
   }
 ```
 где:\
 `WorkspaceEmail` - почта, указанная при авторизации в RocketChatCloud.\
 `WorkspaceName` - произвольное имя шлюза.\
 `WorkspaceUri` -  адрес подключения шлюза.\
-`HidePushInfo` - укажите значение true, если не хотите отправлять информацию о сообщении в пуш-нотификации на сервер RocketChatCloud. Значение по-умолчанию false. \
+`HidePushInfo` - укажите значение true, если не хотите отправлять информацию о сообщении в пуш-нотификации на сервер RocketChatCloud. Значение по-умолчанию false. 
 
 Затем необходимо необходимо дать права шлюзу на запись в папку `/ProgramData` (для Win) или `/usr/share` (linux). После этого запустите шлюз, откройте почту и подтвердите регистрацию в RocketChatCloud. 
 
