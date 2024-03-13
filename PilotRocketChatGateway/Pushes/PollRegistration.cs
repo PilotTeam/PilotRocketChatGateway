@@ -22,7 +22,7 @@ namespace PilotRocketChatGateway.Pushes
             {
                 var task = Task.Run(() => Polling(intent.device_code, cancelTokenSource.Token, log));
 
-                if (task.Wait(TimeSpan.FromMilliseconds(intent.expires_in * 100)))
+                if (task.Wait(TimeSpan.FromMinutes(15)))
                     return task;
             
                 cancelTokenSource.Cancel();
@@ -37,13 +37,17 @@ namespace PilotRocketChatGateway.Pushes
 
             while (data?.payload == null)
             {
-                var (responce, _) = await _requestHelper.GetAsync($"{Const.CLOUD_URI}/api/v2/register/workspace/poll", new Dictionary<string, object>() { { "token", token } });
+                var (responce, code) = await _requestHelper.GetAsync($"{Const.CLOUD_URI}/api/v2/register/workspace/poll", new Dictionary<string, object>() { { "token", token } });
 
                 data = JsonConvert.DeserializeObject<WorkspacePollResult>(responce);
                 if (data?.payload == null)
                 {
                     var pollResponse = JsonConvert.DeserializeObject<PollStatus>(responce);
-                    log.Information($"polling responce: {pollResponse.status}");
+                    if (pollResponse == null)
+                        log.Information($"polling responce: {responce}. code: {code}");
+                    else 
+                        log.Information($"polling responce: {pollResponse.status}");
+
                     cancelToken.WaitHandle.WaitOne(5000);
                 }
 
