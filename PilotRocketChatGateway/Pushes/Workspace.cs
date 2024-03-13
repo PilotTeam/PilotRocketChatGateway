@@ -5,7 +5,7 @@ namespace PilotRocketChatGateway.Pushes
     public interface IWorkspace
     {
         WorkspaceData Data { get; }
-        void SaveData(string json);
+        void SaveData(WorkspaceData data);
     }
     public class Workspace : IWorkspace
     {
@@ -20,7 +20,7 @@ namespace PilotRocketChatGateway.Pushes
             LoadData();
         }
         public WorkspaceData Data { get; private set; }
-        public void SaveData(string json)
+        public void SaveData(WorkspaceData data)
         {
             var fullName = GetFilePath();
             try
@@ -29,8 +29,8 @@ namespace PilotRocketChatGateway.Pushes
                 var dir = Path.GetDirectoryName(fullName);
                 if (Directory.Exists(dir) == false)
                     Directory.CreateDirectory(dir);
-                File.WriteAllText(fullName, json);
-                Data = JsonConvert.DeserializeObject<WorkspaceData>(json);
+                File.WriteAllText(fullName, JsonConvert.SerializeObject(data));
+                Data = data;
 
                 _logger.Log(LogLevel.Information, $"Workspace was initiated, saved data in {fullName}");
             }
