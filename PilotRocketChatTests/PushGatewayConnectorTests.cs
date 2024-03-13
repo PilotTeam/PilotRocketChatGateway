@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using PilotRocketChatGateway;
 using PilotRocketChatGateway.Pushes;
@@ -21,7 +22,7 @@ namespace PilotRocketChatTests
             _workSpace.Setup(x => x.Data).Returns(new WorkspaceData());
             _authorizeQueue = new Mock<ICloudsAuthorizeQueue>();
             _requestHelper = new Mock<IHttpRequestHelper>();
-            _connector = new PushGatewayConnector(_workSpace.Object, _authorizeQueue.Object, _requestHelper.Object, new Mock<ILogger<PushGatewayConnector>>().Object);
+            _connector = new PushGatewayConnector(_workSpace.Object, _authorizeQueue.Object, _requestHelper.Object, new Mock<ILogger<PushGatewayConnector>>().Object, new Mock<IOptions<RocketChatCloudSettings>>().Object);
         }
 
         [Test]
