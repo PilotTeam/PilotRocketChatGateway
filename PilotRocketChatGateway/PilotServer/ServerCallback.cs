@@ -81,13 +81,13 @@ namespace PilotRocketChatGateway.PilotServer
         {
             lock (_personLock)
             {
-                foreach (var l in _changeListeners.ToArray())
+                foreach (var l in _personListeners.ToArray())
                 {
                     var listener = l.Target as IPersonChangeListener;
                     if (listener != null)
                         listener.Notify(changeset.Changed);
                     else
-                        _changeListeners.Remove(l);
+                        _personListeners.Remove(l);
                 }
             }
         }

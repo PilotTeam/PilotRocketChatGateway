@@ -22,7 +22,9 @@ namespace PilotRocketChatTests
             _workSpace.Setup(x => x.Data).Returns(new WorkspaceData());
             _authorizeQueue = new Mock<ICloudsAuthorizeQueue>();
             _requestHelper = new Mock<IHttpRequestHelper>();
-            _connector = new PushGatewayConnector(_workSpace.Object, _authorizeQueue.Object, _requestHelper.Object, new Mock<ILogger<PushGatewayConnector>>().Object, new Mock<IOptions<RocketChatCloudSettings>>().Object);
+            var options = new Mock<IOptions<RocketChatCloudSettings>>();
+            options.Setup(x => x.Value).Returns(new RocketChatCloudSettings());
+            _connector = new PushGatewayConnector(_workSpace.Object, _authorizeQueue.Object, _requestHelper.Object, new Mock<ILogger<PushGatewayConnector>>().Object, options.Object);
         }
 
         [Test]

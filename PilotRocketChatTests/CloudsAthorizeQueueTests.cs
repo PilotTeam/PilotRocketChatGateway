@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace PilotRocketChatTests
 {
-    internal class CloudsAthorizeQueueTests
+    public class CloudsAthorizeQueueTests
     {
         private Mock<ICloudConnector> _cloudConnector;
         private CloudsAuthorizeQueue _queue;
