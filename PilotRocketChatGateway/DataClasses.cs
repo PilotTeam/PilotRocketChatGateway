@@ -149,6 +149,10 @@ namespace PilotRocketChatGateway
         public string msgId { get; init; }
         public string text { get; init; }
     }
+    public record MessageUpload : HttpResult
+    {
+        public FileAttachment file { get; init; }
+    }
     public record SaveNotification
     {
         public string roomId { get; init; }

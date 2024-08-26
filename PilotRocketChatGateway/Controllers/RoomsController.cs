@@ -34,25 +34,22 @@ namespace PilotRocketChatGateway.Controllers
             var result = new Rooms() { success = true, update = rooms, remove = new List<Room>() };
             return JsonConvert.SerializeObject(result);
         }
+
         [Authorize]
         [HttpPost("api/v1/rooms.upload/{roomId}")]
-        public async Task<string> Upload(string roomId)
+        public Task<string> Upload(string roomId)
         {
-            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
-            var file = HttpContext.Request.Form.Files[0];
-            var text = HttpContext.Request.Form["description"];
-            using (var ms = new MemoryStream())
-            {
-                file.CopyTo(ms);
-                await context.ChatService.DataSender.SendAttachmentMessageToServerAsync(roomId, file.FileName, ms.ToArray(), text);
-
-                var result = new MessageRequest()
-                {
-                    success = true
-                };
-                return JsonConvert.SerializeObject(result);
-            }
+            return UploadAsync(roomId);
         }
+
+        [Authorize]
+        [HttpPost("api/v1/rooms.media/{roomId}")]
+        public Task<string> Upload2(string roomId)
+        {
+            return UploadAsync(roomId);
+        }
+
+
         [Authorize]
         [HttpPost("api/v1/rooms.saveNotification")]
         public string SaveNotification(object request)
@@ -67,6 +64,24 @@ namespace PilotRocketChatGateway.Controllers
             var result = new { success = true };
             return JsonConvert.SerializeObject(result);
 
+        }
+
+        private async Task<string> UploadAsync(string roomId)
+        {
+            var context = _contextsBank.GetContext(HttpContext.GetTokenActor(_authHelper));
+            var file = HttpContext.Request.Form.Files[0];
+            var text = HttpContext.Request.Form["description"];
+            using (var ms = new MemoryStream())
+            {
+                file.CopyTo(ms);
+                var newFile = await context.ChatService.DataSender.SendAttachmentMessageToServerAsync(roomId, file.FileName, ms.ToArray(), text);
+                var result = new MessageUpload()
+                {
+                    file = newFile,
+                    success = true
+                };
+                return JsonConvert.SerializeObject(result);
+            }
         }
 
         private string GetParam(string query)

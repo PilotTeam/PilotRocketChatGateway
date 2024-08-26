@@ -30,8 +30,8 @@ namespace PilotRocketChatGateway.PilotServer
             _contentTypeProvider = contentTypeProvider;
             _file = file;
             _data = data;
-            _fileType = GetFileType(file.Name);
-            _format = GetFileType(file.Name);
+            _fileType = GetFileType(file.Name, contentTypeProvider);
+            _format = GetFileType(file.Name, contentTypeProvider);
             _format = GetFileFormat(file.Name);
     }
 
@@ -49,12 +49,12 @@ namespace PilotRocketChatGateway.PilotServer
 
             return Enum.IsDefined(typeof(SupportedMedia), ext.Substring(1));
         }
-        private string GetFileType(string filename)
+        public static string GetFileType(string filename, IContentTypeProvider contentTypeProvider)
         {
-            _contentTypeProvider.TryGetContentType(filename, out var contentType);
+            contentTypeProvider.TryGetContentType(filename, out var contentType);
             return contentType;
         }
-        private string GetFileFormat(string filename)
+        public static string GetFileFormat(string filename)
         {
             var fileExtension = Path.GetExtension(filename).ToLower();
             if (string.IsNullOrEmpty(fileExtension))

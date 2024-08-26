@@ -1,10 +1,8 @@
 ﻿using Ascon.Pilot.DataClasses;
+using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.Utils;
-using PilotRocketChatGateway.WebSockets;
 using SixLabors.ImageSharp;
-using System;
-using System.Security.Cryptography;
 
 namespace PilotRocketChatGateway.UserContext
 {
@@ -13,17 +11,21 @@ namespace PilotRocketChatGateway.UserContext
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
         Attachment LoadAttachment(Guid? objId);
         Attachment GetSimpleAttachment(Guid? objId);
+        FileAttachment LoadFileAttachment(DObject obj, string roomId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
     public class MediaAttachmentLoader : IMediaAttachmentLoader
     {
         private const string DOWNLOAD_URL = "/download";
         private readonly ICommonDataConverter _commonDataConverter;
+        private readonly IContentTypeProvider _contentTypeProvider;
         private readonly IContext _context;
-        public MediaAttachmentLoader(ICommonDataConverter commonDataConverter, IContext context)
+
+        public MediaAttachmentLoader(ICommonDataConverter commonDataConverter, IContext context, IContentTypeProvider contentTypeProvider)
         {
             _commonDataConverter = commonDataConverter;
             _context = context;
+            _contentTypeProvider = contentTypeProvider;
         }
         public (IList<FileAttachment>, int) LoadFiles(string roomId, int offset)
         {
@@ -32,26 +34,24 @@ namespace PilotRocketChatGateway.UserContext
             var attachs = GetAttachmentsIds(chat.Relations).Skip(offset);
             return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), attachs.Count());
         }
-        public Attachment LoadAttachment(Guid? objId)
+        public Attachment LoadAttachment(Guid? objId) 
         {
             if (objId == null || objId == Guid.Empty)
                 return null;
 
             var obj = _context.RemoteService.ServerApi.GetObject(objId.Value);
-            var attach = LoadFileInfo(obj);
-
+            var file = obj.ActualFileSnapshot.Files.First();
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
 
-            if (attach != null && PilotServer.FileInfo.IsSupportedMediaFile(attach.File.Name))
+            if (PilotServer.FileInfo.IsSupportedMediaFile(file.Name))
             {
-                var image = Image.Load(attach.Data);
                 return new Attachment()
                 {
-                    title = attach.File.Name,
+                    title = file.Name,
                     title_link = downloadUrl,
-                    image_dimensions = new Dimension { width = image.Width, height = image.Height },
-                    image_type = attach.FileType,
-                    image_size = attach.File.Size,
+                    image_dimensions = GetDimension(obj),
+                    image_type = PilotServer.FileInfo.GetFileType(file.Name, _contentTypeProvider),
+                    image_size = file.Body.Size,
                     image_url = downloadUrl,
                     type = "file",
                 };
@@ -59,7 +59,7 @@ namespace PilotRocketChatGateway.UserContext
 
             return new Attachment()
             {
-                title = GetAttachmentTitle(obj, attach),
+                title = obj.ActualFileSnapshot.Files[0].Name,
                 title_link = downloadUrl,
                 type = "file",
             };
@@ -79,12 +79,43 @@ namespace PilotRocketChatGateway.UserContext
                 type = "file",
             };
         }
-
-        private string GetAttachmentTitle(DObject obj, IFileInfo? attach)
+        public FileAttachment LoadFileAttachment(DObject obj, string roomId)
         {
-            return attach == null ? obj.GetTiltle(_context.RemoteService.ServerApi.GetNType(obj.TypeId)) : attach.File.Name;
-        }
+            var creator = _commonDataConverter.ConvertToUser(GetAttachCreator(obj));
+            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", obj.Id.ToString()) });
+            var file = obj.ActualFileSnapshot.Files.First();
+            if (PilotServer.FileInfo.IsSupportedMediaFile(file.Name))
+            {
+                return new FileAttachment
+                {
+                    name = file.Name,
+                    type = PilotServer.FileInfo.GetFileType(file.Name, _contentTypeProvider),
+                    id = file.Body.Id.ToString(),
+                    size = file.Body.Size,
+                    roomId = roomId,
+                    userId = creator.id,
+                    identify = new FileIdentity
+                    {
+                        format = PilotServer.FileInfo.GetFileFormat(file.Name),
+                        size = GetDimension(obj),
+                    },
+                    url = downloadUrl,
+                    typeGroup = "image",
+                    user = creator,
+                    uploadedAt = _commonDataConverter.ConvertToJSDate(file.Body.Created)
+                };
+            }
 
+            return new FileAttachment
+            {
+                name = file.Name,
+                roomId = roomId,
+                userId = creator.id,
+                url = downloadUrl,
+                user = creator,
+                uploadedAt = _commonDataConverter.ConvertToJSDate(obj.Created)
+            };
+        }
         public Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations)
         {
             var attachs = new Dictionary<Guid, Guid>();
@@ -100,72 +131,25 @@ namespace PilotRocketChatGateway.UserContext
 
             return $"{DOWNLOAD_URL}/{@params.First().Item2}";
         }
-        public IFileInfo LoadFileInfo(DObject obj)
-        {
-            var fileLoader = _context.RemoteService.FileManager.FileLoader;
 
-            var file = obj.ActualFileSnapshot.Files.FirstOrDefault();
-            return fileLoader.Download(file);
-        }
         private FileAttachment LoadFileAttachment(Guid objId, string roomId)
         {
             if (objId == Guid.Empty)
                 return null;
 
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
-            var attach = LoadFileInfo(obj);
-
-            var creator = _commonDataConverter.ConvertToUser(GetAttachCreator(obj, attach));
-            var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", objId.ToString()) });
-
-            if (attach != null && PilotServer.FileInfo.IsSupportedMediaFile(attach.File.Name))
-            {
-                using (var ms = new MemoryStream(attach.Data))
-                {
-                    var image = Image.Load(attach.Data);
-
-                    return new FileAttachment
-                    {
-                        name = attach.File.Name,
-                        type = attach.FileType,
-                        id = attach.File.Id.ToString(),
-                        size = attach.File.Size,
-                        roomId = roomId,
-                        userId = creator.id,
-                        identify = new FileIdentity
-                        {
-                            format = attach.Format,
-                            size = new Dimension { width = image.Width, height = image.Height },
-                        },
-                        url = downloadUrl,
-                        typeGroup = "image",
-                        user = creator,
-                        uploadedAt = _commonDataConverter.ConvertToJSDate(attach.File.Created)
-                    };
-                }
-            }
-
-            return new FileAttachment
-            {
-                name = GetAttachmentTitle(obj, attach),
-                roomId = roomId,
-                userId = creator.id,
-                url = downloadUrl,
-                user = creator,
-                uploadedAt = attach == null ? _commonDataConverter.ConvertToJSDate(obj.Created) : _commonDataConverter.ConvertToJSDate(attach.File.Created)
-            };
+            return LoadFileAttachment(obj, roomId);
         }
 
-        private INPerson GetAttachCreator(DObject obj, IFileInfo attach)
+
+        private INPerson GetAttachCreator(DObject obj)
         {
-            if (attach == null)
-                return _context.RemoteService.ServerApi.GetPerson(obj.CreatorId);
+            return _context.RemoteService.ServerApi.GetPerson(obj.CreatorId);
+        }
 
-            var person = _context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId);
-            if (person != null)
-                return person;
-
-            return _context.RemoteService.ServerApi.GetPerson(attach.File.CreatorId) ?? _context.RemoteService.ServerApi.GetPerson(obj.CreatorId);
+        private Dimension GetDimension(DObject obj)
+        {
+            return new Dimension { width = (int)obj.Attributes[SystemAttributes.WIDTH].IntValue, height = (int)obj.Attributes[SystemAttributes.HEIGHT] };
         }
     }
 }

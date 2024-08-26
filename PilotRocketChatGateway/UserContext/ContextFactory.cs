@@ -1,4 +1,5 @@
 ﻿using Ascon.Pilot.Server.Api;
+using Microsoft.AspNetCore.StaticFiles;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.Pushes;
 using PilotRocketChatGateway.Utils;
@@ -20,7 +21,7 @@ namespace PilotRocketChatGateway.UserContext
             await remoteSerive.ConnectAsync();
 
             var commonConverter = new CommonDataConverter(context);
-            var attachLoader = new MediaAttachmentLoader(commonConverter, context);
+            var attachLoader = new MediaAttachmentLoader(commonConverter, context, new FileExtensionContentTypeProvider());
             var rcConverter = new RCDataConverter(context, attachLoader, commonConverter, logger);
             var msgLoader = new BatchMessageLoader(context);
             var loader = new DataLoader(rcConverter, commonConverter, context, msgLoader, logger);
