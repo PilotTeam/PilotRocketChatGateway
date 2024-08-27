@@ -12,6 +12,7 @@ using PilotRocketChatGateway.Utils;
 using PilotRocketChatGateway.Pushes;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 var builder = WebApplication.CreateBuilder(args);
@@ -41,7 +42,10 @@ builder.Services.AddSingleton<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton<IWorkspace, Workspace>();
 builder.Services.AddSingleton<IPushGatewayConnector, PushGatewayConnector>();
 builder.Services.AddSingleton<IPollRegistration, PollRegistration>();
-
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
 
 builder.AddAuthentication();
 builder.Logging.ClearProviders();

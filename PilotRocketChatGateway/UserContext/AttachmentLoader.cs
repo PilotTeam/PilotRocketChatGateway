@@ -90,7 +90,7 @@ namespace PilotRocketChatGateway.UserContext
                 {
                     name = file.Name,
                     type = PilotServer.FileInfo.GetFileType(file.Name, _contentTypeProvider),
-                    id = file.Body.Id.ToString(),
+                    id = obj.Id.ToString(),
                     size = file.Body.Size,
                     roomId = roomId,
                     userId = creator.id,

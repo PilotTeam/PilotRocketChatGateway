@@ -11,11 +11,14 @@ namespace PilotRocketChatGateway.UserContext
     {
         void SendTextMessageToServer(string roomId, string msgId, string text, Uri replyLink);
         void SendEditMessageToServer(string roomId, string msgId, string text);
-        Task<FileAttachment> SendAttachmentMessageToServerAsync(string roomId, string fileName, byte[] data, string text);
         void SendReadAllMessageToServer(string roomId);
         void SendTypingMessageToServer(string roomId);
         void SendChageNotificationMessageToServer(string roomId, bool on);
         Room SendChatCreationMessageToServer(string name, IList<string> members, ChatKind kind);
+        Task<FileAttachment> CreateAttachmentObject(string roomId, string fileName, byte[] data);
+        void SendAttachmentMessageToServer(string roomId, string objId, string text);
+        [Obsolete]
+        Task<FileAttachment> SendAttachmentMessageToServerAsync(string roomId, string fileName, byte[] data, string text);
     }
     public class DataSender : IDataSender
     {
@@ -76,6 +79,28 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             _context.WebSocketsNotifyer.NotifyMessageCreated(origin, chat, NotifyClientKind.FullChat);
         }
+
+        public async Task<FileAttachment> CreateAttachmentObject(string roomId, string fileName, byte[] data)
+        {
+            var obj = await _context.RemoteService.ServerApi.CreateAttachmentObjectAsync(fileName, data);
+            return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId);
+        }
+
+        public void SendAttachmentMessageToServer(string roomId, string objId, string text)
+        {
+            var chatId = _commonConverter.ConvertToChatId(roomId);
+            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            var msgData = GetAttachmentsMessageData(Guid.Parse(objId), dMessage.Id, text);
+
+            SetMessageData(dMessage, msgData);
+            dMessage.ServerDate = _context.RemoteService.ServerApi.SendMessage(dMessage);
+
+            var chat = _context.RemoteService.ServerApi.GetChat(chatId);
+            _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, chat, NotifyClientKind.FullChat);
+        }
+
+
+        [Obsolete]
         public async Task<FileAttachment> SendAttachmentMessageToServerAsync(string roomId, string fileName, byte[] data, string text)
         {
             var obj = await _context.RemoteService.ServerApi.CreateAttachmentObjectAsync(fileName, data);
@@ -86,8 +111,7 @@ namespace PilotRocketChatGateway.UserContext
             SetMessageData(dMessage, msgData);
             dMessage.ServerDate = _context.RemoteService.ServerApi.SendMessage(dMessage);
 
-            var id = _commonConverter.ConvertToChatId(roomId);
-            var chat = _context.RemoteService.ServerApi.GetChat(id);
+            var chat = _context.RemoteService.ServerApi.GetChat(chatId);
             _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, chat, NotifyClientKind.FullChat);
 
             return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId);

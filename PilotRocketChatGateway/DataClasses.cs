@@ -158,6 +158,12 @@ namespace PilotRocketChatGateway
         public string roomId { get; init; }
         public Notifications notifications { get; init; }
     }
+    public record ConfirmUpload
+    {
+        public string msg { get; init; }
+        public string tmid { get; init; }
+        public string description { get; init; }
+    }
     public record Notifications
     {
         public string disableNotifications { get; init; }
