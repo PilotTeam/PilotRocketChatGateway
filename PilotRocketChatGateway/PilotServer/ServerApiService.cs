@@ -117,7 +117,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public DObject GetObject(Guid id)
         {
-            return _serverApi.GetObjects(new Guid[] { id }).First();
+            return _serverApi.GetObjects(new Guid[] { id }).FirstOrDefault();
         }
 
         public async Task<DObject> CreateAttachmentObjectAsync(string fileName, byte[] data)

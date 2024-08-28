@@ -1,5 +1,4 @@
 ﻿using PilotRocketChatGateway.Authentication;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace PilotRocketChatGateway.PilotServer
 {

@@ -31,8 +31,9 @@ namespace PilotRocketChatGateway.UserContext
         {
             var id = _commonDataConverter.ConvertToChatId(roomId);
             var chat = _context.RemoteService.ServerApi.GetChat(id);
-            var attachs = GetAttachmentsIds(chat.Relations).Skip(offset);
-            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), attachs.Count());
+            var allAttachments = GetAttachmentsIds(chat.Relations);
+            var attachs = allAttachments.Reverse().Skip(offset).Take(10);
+            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), allAttachments.Count());
         }
         public Attachment LoadAttachment(Guid? objId) 
         {
@@ -81,6 +82,9 @@ namespace PilotRocketChatGateway.UserContext
         }
         public FileAttachment LoadFileAttachment(DObject obj, string roomId)
         {
+            if (obj == null || obj.StateInfo.State != ObjectState.Alive)
+                return null;
+
             var creator = _commonDataConverter.ConvertToUser(GetAttachCreator(obj));
             var downloadUrl = MakeDownloadLink(new List<(string, string)> { ("objId", obj.Id.ToString()) });
             var file = obj.ActualFileSnapshot.Files.First();
