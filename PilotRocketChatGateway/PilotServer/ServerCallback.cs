@@ -99,5 +99,10 @@ namespace PilotRocketChatGateway.PilotServer
         public void NotifyAccessChangeset(Guid objectId)
         {
         }
+
+        public void NotifySettingsChangeset(string settingKey)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

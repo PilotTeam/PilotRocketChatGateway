@@ -67,9 +67,9 @@ namespace PilotRocketChatGateway.PilotServer
             return Call(() => _serverApi.GetMetadata(localVersion));
         }
 
-        DSettings IServerApi.GetPersonalSettings()
+        DSettings IServerApi.GetPersonalSettings(string key = null)
         {
-            return Call(() => _serverApi.GetPersonalSettings());
+            return Call(() => _serverApi.GetPersonalSettings(key));
         }
 
         DSettings IServerApi.GetCommonSettings()
@@ -374,5 +374,6 @@ namespace PilotRocketChatGateway.PilotServer
         {
             _isConnected = false;
         }
+
     }
 }
