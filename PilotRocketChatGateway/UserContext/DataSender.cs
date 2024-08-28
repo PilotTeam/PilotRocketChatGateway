@@ -38,7 +38,7 @@ namespace PilotRocketChatGateway.UserContext
             DMessage dMessage = null;
             if (replyLink == null)
             {
-                dMessage = CreateMessage(chatId, MessageType.TextMessage);
+                dMessage = CreateMessage(Guid.NewGuid(), chatId, MessageType.TextMessage);
             }
             else
             {
@@ -46,7 +46,7 @@ namespace PilotRocketChatGateway.UserContext
                 var reply = _commonConverter.IsRocketChatId(id) ?
                             _context.RemoteService.ServerApi.GetMessage(id) :
                             _context.RemoteService.ServerApi.GetMessage(Guid.Parse(id));
-                dMessage = CreateMessage(chatId, MessageType.MessageAnswer, reply.Id);
+                dMessage = CreateMessage(Guid.NewGuid(), chatId, MessageType.MessageAnswer, reply.Id);
                 dMessage.RelatedMessages.Add(reply); 
             }
             var data = new DTextMessageData { Text = text, ThirdPartyInfo = rcMsgId };
@@ -66,7 +66,7 @@ namespace PilotRocketChatGateway.UserContext
 
             var chatId = _commonConverter.ConvertToChatId(roomId);
 
-            var edit = CreateMessage(chatId, MessageType.EditTextMessage, relatedMsgId);
+            var edit = CreateMessage(Guid.NewGuid(),chatId, MessageType.EditTextMessage, relatedMsgId);
             var data = new DTextMessageData { Text = text };
 
             var origin = _context.RemoteService.ServerApi.GetMessage(relatedMsgId);
@@ -83,13 +83,13 @@ namespace PilotRocketChatGateway.UserContext
         public async Task<FileAttachment> CreateAttachmentObject(string roomId, string fileName, byte[] data)
         {
             var obj = await _context.RemoteService.ServerApi.CreateAttachmentObjectAsync(fileName, data);
-            return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId);
+            return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId, obj.Id.ToString());
         }
 
         public void SendAttachmentMessageToServer(string roomId, string objId, string text)
         {
             var chatId = _commonConverter.ConvertToChatId(roomId);
-            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            var dMessage = CreateMessage(Guid.Parse(objId), chatId, MessageType.TextMessage);
             var msgData = GetAttachmentsMessageData(Guid.Parse(objId), dMessage.Id, text);
 
             SetMessageData(dMessage, msgData);
@@ -105,7 +105,7 @@ namespace PilotRocketChatGateway.UserContext
         {
             var obj = await _context.RemoteService.ServerApi.CreateAttachmentObjectAsync(fileName, data);
             var chatId = _commonConverter.ConvertToChatId(roomId);
-            var dMessage = CreateMessage(chatId, MessageType.TextMessage);
+            var dMessage = CreateMessage(Guid.NewGuid(), chatId, MessageType.TextMessage);
             var msgData = GetAttachmentsMessageData(obj.Id, dMessage.Id, text);
 
             SetMessageData(dMessage, msgData);
@@ -114,12 +114,12 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(chatId);
             _context.WebSocketsNotifyer.NotifyMessageCreated(dMessage, chat, NotifyClientKind.FullChat);
 
-            return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId);
+            return _rcConverter.AttachmentLoader.LoadFileAttachment(obj, roomId, dMessage.Id.ToString());
         }
         public void SendChageNotificationMessageToServer(string roomId, bool on)
         {
             var chatId = _commonConverter.ConvertToChatId(roomId);
-            var dMessage = CreateMessage(chatId, MessageType.ChatMembers);
+            var dMessage = CreateMessage(Guid.NewGuid(), chatId, MessageType.ChatMembers);
 
             var data = new DChatMembersData();
             data.Changes.Add(new DMemberChange()
@@ -143,7 +143,7 @@ namespace PilotRocketChatGateway.UserContext
             if (chat.UnreadMessagesNumber == 0)
                 return;
 
-            var msg = CreateMessage(id, MessageType.MessageDropUnreadCounter, chat.LastMessage?.Id);
+            var msg = CreateMessage(Guid.NewGuid(), id, MessageType.MessageDropUnreadCounter, chat.LastMessage?.Id);
             _context.RemoteService.ServerApi.SendMessage(msg);
         }
         public void SendTypingMessageToServer(string roomId)
@@ -162,7 +162,7 @@ namespace PilotRocketChatGateway.UserContext
                 CreationDateUtc = DateTime.UtcNow
             };
 
-            var msg = CreateMessage(chat.Id, MessageType.ChatCreation);
+            var msg = CreateMessage(Guid.NewGuid(), chat.Id, MessageType.ChatCreation);
             chat.LastMessageId = msg.Id;
 
             SetMessageData(msg, chat);
@@ -190,11 +190,11 @@ namespace PilotRocketChatGateway.UserContext
             return data;
         }
 
-        private DMessage CreateMessage(Guid chatId, MessageType type, Guid? relatedMessageId = null)
+        private DMessage CreateMessage(Guid msgId, Guid chatId, MessageType type, Guid? relatedMessageId = null)
         {
             return new DMessage()
             {
-                Id = Guid.NewGuid(),
+                Id = msgId,
                 CreatorId = _context.RemoteService.ServerApi.CurrentPerson.Id,
                 ChatId = chatId,
                 LocalDate = DateTime.Now.ToUniversalTime(),
@@ -213,7 +213,7 @@ namespace PilotRocketChatGateway.UserContext
         }
         private void SendChatsMemberMessageToServer(Guid roomId, string username)
         {
-            var msg = CreateMessage(roomId, MessageType.ChatMembers);
+            var msg = CreateMessage(Guid.NewGuid(), roomId, MessageType.ChatMembers);
             var person = _context.RemoteService.ServerApi.GetPerson(username);
 
             var change = new DMemberChange

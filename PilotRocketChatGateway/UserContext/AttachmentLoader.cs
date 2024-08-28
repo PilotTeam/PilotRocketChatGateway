@@ -11,7 +11,7 @@ namespace PilotRocketChatGateway.UserContext
         (IList<FileAttachment>, int) LoadFiles(string roomId, int offset);
         Attachment LoadAttachment(Guid? objId);
         Attachment GetSimpleAttachment(Guid? objId);
-        FileAttachment LoadFileAttachment(DObject obj, string roomId);
+        FileAttachment LoadFileAttachment(DObject obj, string roomId, string msgId);
         Dictionary<Guid, Guid> GetAttachmentsIds(IList<DChatRelation> chatRelations);
     }
     public class MediaAttachmentLoader : IMediaAttachmentLoader
@@ -33,7 +33,7 @@ namespace PilotRocketChatGateway.UserContext
             var chat = _context.RemoteService.ServerApi.GetChat(id);
             var allAttachments = GetAttachmentsIds(chat.Relations);
             var attachs = allAttachments.Reverse().Skip(offset).Take(10);
-            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId)).Where(x => x != null).ToList(), allAttachments.Count());
+            return (attachs.Select(x => LoadFileAttachment(x.Value, roomId, x.Key.ToString())).Where(x => x != null).ToList(), allAttachments.Count());
         }
         public Attachment LoadAttachment(Guid? objId) 
         {
@@ -80,7 +80,7 @@ namespace PilotRocketChatGateway.UserContext
                 type = "file",
             };
         }
-        public FileAttachment LoadFileAttachment(DObject obj, string roomId)
+        public FileAttachment LoadFileAttachment(DObject obj, string roomId, string msgId)
         {
             if (obj == null || obj.StateInfo.State != ObjectState.Alive)
                 return null;
@@ -94,7 +94,7 @@ namespace PilotRocketChatGateway.UserContext
                 {
                     name = file.Name,
                     type = PilotServer.FileInfo.GetFileType(file.Name, _contentTypeProvider),
-                    id = obj.Id.ToString(),
+                    id = msgId,
                     size = file.Body.Size,
                     roomId = roomId,
                     userId = creator.id,
@@ -106,7 +106,7 @@ namespace PilotRocketChatGateway.UserContext
                     url = downloadUrl,
                     typeGroup = "image",
                     user = creator,
-                    uploadedAt = _commonDataConverter.ConvertToJSDate(file.Body.Created)
+                    uploadedAt = _commonDataConverter.ConvertToJSDate(file.Body.Created.ToUniversalTime())
                 };
             }
 
@@ -136,13 +136,13 @@ namespace PilotRocketChatGateway.UserContext
             return $"{DOWNLOAD_URL}/{@params.First().Item2}";
         }
 
-        private FileAttachment LoadFileAttachment(Guid objId, string roomId)
+        private FileAttachment LoadFileAttachment(Guid objId, string roomId, string msgId)
         {
             if (objId == Guid.Empty)
                 return null;
 
             var obj = _context.RemoteService.ServerApi.GetObject(objId);
-            return LoadFileAttachment(obj, roomId);
+            return LoadFileAttachment(obj, roomId, msgId);
         }
 
 
