@@ -3,6 +3,7 @@ using Ascon.Pilot.DataClasses;
 using PilotRocketChatGateway.PilotServer;
 using PilotRocketChatGateway.WebSockets;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.ServiceModel.Channels;
@@ -208,15 +209,15 @@ namespace PilotRocketChatGateway.UserContext
         }
 
 
-        private Guid? GetAttachmentId(byte[] msgData)
+        private IList<Guid> GetAttachmentId(byte[] msgData)
         {
             using (var stream = new MemoryStream(msgData))
             {
                 var data = ProtoBuf.Serializer.Deserialize<DTextMessageData>(stream);
                 if (data.Attachments.Any() == false)
-                    return null;
+                    return new List<Guid>();
 
-                return data.Attachments.Where(x => x.Type == ChatRelationType.Attach).FirstOrDefault()?.ObjectId;
+                return data.Attachments.Where(x => x.Type == ChatRelationType.Attach).Select(x => x.ObjectId).ToList();
             }
         }
 
@@ -250,7 +251,6 @@ namespace PilotRocketChatGateway.UserContext
                     var replyAttach = LoadReplyAttachments(roomId, msg);
                     attachments.Add(replyAttach);
                 }
-
           
                 var edited = GetEditMessage(msg);
                 var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
@@ -282,15 +282,27 @@ namespace PilotRocketChatGateway.UserContext
                 return attachments;
             }
         }
-        private IList<Attachment> LoadAttachments(Guid? objId)
+        private IList<Attachment> LoadAttachments(IList<Guid> objIds)
         {
-            var attach = AttachmentLoader.LoadAttachment(objId);
-            return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
+            var result = new List<Attachment>();
+            foreach (var id in objIds)
+            {
+                var attach = AttachmentLoader.LoadAttachment(id);
+                if (attach != null)
+                    result.Add(attach);
+            }
+            return result;
         }
-        private IList<Attachment> GetSimpleAttachments(Guid? objId)
+        private IList<Attachment> GetSimpleAttachments(IList<Guid> objIds)
         {
-            var attach = AttachmentLoader.GetSimpleAttachment(objId);
-            return attach == null ? new List<Attachment> { } : new List<Attachment> { attach };
+            var result = new List<Attachment>();
+            foreach (var id in objIds)
+            {
+                var attach = AttachmentLoader.GetSimpleAttachment(id);
+                if (attach != null)
+                    result.Add(attach);
+            }
+            return result;
         }
 
         private string GetMessageText(DMessage msg)
