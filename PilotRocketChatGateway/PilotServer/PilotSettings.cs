@@ -4,6 +4,5 @@
     {
         public string Url { get; init; }
         public string Database { get; init; }
-        public int LicenseCode { get; init; }
     }
 }

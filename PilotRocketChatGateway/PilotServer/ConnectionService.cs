@@ -34,7 +34,7 @@ namespace PilotRocketChatGateway.PilotServer
 
         public Task ConnectAsync(IAuthenticationAsyncApi authApi, UserData credentials)
         {
-            return authApi.LoginWithIdentityAsync(_config.Database, credentials.Username, credentials.ProtectedPassword, _config.LicenseCode, new SelfIdentity() { Id = SELF_IDENTITY });
+            return authApi.LoginWithIdentityAsync(_config.Database, credentials.Username, credentials.ProtectedPassword, new SelfIdentity() { Id = SELF_IDENTITY });
         }
     }
 }
