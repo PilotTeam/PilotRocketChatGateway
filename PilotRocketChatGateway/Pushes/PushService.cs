@@ -87,7 +87,7 @@ namespace PilotRocketChatGateway.Pushes
 
         private PushOptions GetGroupChatOption(DMessage message, DChat chat)
         {
-            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToSimpleMessage(message, chat);
+            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToMessage(message, chat);
             return new PushOptions
             {
                 createdAt = rcMesssage.creationDate,
@@ -105,7 +105,7 @@ namespace PilotRocketChatGateway.Pushes
 
         private PushOptions GetPersonalChatOption(DMessage message, DChat chat)
         {
-            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToSimpleMessage(message, chat);
+            var rcMesssage = _context.ChatService.DataLoader.RCDataConverter.ConvertToMessage(message, chat);
             return new PushOptions
             {
                 createdAt = rcMesssage.creationDate,

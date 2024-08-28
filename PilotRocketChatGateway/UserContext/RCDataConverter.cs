@@ -18,7 +18,6 @@ namespace PilotRocketChatGateway.UserContext
         Room ConvertToRoom(DChat chat, DMessage lastMessage);
         Subscription ConvertToSubscription(DChatInfo chat);
         Message ConvertToMessage(DMessage msg, DChat chat);
-        Message ConvertToSimpleMessage(DMessage msg, DChat chat);
         string ConvertToRoomId(DChat chat);
     }
     public class RCDataConverter : IRCDataConverter
@@ -53,7 +52,7 @@ namespace PilotRocketChatGateway.UserContext
                 id = roomId,
                 channelType = GetChannelType(chat),
                 creationDate = CommonDataConverter.ConvertToJSDate(chat.CreationDateUtc),
-                lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToSimpleMessage(lastMessage, chat),
+                lastMessage = lastMessage.Type == MessageType.ChatCreation ? null : ConvertToMessage(lastMessage, chat),
             };
         }
         public Subscription ConvertToSubscription(DChatInfo chat)
@@ -96,27 +95,7 @@ namespace PilotRocketChatGateway.UserContext
                 role = GetRole(origin)
             };
         }
-        public Message ConvertToSimpleMessage(DMessage msg, DChat chat)
-        {
-            var origin = GetOriginMessage(msg);
-            var user = CommonDataConverter.ConvertToUser(_context.RemoteService.ServerApi.GetPerson(origin.CreatorId));
-            var roomId = ConvertToRoomId(chat);
-            var editedAt = GetEditedAt(origin);
-            return new Message()
-            {
-                id = GetMessageId(origin),
-                roomId = roomId,
-                updatedAt = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
-                creationDate = CommonDataConverter.ConvertToJSDate(origin.ServerDate.Value),
-                msg = GetMessageText(origin),
-                u = user,
-                attachments = GetSimpleAttachments(origin),
-                editedAt = editedAt,
-                editedBy = GetEditor(origin),
-                type = GetMsgType(origin),
-                role = GetRole(origin)
-            };
-        }
+
         public string ConvertToRoomId(DChat chat)
         {
             return chat.Type == ChatKind.Personal ? GetPersonalChatTarget(chat).id : chat.Id.ToString();
@@ -262,43 +241,12 @@ namespace PilotRocketChatGateway.UserContext
                 return attachments;
             }
         }
-
-        private IList<Attachment> GetSimpleAttachments(DMessage msg)
-        {
-            List<Attachment> attachments = new List<Attachment>();
-            try
-            {
-                if (msg.Type != MessageType.MessageAnswer && msg.Type != MessageType.TextMessage)
-                    return attachments;
-
-
-                var edited = GetEditMessage(msg);
-                var attachId = edited == null ? GetAttachmentId(msg.Data) : GetAttachmentId(edited.Data);
-                return attachments.Concat(GetSimpleAttachments(attachId)).ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return attachments;
-            }
-        }
         private IList<Attachment> LoadAttachments(IList<Guid> objIds)
         {
             var result = new List<Attachment>();
             foreach (var id in objIds)
             {
                 var attach = AttachmentLoader.LoadAttachment(id);
-                if (attach != null)
-                    result.Add(attach);
-            }
-            return result;
-        }
-        private IList<Attachment> GetSimpleAttachments(IList<Guid> objIds)
-        {
-            var result = new List<Attachment>();
-            foreach (var id in objIds)
-            {
-                var attach = AttachmentLoader.GetSimpleAttachment(id);
                 if (attach != null)
                     result.Add(attach);
             }
